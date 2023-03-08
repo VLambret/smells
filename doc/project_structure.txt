@@ -1,0 +1,22 @@
+.
+├── doc
+│   ├── output.json
+│   └── project_structure.txt
+├── LICENSE.txt
+├── Makefile
+├── README.md
+├── src
+│   ├── cli
+│   ├── gui
+│   ├── metrics
+│   └── output_formats
+└── test
+    ├── data
+    ├── e2e
+    └── unit
+        ├── cli
+        ├── gui
+        ├── metrics
+        └── output_formats
+
+14 directories, 5 files

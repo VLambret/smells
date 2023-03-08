@@ -1,0 +1,26 @@
+[
+	"file1": {
+		"metrics": {
+			"lines_metric": 0,
+			"social_complexity_metric": 1
+		}
+	},
+	"folder1": {
+		"metrics": {
+			"lines_metric": 0,
+			"social_complexity_metric": 0
+		},
+		"folder_content": []
+	}
+]
+
+// Empty
+[
+	".": {
+		"metrics": {
+			"lines_metric": 0,
+			"social_complexity_metric": 0
+		},
+		"folder_content": []
+	}
+]
