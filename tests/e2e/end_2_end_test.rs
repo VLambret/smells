@@ -1,15 +1,9 @@
 use assert_cmd::cmd::Command;
-
-/*macro_rules! concatenate {
-    ($suffix:literal $($s:literal)*) => {
-        concat!($suffix $(, '\n', $s)*)
-    };
-}*/
-
+use predicates::prelude::*;
 
 #[test]
 #[ignore]
-fn should_return_empty_json_if_in_current_empty_dir_with_no_argument() -> Result<(), Box<dyn std::error::Error>>{
+fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::error::Error>>{
     // given
     let cmd_call = "smells";
 
@@ -31,15 +25,59 @@ r#"[
         .code(0)
         .stdout(expected_stdout)
         .stderr("");
+    Ok(())
+}
 
+/*#[test]
+#[ignore]
+fn with_argument_which_is_point_smells_analyses_current_folder() -> Result<(), Box<dyn std::error::Error>>{
+    // given
+    let cmd_call = "smells .";
+
+    // when
+    let mut cmd = Command::cargo_bin(cmd_call)?;
+
+    // then
+    let expected_stdout = predicate::str::is_empty().not();
+    cmd.assert()
+        .code(0)
+        .stdout(expected_stdout)
+        .stderr("");
+    Ok(())
+}*/
+
+#[test]
+#[ignore]
+fn folder_to_analyse_can_be_specified_with_first_parameter() -> Result<(), Box<dyn std::error::Error>>{
+    // given
+    let cmd_call = "smells tests/data/empty_folder";
+
+    // when
+    let mut cmd = Command::cargo_bin(cmd_call)?;
+
+    // then
+    let expected_stdout = 
+r#"[
+    "empty_folder": {
+        "metrics": {
+            "lines_metric": 0,
+        },
+        "folder_content": []
+    }
+]
+"#; 
+    cmd.assert()
+        .code(0)
+        .stdout(expected_stdout)
+        .stderr("");
     Ok(())
 }
 
 #[test]
 #[ignore]
-fn should_return_file0_with_0_line_in_current_dir() -> Result<(), Box<dyn std::error::Error>>{
+fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::Error>>{
     // given
-    let cmd_call = "smells";
+    let cmd_call = "smells tests/data/single_file_folder";
 
     // when
     let mut cmd = Command::cargo_bin(cmd_call)?;
@@ -47,17 +85,11 @@ fn should_return_file0_with_0_line_in_current_dir() -> Result<(), Box<dyn std::e
     //then
     let expected_stdout = 
 r#"[
-    "file0": {
+    "single_file.txt": {
         "metrics": {
             "lines_metric": 0,
         }
     },
-    "folder1": {
-        "metrics": {
-            "lines_metric": 0,
-        },
-        "folder_content": []
-    }
 ]
 "#;  
     cmd.assert()
@@ -65,15 +97,14 @@ r#"[
     .stdout(expected_stdout)
     .stderr("");  
 
-
     Ok(())
 }
 
 #[test]
 #[ignore]
-fn should_return_file1_with_1_line_in_current_dir() -> Result<(), Box<dyn std::error::Error>>{
+fn smells_can_count_lines_of_a_single_file_other_case() -> Result<(), Box<dyn std::error::Error>>{
     // given
-    let cmd_call = "smells";
+    let cmd_call = "smells tests/data/single_file_folder_other";
 
     // when
     let mut cmd = Command::cargo_bin(cmd_call)?;
@@ -81,52 +112,13 @@ fn should_return_file1_with_1_line_in_current_dir() -> Result<(), Box<dyn std::e
     //then
     let expected_stdout = 
 r#"[
-    "file0": {
-        "metrics": {
-            "lines_metric": 1,
-        }
-    },
-    "folder1": {
-        "metrics": {
-            "lines_metric": 0,
-        },
-        "folder_content": []
-    }
-]
-"#;
-    cmd.assert()
-    .code(0)
-    .stdout(expected_stdout)
-    .stderr("");  
-
-    Ok(())
-}
-
-#[test]
-#[ignore]
-fn should_return_file10_with_10_lines_in_current_dir() -> Result<(), Box<dyn std::error::Error>>{
-    // given
-    let cmd_call = "smells";
-
-    // when
-    let mut cmd = Command::cargo_bin(cmd_call)?;
-
-    //then
-    let expected_stdout = 
-r#"[
-    "file0": {
+    "single_file.txt": {
         "metrics": {
             "lines_metric": 10,
         }
     },
-    "folder1": {
-        "metrics": {
-            "lines_metric": 0,
-        },
-        "folder_content": []
-    }
 ]
-"#;
+"#;  
     cmd.assert()
     .code(0)
     .stdout(expected_stdout)
@@ -135,34 +127,42 @@ r#"[
     Ok(())
 }
 
+
 #[test]
-fn should_return_file1000000_with_1000000_lines_in_current_dir() -> Result<(), Box<dyn std::error::Error>>{
+#[ignore]
+fn smells_must_not_access_to_a_file_with_no_permission() -> Result<(), Box<dyn std::error::Error>>{
+       // given
+       let cmd_call = "smells tests/data/folder_with_no_permission";
+
+       // when
+       let mut cmd = Command::cargo_bin(cmd_call)?;
+   
+       //then
+       let excpected_stderr = "Error! Permission denied!";
+
+       cmd.assert()
+       .code(0)
+       .stdout("")
+       .stderr(excpected_stderr);
+    Ok(())
+}
+
+/*#[test]
+#[ignore]
+fn with_two_arguments_smells_show_an_error() -> Result<(), Box<dyn std::error::Error>>{
     // given
-    let cmd_call = "smells";
+    let cmd_call = "smells . another_argument";
 
     // when
     let mut cmd = Command::cargo_bin(cmd_call)?;
 
     //then
-    let expected_stdout = 
-r#"[
-    "file0": {
-        "metrics": {
-            "lines_metric": 1000000,
-        }
-    },
-    "folder1": {
-        "metrics": {
-            "lines_metric": 0,
-        },
-        "folder_content": []
-    }
-]
-"#;
-    cmd.assert()
-    .code(0)
-    .stdout(expected_stdout)
-    .stderr("");
+    let expected_stderr = "Error! Argument number error!";
+
+       cmd.assert()
+       .code(0)
+       .stdout("")
+       .stderr(expected_stderr);
 
     Ok(())
-}
+}*/

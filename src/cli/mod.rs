@@ -55,7 +55,7 @@ r#"[
     }
 ]"#;
 
-    let json_file_file1000000 = 
+    let _json_file_file1000000 = 
 r#"[
     "file0": {
         "metrics": {
@@ -70,7 +70,9 @@ r#"[
     }
 ]"#;
 
+    let file_permission_denied = "Error! Permission denied!";
 
 
-    println!("{}", json_file_file1000000);
+
+    println!("{}", file_permission_denied);
 }
