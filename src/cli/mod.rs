@@ -11,7 +11,6 @@ r#"[
 ]"#;
 
     let _json_file_file0 =
-
 r#"[
     "file0": {
         "metrics": {
@@ -26,8 +25,7 @@ r#"[
     }
 ]"#;
 
-    let json_file_file1 =
-
+    let _json_file_file1 =
 r#"[
     "file0": {
         "metrics": {
@@ -42,5 +40,21 @@ r#"[
     }
 ]"#;
 
-    println!("{}", json_file_file1);
+    let json_file_file10 =
+r#"[
+    "file0": {
+        "metrics": {
+            "lines_metric": 10,
+        }
+    },
+    "folder1": {
+        "metrics": {
+            "lines_metric": 0,
+        },
+        "folder_content": []
+    }
+]"#;
+
+
+    println!("{}", json_file_file10);
 }

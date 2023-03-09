@@ -102,3 +102,34 @@ r#"[
     Ok(())
 }
 
+#[test]
+fn should_return_file10_with_10_lines_in_current_dir() -> Result<(), Box<dyn std::error::Error>>{
+    // given
+    let cmd_call = "smells";
+
+    // when
+    let mut cmd = Command::cargo_bin(cmd_call)?;
+
+    //then
+    let expected_stdout = 
+r#"[
+    "file0": {
+        "metrics": {
+            "lines_metric": 10,
+        }
+    },
+    "folder1": {
+        "metrics": {
+            "lines_metric": 0,
+        },
+        "folder_content": []
+    }
+]
+"#;
+    cmd.assert()
+    .code(0)
+    .stdout(expected_stdout)
+    .stderr(""); 
+
+    Ok(())
+}
