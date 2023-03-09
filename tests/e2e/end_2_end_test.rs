@@ -28,7 +28,7 @@ r#"[
     Ok(())
 }
 
-/*#[test]
+#[test]
 #[ignore]
 fn with_argument_which_is_point_smells_analyses_current_folder() -> Result<(), Box<dyn std::error::Error>>{
     // given
@@ -44,7 +44,7 @@ fn with_argument_which_is_point_smells_analyses_current_folder() -> Result<(), B
         .stdout(expected_stdout)
         .stderr("");
     Ok(())
-}*/
+}
 
 #[test]
 #[ignore]
