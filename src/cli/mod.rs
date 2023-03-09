@@ -7,10 +7,10 @@ r#"[
             },
             "folder_content": []
         }
-]
-"#;
+]"#;
 
-let json_file_file0 =
+    let json_file_file0 =
+
 r#"[
     "file0": {
         "metrics": {
@@ -23,8 +23,7 @@ r#"[
         },
         "folder_content": []
     }
-]
-"#;
+]"#;
 
     println!("{}", json_file_file0);
 }
