@@ -149,7 +149,7 @@ fn smells_must_not_access_to_a_file_with_no_permission() -> Result<(), Box<dyn s
 
 #[test]
 #[ignore]
-fn with_two_arguments_smells_show_an_error() -> Result<(), Box<dyn std::error::Error>>{
+fn with_two_arguments_smells_shows_an_error() -> Result<(), Box<dyn std::error::Error>>{
     // given
     let cmd_call = "smells . another_argument";
 
@@ -164,5 +164,37 @@ fn with_two_arguments_smells_show_an_error() -> Result<(), Box<dyn std::error::E
        .stdout("")
        .stderr(expected_stderr);
 
+    Ok(())
+}
+
+#[test]
+#[ignore]
+fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::error::Error>>{
+    // given
+    let cmd_call = "smells tests/data/folder_with_multiple_files";
+
+    // when
+    let mut cmd = Command::cargo_bin(cmd_call)?;
+
+    //then
+    let expected_stdout =
+r#"[
+    "file1.txt": {
+        "metrics": {
+            "lines_metric": 1,
+        }
+    },
+    "file2.txt": {
+        "metrics": {
+            "lines_metric": 5,
+        }
+    }
+]
+"#;  
+
+    cmd.assert()
+    .code(0)
+    .stdout(expected_stdout)
+    .stderr("");
     Ok(())
 }
