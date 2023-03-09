@@ -147,7 +147,7 @@ fn smells_must_not_access_to_a_file_with_no_permission() -> Result<(), Box<dyn s
     Ok(())
 }
 
-/*#[test]
+#[test]
 #[ignore]
 fn with_two_arguments_smells_show_an_error() -> Result<(), Box<dyn std::error::Error>>{
     // given
@@ -165,4 +165,4 @@ fn with_two_arguments_smells_show_an_error() -> Result<(), Box<dyn std::error::E
        .stderr(expected_stderr);
 
     Ok(())
-}*/
+}
