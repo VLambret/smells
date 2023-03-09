@@ -40,7 +40,7 @@ r#"[
     }
 ]"#;
 
-    let json_file_file10 =
+    let _json_file_file10 =
 r#"[
     "file0": {
         "metrics": {
@@ -55,6 +55,22 @@ r#"[
     }
 ]"#;
 
+    let json_file_file1000000 = 
+r#"[
+    "file0": {
+        "metrics": {
+            "lines_metric": 1000000,
+        }
+    },
+    "folder1": {
+        "metrics": {
+            "lines_metric": 0,
+        },
+        "folder_content": []
+    }
+]"#;
 
-    println!("{}", json_file_file10);
+
+
+    println!("{}", json_file_file1000000);
 }
