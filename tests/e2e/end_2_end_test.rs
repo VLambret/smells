@@ -49,7 +49,6 @@ fn with_argument_which_is_point_smells_analyses_current_folder() -> Result<(), B
 }
 
 #[test]
-#[ignore]
 fn folder_to_analyse_can_be_specified_with_first_parameter() -> Result<(), Box<dyn std::error::Error>>{
     // given
     let cmd_call = "smells";
@@ -61,15 +60,15 @@ fn folder_to_analyse_can_be_specified_with_first_parameter() -> Result<(), Box<d
 
     // then
     let expected_stdout = 
-r#"[
-    "empty_folder": {
-        "metrics": {
-            "lines_metric": 0,
-        },
-        "folder_content": []
-    }
-]
-"#; 
+    r#"[
+        "empty_folder": {
+            "metrics": {
+                "lines_metric": 0,
+            },
+            "folder_content": []
+        }
+    ]
+    "#; 
     cmd.assert()
         .code(0)
         .stdout(expected_stdout)
