@@ -8,6 +8,10 @@ pub struct CmdArgs{
 
 pub fn smells(){
     let args = CmdArgs::from_args();
+    print_analysis(args.path);
+}   
+
+fn print_analysis(analysed_file: std::path::PathBuf){
     let json_output = format!(
 r#"[
         "{}": {{
@@ -16,6 +20,6 @@ r#"[
             }},
             "folder_content": []
         }}
-]"#, args.path.display());
-    println!("{}", json_output);
+]"#, analysed_file.display());
+    println!("{}", json_output);       
 }
