@@ -3,12 +3,12 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 pub struct CmdArgs{
     #[structopt(default_value=".")]
-    path: String,
+    path: std::path::PathBuf,
 }
 
 pub fn smells(){
     let args = CmdArgs::from_args();
-    let json_file_empty_dir = format!(
+    let json_output = format!(
 r#"[
         "{}": {{
             "metrics": {{
@@ -16,6 +16,6 @@ r#"[
             }},
             "folder_content": []
         }}
-]"#, args.path);
-    println!("{}", json_file_empty_dir);
+]"#, args.path.display());
+    println!("{}", json_output);
 }
