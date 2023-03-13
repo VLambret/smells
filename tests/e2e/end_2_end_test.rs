@@ -67,8 +67,7 @@ fn folder_to_analyse_can_be_specified_with_first_parameter() -> Result<(), Box<d
             },
             "folder_content": []
         }
-    ]
-    "#; 
+    ]"#;
     cmd.assert()
         .code(0)
         .stdout(expected_stdout)
