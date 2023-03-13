@@ -11,15 +11,14 @@ fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::
 
     // then
     let expected_stdout = 
-r#"[
+    r#"[
         ".": {
             "metrics": {
                 "lines_metric": 0,
             },
             "folder_content": []
         }
-]
-"#;
+    ]"#;
     cmd.assert()
         .code(0)
         .stdout(expected_stdout)
