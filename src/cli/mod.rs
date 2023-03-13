@@ -1,9 +1,10 @@
 use structopt::StructOpt;
+use std::path::PathBuf;
 
 #[derive(Debug, StructOpt)]
 pub struct CmdArgs{
     #[structopt(default_value=".")]
-    path: std::path::PathBuf,
+    path: PathBuf,
 }
 
 pub fn smells(){
@@ -11,20 +12,51 @@ pub fn smells(){
     print_analysis(args.path);
 }   
 
-fn print_analysis(analysed_file: std::path::PathBuf){
+fn print_analysis(analysed_file: PathBuf){
+    let file_os_str = analysed_file.as_os_str();
     let file_key = match analysed_file.file_name() {
         Some(file_name) => file_name.to_owned(),
-        _ => analysed_file.into_os_string(),
+        _ => file_os_str.to_owned(),
     };
 
-    let json_output = format!(
-    r#"[
+    let json_output_with_empty_folder = format!(
+    r#"{{
         {:?}: {{
             "metrics": {{
-                "lines_metric": 0,
+                "lines_metric": 0
             }},
-            "folder_content": []
+            "folder_content": {{}}
         }}
-    ]"#, file_key);
-    print!("{}", json_output);
+    }}"#, file_key);
+
+    let folder_content = 
+    r#"
+                "file0.txt": {
+                    "metrics": {
+                        "lines_metric": 0
+                    }
+                }"#;
+
+    let json_output_with_folder_not_empty = format!(
+    r#"{{
+        {:?}: {{
+            "metrics": {{
+                "lines_metric": 0
+            }},
+            "folder_content": {{{}
+            }}
+        }}
+    }}"#, file_key, folder_content);
+
+
+    let is_empty = std::fs::read_dir(&analysed_file)
+        .map(|mut dir| dir.next().is_none())
+        .unwrap_or(true);
+
+    if analysed_file.into_os_string() != "." && !is_empty{
+        print!("{}", json_output_with_folder_not_empty);
+    }
+    else{
+        print!("{}", json_output_with_empty_folder);
+    }
 }

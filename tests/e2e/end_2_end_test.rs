@@ -11,14 +11,14 @@ fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::
 
     // then
     let expected_stdout = 
-    r#"[
+    r#"{
         ".": {
             "metrics": {
-                "lines_metric": 0,
+                "lines_metric": 0
             },
-            "folder_content": []
+            "folder_content": {}
         }
-    ]"#;
+    }"#;
     cmd.assert()
         .code(0)
         .stdout(expected_stdout)
@@ -32,7 +32,6 @@ fn with_argument_which_is_point_smells_analyses_current_folder() -> Result<(), B
     let cmd_call = "smells";
     let args = ".";
     //let args = &[".", ".."];
-
 
     // when
     let mut cmd = Command::cargo_bin(cmd_call)?;
@@ -59,14 +58,14 @@ fn folder_to_analyse_can_be_specified_with_first_parameter() -> Result<(), Box<d
 
     // then
     let expected_stdout = 
-    r#"[
+    r#"{
         "empty_folder": {
             "metrics": {
-                "lines_metric": 0,
+                "lines_metric": 0
             },
-            "folder_content": []
+            "folder_content": {}
         }
-    ]"#;
+    }"#;
     cmd.assert()
         .code(0)
         .stdout(expected_stdout)
@@ -75,30 +74,31 @@ fn folder_to_analyse_can_be_specified_with_first_parameter() -> Result<(), Box<d
 }
 
 #[test]
-#[ignore]
 fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::Error>>{
     // given
-    let cmd_call = "smells tests/data/single_file_folder";
+    let cmd_call = "smells";
+    let args = "tests/data/single_file_folder";
 
     // when
     let mut cmd = Command::cargo_bin(cmd_call)?;
+    cmd.args(&[args]);
 
     //then
     let expected_stdout = 
-r#"[
-    "single_file_folder":{
-        "metrics": {
-            "lines_metric": 0,
-    },
-    "folder_content":[
-        "file0.txt": {
+    r#"{
+        "single_file_folder": {
             "metrics": {
-                "lines_metric": 0,
+                "lines_metric": 0
+            },
+            "folder_content": {
+                "file0.txt": {
+                    "metrics": {
+                        "lines_metric": 0
+                    }
+                }
             }
         }
-    ]
-]
-"#;  
+    }"#;
     cmd.assert()
     .code(0)
     .stdout(expected_stdout)
@@ -118,7 +118,7 @@ fn smells_can_count_lines_of_a_single_file_other_case() -> Result<(), Box<dyn st
 
     //then
     let expected_stdout = 
-r#"[
+r#"{
     "single_file_folder_other":{
         "metrics": {
             "lines_metric": 5,
@@ -130,8 +130,7 @@ r#"[
             }
         }
     ]
-]
-"#;  
+    }"#;  
     cmd.assert()
     .code(0)
     .stdout(expected_stdout)
@@ -191,7 +190,7 @@ fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::e
 
     //then
     let expected_stdout =
-r#"[
+r#"{
     "folder_with_multiple_files":{
         "metrics": {
             "lines_metric": 6,
@@ -209,8 +208,7 @@ r#"[
         }
 
     ]
-]
-"#;  
+    }"#;  
 
     cmd.assert()
     .code(0)
@@ -230,7 +228,7 @@ fn smells_can_analyses_folder_with_a_folder_and_a_file() -> Result<(), Box<dyn s
     
         //then
         let expected_stdout =
-r#"[
+r#"{
     "folder_with_folder_and_file":{
         "metrics": {
             "lines_metric": 11,
@@ -255,8 +253,7 @@ r#"[
         }
 
     ]
-]
-"#;
+    }"#;
     cmd.assert()
     .code(0)
     .stdout(expected_stdout)
