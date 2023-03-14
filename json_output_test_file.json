@@ -1,0 +1,25 @@
+{
+	"file1": {
+		"File": {
+			"metrics": {
+				"lines_metrics": 0
+			}
+		}
+	},
+	"folder1": {
+		"Folder": {
+			"metrics": {
+				"lines_metrics": 0
+			},
+			"folder_content": {
+				"file2": {
+					"File": {
+						"metrics": {
+							"lines_metrics": 2
+						}
+					}
+				}
+			}
+		}
+	}
+}
