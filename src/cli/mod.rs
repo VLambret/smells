@@ -27,12 +27,17 @@ fn analyse(folder: PathBuf) -> AnalysisResult {
     }
 }
 
-fn print_analysis(analysis: AnalysisResult) {
-    let file_os_str = analysis.file.as_os_str();
-    let file_key = match analysis.file.file_name() {
+fn extract_key(file: PathBuf) -> String{
+    let file_os_str = file.as_os_str();
+    let file_key = match file.file_name() {
         Some(file_name) => file_name.to_owned(),
         _ => file_os_str.to_owned(),
     };
+    file_key.to_string_lossy().into_owned()
+}
+
+fn print_analysis(analysis: AnalysisResult) {
+    let file_key = extract_key(analysis.file);
 
     let json_output_with_empty_folder = format!(
         r#"{{
