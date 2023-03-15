@@ -30,39 +30,7 @@ fn print_analysis(analysed_file: PathBuf) -> Result<(),Box<dyn std::error::Error
         }}
     }}"#, file_key);
 
-    let folder_content = create_folder_content(file_line_number);
-
-    let json_output_with_folder_not_empty = format!(
-    r#"{{
-        {:?}: {{
-            "metrics": {{
-                "lines_metric": 0
-            }},
-            "folder_content": {{{}
-            }}
-        }}
-    }}"#, file_key, folder_content);
-
-
-    let is_empty = std::fs::read_dir(&analysed_file)
-        .map(|mut dir| dir.next().is_none())
-        .unwrap_or(true);
-
-    if analysed_file.into_os_string() != "." && !is_empty{
-        print!("{}", json_output_with_folder_not_empty);
-    }
-    else{
-        print!("{}", json_output_with_empty_folder);
-    }
+    print!("{}", json_output_with_empty_folder);
+    
     Ok(())
-}
-
-fn  create_folder_content(file_line_number: u32) -> String{
-    format!(
-        r#"
-                {:?}: {{
-                    "metrics": {{
-                        "lines_metric": {}
-                    }}
-                }}"#, "file0.txt",file_line_number)
 }
