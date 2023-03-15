@@ -23,3 +23,17 @@ package: build
 
 perf: build
 	echo sh test/perf/run_perf_tests.sh
+
+################################################################################
+# BACKLOG
+################################################################################
+
+backlog: backlog.png
+	eog backlog.png
+
+backlog.png: backlog.dot
+	dot -Tpng $^ -o $@
+
+backlog.dot: backlog.py
+	python3 $^ > $@
+	cat $@

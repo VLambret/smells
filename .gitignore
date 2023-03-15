@@ -4,3 +4,7 @@ target
 # Added by cargo
 
 /target
+
+# backlog
+*.dot
+backlog.png
