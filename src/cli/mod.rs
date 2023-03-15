@@ -14,17 +14,18 @@ pub struct Analysis {
 pub fn smells(){
     let args = CmdArgs::from_args();
     do_analysis(args.path).expect("Error");
-}   
+}  
 
 fn do_analysis(analysed_file: PathBuf) -> Result<(),Box<dyn std::error::Error>> {
-
-    let file_line_number = 0;
-
-    let analysis = Analysis{
-        analysed_file
-    };
+    let analysis = analyse(analysed_file);
     print_analysis(analysis);   
     Ok(())
+}
+
+fn analyse(folder: PathBuf) -> Analysis {
+    Analysis{
+        analysed_file: folder
+    }
 }
 
 fn print_analysis(analysis: Analysis) {
