@@ -7,30 +7,29 @@ pub struct CmdArgs{
     path: PathBuf,
 }
 
-pub struct Analysis {
-    analysed_file: PathBuf
+pub struct AnalysisResult {
+    file: PathBuf
 }
 
 pub fn smells(){
     let args = CmdArgs::from_args();
-    do_analysis(args.path).expect("Error");
+    do_analysis(args.path);
 }  
 
-fn do_analysis(analysed_file: PathBuf) -> Result<(),Box<dyn std::error::Error>> {
-    let analysis = analyse(analysed_file);
-    print_analysis(analysis);   
-    Ok(())
+fn do_analysis(folder: PathBuf){
+    let analysis = analyse(folder);
+    print_analysis(analysis);
 }
 
-fn analyse(folder: PathBuf) -> Analysis {
-    Analysis{
-        analysed_file: folder
+fn analyse(folder: PathBuf) -> AnalysisResult {
+    AnalysisResult{
+        file: folder
     }
 }
 
-fn print_analysis(analysis: Analysis) {
-    let file_os_str = analysis.analysed_file.as_os_str();
-    let file_key = match analysis.analysed_file.file_name() {
+fn print_analysis(analysis: AnalysisResult) {
+    let file_os_str = analysis.file.as_os_str();
+    let file_key = match analysis.file.file_name() {
         Some(file_name) => file_name.to_owned(),
         _ => file_os_str.to_owned(),
     };
