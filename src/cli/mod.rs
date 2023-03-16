@@ -1,7 +1,6 @@
 use structopt::StructOpt;
 use std::path::PathBuf;
 use serde_json::{Result, Value};
-use std::fs;
 
 #[derive(Debug, StructOpt)]
 pub struct CmdArgs{
@@ -40,13 +39,11 @@ fn extract_key(file: &PathBuf) -> String{
     file_key.to_string_lossy().into_owned()
 }
 
-fn print_analysis(analysis: AnalysisResult) -> Result<()>{
-    let file_key = extract_key(&analysis.file);
+fn extract_file_content(file: PathBuf) -> String{
     let mut file_content = "".to_string();
-
     let mut path_to_compare = PathBuf::new();
     path_to_compare.push(".");
-    if !analysis.file.read_dir().unwrap().next().is_none() && analysis.file != path_to_compare{
+    if !file.read_dir().unwrap().next().is_none() && file != path_to_compare{
         file_content = 
         r#""file0.txt": {
             "metrics": {
@@ -54,7 +51,12 @@ fn print_analysis(analysis: AnalysisResult) -> Result<()>{
             }
         }"#.to_string();
     }
+    file_content
+}
 
+fn print_analysis(analysis: AnalysisResult) -> Result<()>{
+    let file_key = extract_key(&analysis.file);
+    let file_content = extract_file_content(analysis.file);
     let json_output = format!(
     r#"{{
         "{}": {{
