@@ -12,14 +12,16 @@ struct AnalysisResult {
     file: PathBuf
 }
 
-pub fn smells(){
+pub fn smells() -> Result<()> {
     let args = CmdArgs::from_args();
-    do_analysis(args.path);
+    do_analysis(args.path)?;
+    Ok(())
 }  
 
-fn do_analysis(folder: PathBuf){
+fn do_analysis(folder: PathBuf) -> Result<()> {
     let analysis = analyse(folder);
-    print_analysis(analysis);
+    print_analysis(analysis)?;
+    Ok(())
 }
 
 fn analyse(folder: PathBuf) -> AnalysisResult {

@@ -22,17 +22,16 @@ fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::
     }"#;
     
     let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
-    let json_pretty_expected_stdout = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
+    let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
 
     cmd.assert()
         .code(0)
-        .stdout(predicates::ord::eq(json_pretty_expected_stdout))
+        .stdout(json_expected_stdout_to_str)
         .stderr("");
     Ok(())
 }
 
 #[test]
-#[ignore]
 fn with_argument_which_is_point_smells_analyses_current_folder() -> Result<(), Box<dyn std::error::Error>>{
     // given
     let cmd_call = "smells";
@@ -53,7 +52,6 @@ fn with_argument_which_is_point_smells_analyses_current_folder() -> Result<(), B
 }
 
 #[test]
-#[ignore]
 fn folder_to_analyse_can_be_specified_with_first_parameter() -> Result<(), Box<dyn std::error::Error>>{
     // given
     let cmd_call = "smells";
@@ -75,18 +73,16 @@ fn folder_to_analyse_can_be_specified_with_first_parameter() -> Result<(), Box<d
     }"#;
 
     let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
-    let binding = serde_json::to_string(&json_expected_stdout).unwrap();
-    let expected_stdout_bytes = binding.as_bytes();
+    let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
 
     cmd.assert()
         .code(0)
-        .stdout(predicates::ord::eq(expected_stdout_bytes))
+        .stdout(json_expected_stdout_to_str)
         .stderr("");
     Ok(())
 }
 
 #[test]
-#[ignore]
 fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::Error>>{
     // given
     let cmd_call = "smells";
@@ -114,12 +110,11 @@ fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::E
     }"#;
 
     let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
-    let binding = serde_json::to_string(&json_expected_stdout).unwrap();
-    let expected_stdout_bytes = binding.as_bytes();
+    let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
 
     cmd.assert()
     .code(0)
-    .stdout(predicates::ord::eq(expected_stdout_bytes))
+    .stdout(predicates::ord::eq(json_expected_stdout_to_str))
     .stderr("");  
 
     Ok(())
