@@ -39,18 +39,22 @@ fn extract_key(file: &PathBuf) -> String{
     file_key.to_string_lossy().into_owned()
 }
 
-fn extract_file_content(file: PathBuf) -> String{
-    // extract all files of a folder
-    let mut file_keys = "".to_string();
+fn extract_files_name(file: &PathBuf) -> String{
+    // extract all files name of a folder
+    let mut files_name = "".to_string();
     if let Ok(entries) = std::fs::read_dir(&file) {
         for entry in entries {
             if let Ok(entry) = entry {
-                file_keys = extract_key(&entry.path());
+                files_name = extract_key(&entry.path());
             }
         }
     }
+    files_name
+}
 
-    // create the file content if needed
+fn extract_file_content(file: PathBuf) -> String{
+    let files_name = extract_files_name(&file);
+    // create the file content if needed to be displayed in print_analysis
     let mut file_content = "".to_string();
     let mut path_to_compare = PathBuf::new();
     path_to_compare.push(".");
@@ -60,7 +64,7 @@ fn extract_file_content(file: PathBuf) -> String{
             "metrics": {{
                 "lines_metric": 0
             }}
-        }}"#, file_keys);
+        }}"#, files_name);
     }
     file_content
 }
