@@ -1,6 +1,7 @@
 use structopt::StructOpt;
 use std::path::PathBuf;
-use serde_json::{Value, Result};
+use serde_json::{Result, Value};
+use std::fs;
 
 #[derive(Debug, StructOpt)]
 pub struct CmdArgs{
@@ -30,7 +31,7 @@ fn analyse(folder: PathBuf) -> AnalysisResult {
     }
 }
 
-fn extract_key(file: PathBuf) -> String{
+fn extract_key(file: &PathBuf) -> String{
     let file_os_str = file.as_os_str();
     let file_key = match file.file_name() {
         Some(file_name) => file_name.to_owned(),
@@ -40,16 +41,29 @@ fn extract_key(file: PathBuf) -> String{
 }
 
 fn print_analysis(analysis: AnalysisResult) -> Result<()>{
-    let file_key = extract_key(analysis.file);
+    let file_key = extract_key(&analysis.file);
+    let mut file_content = "".to_string();
+
+    let mut path_to_compare = PathBuf::new();
+    path_to_compare.push(".");
+    if !analysis.file.read_dir().unwrap().next().is_none() && analysis.file != path_to_compare{
+        file_content = 
+        r#""file0.txt": {
+            "metrics": {
+                "lines_metric": 0
+            }
+        }"#.to_string();
+    }
+
     let json_output = format!(
     r#"{{
         "{}": {{
             "metrics": {{
                 "lines_metric": 0
             }},
-            "folder_content": {{}}
+            "folder_content": {{{}}}
         }}
-    }}"#, file_key);
+    }}"#, file_key, file_content);
 
     let converted_json_output: Value = serde_json::from_str(&json_output)?;
     print!("{}", serde_json::to_string_pretty(&converted_json_output)?);

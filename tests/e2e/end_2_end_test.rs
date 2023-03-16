@@ -62,7 +62,7 @@ fn folder_to_analyse_can_be_specified_with_first_parameter() -> Result<(), Box<d
     cmd.args(&[args]);
 
     // then
-    let expected_stdout = 
+    let expected_stdout =
     r#"{
         "empty_folder": {
             "metrics": {
