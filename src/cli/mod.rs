@@ -40,16 +40,27 @@ fn extract_key(file: &PathBuf) -> String{
 }
 
 fn extract_file_content(file: PathBuf) -> String{
+    // extract all files of a folder
+    let mut file_keys = "".to_string();
+    if let Ok(entries) = std::fs::read_dir(&file) {
+        for entry in entries {
+            if let Ok(entry) = entry {
+                file_keys = extract_key(&entry.path());
+            }
+        }
+    }
+
+    // create the file content if needed
     let mut file_content = "".to_string();
     let mut path_to_compare = PathBuf::new();
     path_to_compare.push(".");
     if !file.read_dir().unwrap().next().is_none() && file != path_to_compare{
-        file_content = 
-        r#""file0.txt": {
-            "metrics": {
+        file_content = format!(
+        r#""{}": {{
+            "metrics": {{
                 "lines_metric": 0
-            }
-        }"#.to_string();
+            }}
+        }}"#, file_keys);
     }
     file_content
 }
