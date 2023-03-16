@@ -22,12 +22,11 @@ fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::
     }"#;
     
     let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
-    let binding = serde_json::to_string(&json_expected_stdout).unwrap();
-    let expected_stdout_bytes = binding.as_bytes();
+    let json_pretty_expected_stdout = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
 
     cmd.assert()
         .code(0)
-        .stdout(predicates::ord::eq(expected_stdout_bytes))
+        .stdout(predicates::ord::eq(json_pretty_expected_stdout))
         .stderr("");
     Ok(())
 }
@@ -74,9 +73,14 @@ fn folder_to_analyse_can_be_specified_with_first_parameter() -> Result<(), Box<d
             "folder_content": {}
         }
     }"#;
+
+    let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
+    let binding = serde_json::to_string(&json_expected_stdout).unwrap();
+    let expected_stdout_bytes = binding.as_bytes();
+
     cmd.assert()
         .code(0)
-        .stdout(expected_stdout)
+        .stdout(predicates::ord::eq(expected_stdout_bytes))
         .stderr("");
     Ok(())
 }
@@ -108,9 +112,14 @@ fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::E
             }
         }
     }"#;
+
+    let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
+    let binding = serde_json::to_string(&json_expected_stdout).unwrap();
+    let expected_stdout_bytes = binding.as_bytes();
+
     cmd.assert()
     .code(0)
-    .stdout(expected_stdout)
+    .stdout(predicates::ord::eq(expected_stdout_bytes))
     .stderr("");  
 
     Ok(())
