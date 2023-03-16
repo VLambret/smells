@@ -1,5 +1,6 @@
 use structopt::StructOpt;
 use std::path::PathBuf;
+use serde_json::Value;
 
 #[derive(Debug, StructOpt)]
 pub struct CmdArgs{
@@ -7,7 +8,7 @@ pub struct CmdArgs{
     path: PathBuf,
 }
 
-pub struct AnalysisResult {
+struct AnalysisResult {
     file: PathBuf
 }
 
@@ -39,14 +40,16 @@ fn extract_key(file: PathBuf) -> String{
 fn print_analysis(analysis: AnalysisResult) {
     let file_key = extract_key(analysis.file);
 
-    let json_output_with_empty_folder = format!(
-        r#"{{
-        {:?}: {{
+    let json_output = format!(
+    r#"{{
+        "{}": {{
             "metrics": {{
                 "lines_metric": 0
             }},
             "folder_content": {{}}
         }}
-    }}"#, file_key);  
-    print!("{}", json_output_with_empty_folder)
+    }}"#, file_key);
+
+    let converted_json_output: Value = serde_json::from_str(&json_output).unwrap();
+    print!("{}", converted_json_output);
 }

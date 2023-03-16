@@ -1,5 +1,6 @@
 use assert_cmd::cmd::Command;
 use predicates::prelude::*;
+use serde_json::Value;
 
 #[test]
 fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::error::Error>>{
@@ -13,15 +14,20 @@ fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::
     let expected_stdout = 
     r#"{
         ".": {
-            "metrics": {
+        "metrics": {
                 "lines_metric": 0
             },
             "folder_content": {}
         }
     }"#;
+    
+    let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
+    let binding = serde_json::to_string(&json_expected_stdout).unwrap();
+    let expected_stdout_bytes = binding.as_bytes();
+
     cmd.assert()
         .code(0)
-        .stdout(expected_stdout)
+        .stdout(predicates::ord::eq(expected_stdout_bytes))
         .stderr("");
     Ok(())
 }
