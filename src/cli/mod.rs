@@ -11,7 +11,12 @@ pub struct CmdArgs{
 }
 
 struct AnalysisResult {
-    file: PathBuf
+    file: PathBuf,
+    metrics: Metrics,
+}
+
+struct Metrics{
+    lines_count: u32
 }
 
 pub fn smells() -> Result<()> {
@@ -20,15 +25,20 @@ pub fn smells() -> Result<()> {
     Ok(())
 }  
 
-fn do_analysis(folder: PathBuf) -> Result<()> {
-    let analysis = analyse(folder);
+fn do_analysis(file: PathBuf) -> Result<()> {
+    let analysis = analyse(file);
     print_analysis(analysis)?;
     Ok(())
 }
 
-fn analyse(folder: PathBuf) -> AnalysisResult {
+fn analyse(file: PathBuf) -> AnalysisResult {
+    let metrics = Metrics {
+        lines_count: get_file_line_metrics(&file)
+    };
+
     AnalysisResult{
-        file: folder
+        file,
+        metrics,
     }
 }
 
@@ -106,7 +116,7 @@ fn is_folder_empty(folder_path: &PathBuf) -> bool {
 fn print_analysis(analysis: AnalysisResult) -> Result<()>{
     let file_key = extract_key(&analysis.file);
     let file_content = extract_file_content(&analysis.file);
-    let lines_metric = get_file_line_metrics(&analysis.file);
+    let lines_metric = analysis.metrics.lines_count;
 
     let json_output = format!(
     r#"{{
