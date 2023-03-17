@@ -33,7 +33,7 @@ fn analyse(folder: PathBuf) -> AnalysisResult {
 }
 
 fn extract_key(file: &PathBuf) -> String{
-    // extract the file name of the target given in program parameter
+    // extract the file name of the target given by program parameter
     let file_os_str = file.as_os_str();
     let file_key = match file.file_name() {
         Some(file_name) => file_name.to_owned(),

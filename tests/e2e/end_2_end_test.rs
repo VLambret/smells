@@ -132,20 +132,20 @@ fn smells_can_count_lines_of_a_single_file_other_case() -> Result<(), Box<dyn st
 
     //then
     let expected_stdout = 
-r#"{
-	"single_file_folder_other": {
-		"metrics": {
-			"lines_metric": 5
-		},
-		"folder_content": {
-			"file5.txt": {
-				"metrics": {
-					"lines_metric": 5
-				}
-			}
-		}
-	}
-}"#;  
+    r#"{
+        "single_file_folder_other": {
+            "metrics": {
+                "lines_metric": 5
+            },
+            "folder_content": {
+                "file5.txt": {
+                    "metrics": {
+                        "lines_metric": 5
+                    }
+                }
+            }
+        }
+    }"#;  
 
     let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
     let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
@@ -162,36 +162,42 @@ r#"{
 #[ignore]
 fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::error::Error>>{
     // given
-    let cmd_call = "smells tests/data/folder_with_multiple_files";
+    let cmd_call = "smells";
+    let args = "tests/data/folder_with_multiple_files";
 
     // when
     let mut cmd = Command::cargo_bin(cmd_call)?;
+    cmd.args(&[args]);
 
     //then
     let expected_stdout =
-r#"{
-    "folder_with_multiple_files":{
-        "metrics": {
-            "lines_metric": 6,
-    },
-    "folder_content":[
-        "file1.txt": {
+    r#"{
+        "folder_with_multiple_files":{
             "metrics": {
-                "lines_metric": 1,
-            }
-        },
-        "file5.txt": {
-            "metrics": {
-                "lines_metric": 5,
+                "lines_metric": 6
+            },
+            "folder_content":{
+                "file1.txt": {
+                    "metrics": {
+                        "lines_metric": 1
+                    }
+                },
+                "file5.txt": {
+                    "metrics": {
+                        "lines_metric": 5
+                    }
+                }
+
             }
         }
-
-    ]
     }"#;  
+
+    let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
+    let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
 
     cmd.assert()
     .code(0)
-    .stdout(expected_stdout)
+    .stdout(json_expected_stdout_to_str)
     .stderr("");
     Ok(())
 }
