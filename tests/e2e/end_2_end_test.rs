@@ -158,46 +158,6 @@ r#"{
     Ok(())
 }
 
-
-#[test]
-#[ignore]
-fn smells_must_not_access_to_a_file_with_no_permission() -> Result<(), Box<dyn std::error::Error>>{
-       // given
-       let cmd_call = "smells tests/data/folder_with_no_permission";
-
-       // when
-       let mut cmd = Command::cargo_bin(cmd_call)?;
-   
-       //then
-       let excpected_stderr = "Error! Permission denied!";
-
-       cmd.assert()
-       .code(0)
-       .stdout("")
-       .stderr(excpected_stderr);
-    Ok(())
-}
-
-#[test]
-#[ignore]
-fn with_two_arguments_smells_shows_an_error() -> Result<(), Box<dyn std::error::Error>>{
-    // given
-    let cmd_call = "smells . another_argument";
-
-    // when
-    let mut cmd = Command::cargo_bin(cmd_call)?;
-
-    //then
-    let expected_stderr = "Error! Argument number error!";
-
-       cmd.assert()
-       .code(0)
-       .stdout("")
-       .stderr(expected_stderr);
-
-    Ok(())
-}
-
 #[test]
 #[ignore]
 fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::error::Error>>{
@@ -277,6 +237,45 @@ r#"{
     .code(0)
     .stdout(expected_stdout)
     .stderr("");
+
+    Ok(())
+}
+
+#[test]
+#[ignore]
+fn smells_must_not_access_to_a_file_with_no_permission() -> Result<(), Box<dyn std::error::Error>>{
+       // given
+       let cmd_call = "smells tests/data/folder_with_no_permission";
+
+       // when
+       let mut cmd = Command::cargo_bin(cmd_call)?;
+
+       //then
+       let excpected_stderr = "Error! Permission denied!";
+
+       cmd.assert()
+       .code(0)
+       .stdout("")
+       .stderr(excpected_stderr);
+    Ok(())
+}
+
+#[test]
+#[ignore]
+fn with_two_arguments_smells_shows_an_error() -> Result<(), Box<dyn std::error::Error>>{
+    // given
+    let cmd_call = "smells . another_argument";
+
+    // when
+    let mut cmd = Command::cargo_bin(cmd_call)?;
+
+    //then
+    let expected_stderr = "Error! Argument number error!";
+
+       cmd.assert()
+       .code(0)
+       .stdout("")
+       .stderr(expected_stderr);
 
     Ok(())
 }
