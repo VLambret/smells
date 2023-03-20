@@ -166,17 +166,19 @@ fn print_analysis(analysis: AnalysisResult) -> Result<()>{
             }}
         }}"#, file, lines_metric_content);
     }
+
+    let folder_content = format!(
+    r#",
+            "folder_content": [{}]"#, converted_file_content);
         
-    
     let json_output = format!(
     r#"{{
         "{}": {{
             "metrics": {{
                 "lines_metric": {}
-            }},
-            "folder_content": [{}]
+            }}{}
         }}
-    }}"#, file_key, lines_metric, converted_file_content);
+    }}"#, file_key, lines_metric, folder_content);
 
     let converted_json_output: Value = serde_json::from_str(&json_output)?;
     print!("{}", serde_json::to_string_pretty(&converted_json_output)?);
