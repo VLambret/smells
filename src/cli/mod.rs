@@ -156,6 +156,12 @@ fn format_analysis_to_json(file: String, line_count_metric: u32, folder_content:
         }}"#, file, line_count_metric, folder_content)
 }
 
+fn print_formatted_json(json_output: String) -> Result<()>{
+    let converted_json_output: Value = serde_json::from_str(&json_output)?;
+    print!("{}", serde_json::to_string_pretty(&converted_json_output)?);
+    Ok(())
+}
+
 fn print_analysis(analysis: AnalysisResult) -> Result<()>{
     let file_key = analysis.file;
     let lines_metric = analysis.metrics.lines_count;
@@ -176,9 +182,6 @@ fn print_analysis(analysis: AnalysisResult) -> Result<()>{
     r#","folder_content": [{}]"#, converted_file_content);
         
     let json_output = format_analysis_to_json(file_key, lines_metric, folder_content);
-
-    let converted_json_output: Value = serde_json::from_str(&json_output)?;
-    print!("{}", serde_json::to_string_pretty(&converted_json_output)?);
-    
+    print_formatted_json(json_output)?;
     Ok(())
 }
