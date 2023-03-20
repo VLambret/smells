@@ -17,7 +17,7 @@ fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::
         "metrics": {
                 "lines_metric": 0
             },
-            "folder_content": {}
+            "folder_content": []
         }
     }"#;
     
@@ -68,7 +68,7 @@ fn folder_to_analyse_can_be_specified_with_first_parameter() -> Result<(), Box<d
             "metrics": {
                 "lines_metric": 0
             },
-            "folder_content": {}
+            "folder_content": []
         }
     }"#;
 
@@ -99,13 +99,16 @@ fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::E
             "metrics": {
                 "lines_metric": 0
             },
-            "folder_content": {
-                "file0.txt": {
-                    "metrics": {
-                        "lines_metric": 0
+            "folder_content": [
+                {
+                    "file0.txt": {
+                        "metrics": {
+                            "lines_metric": 0
+                        },
+                        "folder_content": []
                     }
                 }
-            }
+            ]
         }
     }"#;
 
@@ -137,13 +140,16 @@ fn smells_can_count_lines_of_a_single_file_other_case() -> Result<(), Box<dyn st
             "metrics": {
                 "lines_metric": 5
             },
-            "folder_content": {
-                "file5.txt": {
-                    "metrics": {
-                        "lines_metric": 5
+            "folder_content": [
+                {
+                    "file5.txt": {
+                        "metrics": {
+                            "lines_metric": 5
+                        },
+                        "folder_content": []
                     }
                 }
-            }
+            ]
         }
     }"#;  
 
@@ -176,7 +182,7 @@ fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::e
             "metrics": {
                 "lines_metric": 6
             },
-            "folder_content":{
+            "folder_content":[
                 "file1.txt": {
                     "metrics": {
                         "lines_metric": 1
@@ -188,7 +194,7 @@ fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::e
                     }
                 }
 
-            }
+            ]
         }
     }"#;  
 

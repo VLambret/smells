@@ -3,18 +3,21 @@ use std::path::PathBuf;
 use serde_json::{Result, Value};
 use std::io::{BufRead, BufReader};
 use std::fs::File;
-
+use serde::{Serialize, Deserialize};
 #[derive(Debug, StructOpt)]
 pub struct CmdArgs{
     #[structopt(default_value=".")]
     path: PathBuf,
 }
 
-struct AnalysisResult {
-    file: PathBuf,
+#[derive(Debug, Serialize, Deserialize)]
+struct AnalysisResult{
+    file: String,
     metrics: Metrics,
+    file_content: Option<Box<AnalysisResult>>
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 struct Metrics{
     lines_count: u32
 }
@@ -31,15 +34,43 @@ fn do_analysis(file: PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn analyse(file: PathBuf) -> AnalysisResult {
-    let metrics = Metrics {
-        lines_count: get_file_line_metrics(&file)
+fn analyse(folder: PathBuf) -> AnalysisResult{
+    let metrics_content = Metrics{
+        lines_count: get_file_line_metrics(&folder)
     };
 
+    let file_content = AnalysisResult{
+        file: extract_files_name(&folder),
+        metrics: metrics_content,
+        file_content: None
+    };
+
+    let metrics = Metrics {
+        lines_count: get_file_line_metrics(&folder)
+    };
+
+
     AnalysisResult{
-        file,
+        file: extract_key(&folder),
         metrics,
+        //file_content: Some(Box::new(file_content))
+        file_content: if !file_is_empty_or_current_folder(folder) {
+            Some(Box::new(file_content))
+        } else {
+            None
+        },
     }
+}
+
+fn file_is_empty_or_current_folder(file: PathBuf) -> bool{
+    if let Ok(mut path) = file.read_dir(){
+        let mut path_to_compare = PathBuf::new();
+        path_to_compare.push(".");
+        if path.next().is_none() || file.to_path_buf() == path_to_compare{
+            return true;
+        }
+    }
+    false
 }
 
 fn extract_key(file: &PathBuf) -> String{
@@ -114,21 +145,42 @@ fn is_folder_empty(folder_path: &PathBuf) -> bool {
 }
 
 fn print_analysis(analysis: AnalysisResult) -> Result<()>{
-    let file_key = extract_key(&analysis.file);
-    let file_content = extract_file_content(&analysis.file);
+    let file_key = analysis.file;
     let lines_metric = analysis.metrics.lines_count;
+    let file_content = analysis.file_content;
 
+    let (file, lines_metric_content) = file_content
+        .as_ref()
+        .map(|content| (content.file.as_str(), content.metrics.lines_count))
+        .unwrap_or(("", 0));
+
+    let mut converted_file_content = "".to_string();
+
+    if !file_content.is_none() {
+        converted_file_content = format!(
+        r#"{{
+            "{}": {{
+                "metrics": {{
+                    "lines_metric": {}
+                }},
+                "folder_content": [{}]
+            }}
+        }}"#, file, lines_metric_content, "");
+    }
+        
+    
     let json_output = format!(
     r#"{{
         "{}": {{
             "metrics": {{
                 "lines_metric": {}
             }},
-            "folder_content": {{{}}}
+            "folder_content": [{}]
         }}
-    }}"#, file_key, lines_metric, file_content);
+    }}"#, file_key, lines_metric, converted_file_content);
 
     let converted_json_output: Value = serde_json::from_str(&json_output)?;
     print!("{}", serde_json::to_string_pretty(&converted_json_output)?);
+    
     Ok(())
 }
