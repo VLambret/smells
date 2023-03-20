@@ -54,21 +54,28 @@ fn analyse(folder: PathBuf) -> AnalysisResult{
         file: extract_key(&folder),
         metrics,
         //file_content: Some(Box::new(file_content))
-        file_content: if !file_is_empty_or_current_folder(folder) {
-            Some(Box::new(file_content))
-        } else {
+        file_content: if file_is_empty(&folder) || file_is_current_folder(folder){
             None
+        } else {
+            Some(Box::new(file_content))
         },
     }
 }
 
-fn file_is_empty_or_current_folder(file: PathBuf) -> bool{
+fn file_is_current_folder(file: PathBuf) -> bool{
     if let Ok(mut path) = file.read_dir(){
         let mut path_to_compare = PathBuf::new();
         path_to_compare.push(".");
-        if path.next().is_none() || file.to_path_buf() == path_to_compare{
+        if file.to_path_buf() == path_to_compare{
             return true;
         }
+    }
+    false
+}
+
+fn file_is_empty(folder_path: &PathBuf) -> bool {
+    if let Ok(mut entries) = std::fs::read_dir(folder_path) {
+        return entries.next().is_none();
     }
     false
 }
@@ -121,7 +128,7 @@ fn extract_files_name(file: &PathBuf) -> String{
 fn get_file_line_metrics(file: &PathBuf) -> u32{
     let mut lines_metric = 0;
     
-    if file.exists() && !is_folder_empty(file){
+    if file.exists() && !file_is_empty(file){
         let mut path_to_compare = PathBuf::new();
         path_to_compare.push(".");
         let files_name = extract_files_name(&file); 
@@ -135,13 +142,6 @@ fn get_file_line_metrics(file: &PathBuf) -> u32{
         }
     }
     lines_metric
-}
-
-fn is_folder_empty(folder_path: &PathBuf) -> bool {
-    if let Ok(mut entries) = std::fs::read_dir(folder_path) {
-        return entries.next().is_none();
-    }
-    false
 }
 
 fn print_analysis(analysis: AnalysisResult) -> Result<()>{
@@ -162,10 +162,9 @@ fn print_analysis(analysis: AnalysisResult) -> Result<()>{
             "{}": {{
                 "metrics": {{
                     "lines_metric": {}
-                }},
-                "folder_content": [{}]
+                }}
             }}
-        }}"#, file, lines_metric_content, "");
+        }}"#, file, lines_metric_content);
     }
         
     

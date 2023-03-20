@@ -104,8 +104,7 @@ fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::E
                     "file0.txt": {
                         "metrics": {
                             "lines_metric": 0
-                        },
-                        "folder_content": []
+                        }
                     }
                 }
             ]
@@ -145,8 +144,7 @@ fn smells_can_count_lines_of_a_single_file_other_case() -> Result<(), Box<dyn st
                     "file5.txt": {
                         "metrics": {
                             "lines_metric": 5
-                        },
-                        "folder_content": []
+                        }
                     }
                 }
             ]
