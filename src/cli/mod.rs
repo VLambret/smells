@@ -162,25 +162,28 @@ fn print_formatted_json(json_output: String) -> Result<()>{
     Ok(())
 }
 
-fn print_analysis(analysis: AnalysisResult) -> Result<()>{
+fn print_analysis(analysis: AnalysisResult) -> Result<String>{
     let file_key = analysis.file;
     let lines_metric = analysis.metrics.lines_count;
     let file_content = analysis.file_content;
     let mut converted_file_content = "".to_string();
 
     if let Some(content) = file_content {
+        let mut file_content_string = String::new();
 
-        converted_file_content = format_analysis_to_json(content.file.to_string(), content.metrics.lines_count, "".to_string());
 
-        for analysis in content.file_content{
-            print_analysis(*analysis)?;
+        if let Some(inner_content) = content.file_content {
+            let inner_result = print_analysis(*inner_content)?;
+            file_content_string.push_str(&inner_result);
         }
+
+        converted_file_content = format_analysis_to_json(content.file.to_string(), content.metrics.lines_count, file_content_string);
     }
 
     let folder_content = format!(
     r#","folder_content": [{}]"#, converted_file_content);
         
     let json_output = format_analysis_to_json(file_key, lines_metric, folder_content);
-    print_formatted_json(json_output)?;
-    Ok(())
+    print_formatted_json(json_output.clone())?;
+    Ok(json_output)
 }
