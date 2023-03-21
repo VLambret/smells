@@ -181,17 +181,20 @@ fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::e
                 "lines_metric": 6
             },
             "folder_content":[
+                {
                 "file1.txt": {
                     "metrics": {
                         "lines_metric": 1
                     }
+                }
                 },
+                {
                 "file5.txt": {
                     "metrics": {
                         "lines_metric": 5
                     }
                 }
-
+                }
             ]
         }
     }"#;  

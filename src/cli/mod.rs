@@ -63,7 +63,7 @@ fn analyse(folder: PathBuf) -> AnalysisResult{
 }
 
 fn file_is_current_folder(file: PathBuf) -> bool{
-    if let Ok(mut path) = file.read_dir(){
+    if let Ok(path) = file.read_dir(){
         let mut path_to_compare = PathBuf::new();
         path_to_compare.push(".");
         if file.to_path_buf() == path_to_compare{
@@ -166,16 +166,15 @@ fn print_analysis(analysis: AnalysisResult) -> Result<()>{
     let file_key = analysis.file;
     let lines_metric = analysis.metrics.lines_count;
     let file_content = analysis.file_content;
-
-    let (file, lines_metric_content) = file_content
-        .as_ref()
-        .map(|content| (content.file.as_str(), content.metrics.lines_count))
-        .unwrap_or(("", 0));
-
     let mut converted_file_content = "".to_string();
 
-    if !file_content.is_none() {
-        converted_file_content = format_analysis_to_json(file.to_string(), lines_metric_content, "".to_string());
+    if let Some(content) = file_content {
+
+        converted_file_content = format_analysis_to_json(content.file.to_string(), content.metrics.lines_count, "".to_string());
+
+        for analysis in content.file_content{
+            print_analysis(*analysis)?;
+        }
     }
 
     let folder_content = format!(
