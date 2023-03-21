@@ -38,7 +38,7 @@ fn analyse(folder: PathBuf) -> AnalysisResult{
         lines_count: get_file_line_metrics(&folder)
     };
 
-    let file_content = AnalysisResult{
+    let file_content1 = AnalysisResult{
         file: extract_files_name(&folder),
         metrics: metrics_content,
         file_content: None
@@ -56,7 +56,7 @@ fn analyse(folder: PathBuf) -> AnalysisResult{
         file_content: if file_is_empty(&folder) || file_is_current_folder(folder){
             None
         } else {
-            vec_content.push(file_content);
+            vec_content.push(file_content1);
             Some(vec_content)
         },
     }
@@ -146,22 +146,23 @@ fn print_analysis(analysis: AnalysisResult) -> Result<String>{
             if let Some(inner_contents) = &content.file_content {
                 for inner_content in inner_contents.iter(){
                     let inner_result = print_analysis(inner_content.clone())?;
-                file_content_string.push_str(&inner_result);
+                    file_content_string.push_str(&inner_result);
                 }
             }
-            converted_file_content = format_analysis_to_json(content.file.to_string(), content.metrics.lines_count, file_content_string);
+            let converted_file_content_temp = format_analysis_to_json(content.file.to_string(), content.metrics.lines_count, file_content_string);
+            converted_file_content.push_str(&converted_file_content_temp);
         }
     }
     let folder_content = format!(
     r#","folder_content": [{}]"#, converted_file_content);
         
     let json_output = format_analysis_to_json(file_key, lines_metric, folder_content);
-    print_formatted_json(json_output.clone())?;
+    print_formatted_json(&json_output)?;
     Ok(json_output)
 }
 
-fn print_formatted_json(json_output: String) -> Result<()>{
-    let converted_json_output: Value = serde_json::from_str(&json_output)?;
+fn print_formatted_json(json_output: &String) -> Result<()>{
+    let converted_json_output: Value = serde_json::from_str(json_output)?;
     print!("{}", serde_json::to_string_pretty(&converted_json_output)?);
     Ok(())
 }
