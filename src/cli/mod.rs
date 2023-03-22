@@ -164,6 +164,8 @@ fn extract_inner_content(inner_contents: &Vec<AnalysisResult>) -> Result<String>
 
 // build folder content array elements
 fn extract_folder_content(contents: Vec<AnalysisResult>, converted_file_content: &mut String) -> Result<String>{
+    let mut elements: Vec<String> = Vec::new();
+    let mut result = String::new();
     for (i, content) in contents.iter().enumerate(){
         let json_metrics = build_json_metrics(&content.metrics);
         let mut file_content_string= String::new();
@@ -172,11 +174,18 @@ fn extract_folder_content(contents: Vec<AnalysisResult>, converted_file_content:
         }
         let converted_file_content_temp = build_json_analysed_item(content.file.to_string(), json_metrics, file_content_string);
         converted_file_content.push_str(&converted_file_content_temp);
-        if i != contents.len()-1 {
-            converted_file_content.push_str(",");
-        }
+        elements.push(converted_file_content_temp);
     }
-    Ok(converted_file_content.to_string())
+
+    let mut skip_first_comma = true;
+    for element in elements{
+        if !skip_first_comma {
+            result.push_str(", ");
+        }
+        result.push_str(element.as_str());
+        skip_first_comma = false;
+    }
+    Ok(result)
 }
 
 // build analysis result json AND print it
