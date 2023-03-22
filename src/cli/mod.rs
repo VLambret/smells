@@ -167,19 +167,25 @@ fn extract_inner_content(inner_contents: &Vec<AnalysisResult>) -> Result<String>
 fn extract_folder_content(contents: Vec<AnalysisResult>) -> Result<String>{
     let mut elements: Vec<String> = Vec::new();
     for content in contents.iter(){
-        let json_metrics = build_json_metrics(&content.metrics);
-
-        let element = match &content.folder_content {
-            Some(folder_content) => {
-                let json_folder_content = extract_inner_content(folder_content)?;
-                build_json_folder_analysis(content.file.to_string(), &json_metrics, &json_folder_content)
-            },
-            _ => build_json_file_analysis(content.file.to_string(), &json_metrics)
-        };
+        let element = build_json_element_analysis(&content);
         elements.push(element);
     }
 
     Ok(build_array_content(&mut elements))
+}
+
+fn build_json_element_analysis(content: &&AnalysisResult) -> String {
+    let json_metrics = build_json_metrics(&content.metrics);
+
+    // TODO: remove the unwrap to handle the error correctly :-)
+    let element = match &content.folder_content {
+        Some(folder_content) => {
+            let json_folder_content = extract_inner_content(folder_content).unwrap();
+            build_json_folder_analysis(content.file.to_string(), &json_metrics, &json_folder_content)
+        },
+        _ => build_json_file_analysis(content.file.to_string(), &json_metrics)
+    };
+    element
 }
 
 fn build_array_content(elements: &mut Vec<String>) -> String {
