@@ -134,6 +134,15 @@ fn format_analysis_to_json(file: String, line_count_metric: u32, folder_content:
         }}"#, file, line_count_metric, folder_content)
 }
 
+fn extract_inner_content(inner_contents: &Vec<AnalysisResult>, file_content_string: &mut String) -> Result<String> {
+
+    for inner_content in inner_contents{
+        let inner_result = print_analysis(inner_content.clone())?;
+        file_content_string.push_str(&inner_result);
+    }
+    Ok(file_content_string.to_string())
+}
+
 fn print_analysis(analysis: AnalysisResult) -> Result<String>{
     let file_key = analysis.file;
     let lines_metric = analysis.metrics.lines_count;
@@ -141,16 +150,16 @@ fn print_analysis(analysis: AnalysisResult) -> Result<String>{
     let mut converted_file_content = "".to_string();
 
     if let Some(contents) = file_content {
-        for content in contents{
+        for (i, content) in contents.iter().enumerate(){
             let mut file_content_string = String::new();
             if let Some(inner_contents) = &content.file_content {
-                for inner_content in inner_contents.iter(){
-                    let inner_result = print_analysis(inner_content.clone())?;
-                    file_content_string.push_str(&inner_result);
-                }
+                extract_inner_content(inner_contents, &mut file_content_string)?;
             }
             let converted_file_content_temp = format_analysis_to_json(content.file.to_string(), content.metrics.lines_count, file_content_string);
             converted_file_content.push_str(&converted_file_content_temp);
+            if i != contents.len()-1 {
+                converted_file_content.push_str(",");
+            }
         }
     }
     let folder_content = format!(
