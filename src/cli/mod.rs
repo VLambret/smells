@@ -121,7 +121,8 @@ fn get_file_line_metrics(file: &PathBuf) -> u32{
     lines_metric
 }
 
-fn build_json_analysed_item(file: String, json_metrics: String, folder_content: String) -> String{
+
+fn build_json_folder_analysis(file: String, json_metrics: &String, folder_content: &String) -> String{
     // build analysis result json
     // build metrics
     format!(
@@ -133,7 +134,7 @@ fn build_json_analysed_item(file: String, json_metrics: String, folder_content: 
         }}"#, file, json_metrics, folder_content)
 }
 
-fn build_json_file_analysis(file: String, json_metrics: String) -> String{
+fn build_json_file_analysis(file: String, json_metrics: &String) -> String{
     format!(
         r#"{{
             "{}": {{
@@ -167,12 +168,15 @@ fn extract_folder_content(contents: Vec<AnalysisResult>) -> Result<String>{
     let mut elements: Vec<String> = Vec::new();
     for content in contents.iter(){
         let json_metrics = build_json_metrics(&content.metrics);
-        let mut file_content_string= String::new();
-        if let Some(inner_contents) = &content.folder_content {
-            file_content_string = extract_inner_content(inner_contents)?;
-        }
-        let converted_file_content_temp = build_json_analysed_item(content.file.to_string(), json_metrics, file_content_string);
-        elements.push(converted_file_content_temp);
+
+        let element = match &content.folder_content {
+            Some(folder_content) => {
+                let json_folder_content = extract_inner_content(folder_content)?;
+                build_json_folder_analysis(content.file.to_string(), &json_metrics, &json_folder_content)
+            },
+            _ => build_json_file_analysis(content.file.to_string(), &json_metrics)
+        };
+        elements.push(element);
     }
 
     Ok(build_array_content(&mut elements))
@@ -207,7 +211,7 @@ fn print_analysis(analysis: AnalysisResult) -> Result<String>{
     let folder_content = format!(
     r#","folder_content": [{}]"#, converted_file_content);
         
-    let json_output = build_json_analysed_item(file_key, json_metrics, folder_content);
+    let json_output = build_json_folder_analysis(file_key, &json_metrics, &folder_content);
     // print analysis result
     print_formatted_json(&json_output)?;
     Ok(json_output)
