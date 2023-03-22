@@ -14,7 +14,7 @@ pub struct CmdArgs{
 struct AnalysisResult{
     file: String,
     metrics: Metrics,
-    file_content: Option<Vec<AnalysisResult>>
+    folder_content: Option<Vec<AnalysisResult>>
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -41,7 +41,7 @@ fn analyse(folder: PathBuf) -> AnalysisResult{
     let file_content1 = AnalysisResult{
         file: extract_files_name(&folder),
         metrics: metrics_content,
-        file_content: None
+        folder_content: None
     };
 
     let metrics = Metrics {
@@ -53,7 +53,7 @@ fn analyse(folder: PathBuf) -> AnalysisResult{
     AnalysisResult{
         file: extract_key(&folder),
         metrics,
-        file_content: if file_is_empty(&folder) || file_is_current_folder(&folder){
+        folder_content: if file_is_empty(&folder) || file_is_current_folder(&folder){
             None
         } else {
             vec_content.push(file_content1);
@@ -133,6 +133,15 @@ fn build_json_analysed_item(file: String, json_metrics: String, folder_content: 
         }}"#, file, json_metrics, folder_content)
 }
 
+fn build_json_file_analysis(file: String, json_metrics: String) -> String{
+    format!(
+        r#"{{
+            "{}": {{
+                {}
+            }}
+        }}"#, file, json_metrics)
+}
+
 fn build_json_metrics(metrics: &Metrics) -> String{
     // build analysis result json
     // build metrics
@@ -157,7 +166,7 @@ fn extract_folder_content(contents: Vec<AnalysisResult>, converted_file_content:
     for (i, content) in contents.iter().enumerate(){
         let json_metrics = build_json_metrics(&content.metrics);
         let mut file_content_string = String::new();
-        if let Some(inner_contents) = &content.file_content {
+        if let Some(inner_contents) = &content.folder_content {
             extract_inner_content(inner_contents, &mut file_content_string)?;
         }
         let converted_file_content_temp = build_json_analysed_item(content.file.to_string(), json_metrics, file_content_string);
@@ -174,7 +183,7 @@ fn print_analysis(analysis: AnalysisResult) -> Result<String>{
     // build analysis result
     // build root item
     let file_key = analysis.file;
-    let file_content = analysis.file_content;
+    let file_content = analysis.folder_content;
     let mut converted_file_content = "".to_string();
     let json_metrics = build_json_metrics(&analysis.metrics);
 
