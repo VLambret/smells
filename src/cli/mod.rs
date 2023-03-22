@@ -121,20 +121,30 @@ fn get_file_line_metrics(file: &PathBuf) -> u32{
     lines_metric
 }
 
-fn format_analysis_to_json(file: String, line_count_metric: u32, folder_content: String) -> String{
+fn build_json_analysed_item(file: String, json_metrics: String, folder_content: String) -> String{
+    // build analysis result json
+    // build metrics
     format!(
         r#"{{
             "{}": {{
-                "metrics": {{
-                    "lines_metric": {}
-                }}
+                {}
                 {}
             }}
-        }}"#, file, line_count_metric, folder_content)
+        }}"#, file, json_metrics, folder_content)
+}
+
+fn build_json_metrics(metrics: &Metrics) -> String{
+    // build analysis result json
+    // build metrics
+    format!(
+        r#"
+        "metrics": {{
+            "lines_metric": {}
+        }}
+        "#, metrics.lines_count)
 }
 
 fn extract_inner_content(inner_contents: &Vec<AnalysisResult>, file_content_string: &mut String) -> Result<String> {
-
     for inner_content in inner_contents{
         let inner_result = print_analysis(inner_content.clone())?;
         file_content_string.push_str(&inner_result);
@@ -142,13 +152,15 @@ fn extract_inner_content(inner_contents: &Vec<AnalysisResult>, file_content_stri
     Ok(file_content_string.to_string())
 }
 
+// build folder content array elements
 fn extract_folder_content(contents: Vec<AnalysisResult>, converted_file_content: &mut String) -> Result<String>{
     for (i, content) in contents.iter().enumerate(){
+        let json_metrics = build_json_metrics(&content.metrics);
         let mut file_content_string = String::new();
         if let Some(inner_contents) = &content.file_content {
             extract_inner_content(inner_contents, &mut file_content_string)?;
         }
-        let converted_file_content_temp = format_analysis_to_json(content.file.to_string(), content.metrics.lines_count, file_content_string);
+        let converted_file_content_temp = build_json_analysed_item(content.file.to_string(), json_metrics, file_content_string);
         converted_file_content.push_str(&converted_file_content_temp);
         if i != contents.len()-1 {
             converted_file_content.push_str(",");
@@ -157,19 +169,24 @@ fn extract_folder_content(contents: Vec<AnalysisResult>, converted_file_content:
     Ok(converted_file_content.to_string())
 }
 
+// build analysis result json AND print it
 fn print_analysis(analysis: AnalysisResult) -> Result<String>{
+    // build analysis result
+    // build root item
     let file_key = analysis.file;
-    let lines_metric = analysis.metrics.lines_count;
     let file_content = analysis.file_content;
     let mut converted_file_content = "".to_string();
+    let json_metrics = build_json_metrics(&analysis.metrics);
 
+    // build folder content
     if let Some(contents) = file_content {
         extract_folder_content(contents, &mut converted_file_content)?;
     }
     let folder_content = format!(
     r#","folder_content": [{}]"#, converted_file_content);
         
-    let json_output = format_analysis_to_json(file_key, lines_metric, folder_content);
+    let json_output = build_json_analysed_item(file_key, json_metrics, folder_content);
+    // print analysis result
     print_formatted_json(&json_output)?;
     Ok(json_output)
 }
