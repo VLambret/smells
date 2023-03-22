@@ -143,6 +143,21 @@ fn extract_inner_content(inner_contents: &Vec<AnalysisResult>, file_content_stri
     Ok(file_content_string.to_string())
 }
 
+fn extract_folder_content(contents: Vec<AnalysisResult>, converted_file_content: &mut String) -> Result<String>{
+    for (i, content) in contents.iter().enumerate(){
+        let mut file_content_string = String::new();
+        if let Some(inner_contents) = &content.file_content {
+            extract_inner_content(inner_contents, &mut file_content_string)?;
+        }
+        let converted_file_content_temp = format_analysis_to_json(content.file.to_string(), content.metrics.lines_count, file_content_string);
+        converted_file_content.push_str(&converted_file_content_temp);
+        if i != contents.len()-1 {
+            converted_file_content.push_str(",");
+        }
+    }
+    Ok(converted_file_content.to_string())
+}
+
 fn print_analysis(analysis: AnalysisResult) -> Result<String>{
     let file_key = analysis.file;
     let lines_metric = analysis.metrics.lines_count;
@@ -150,17 +165,7 @@ fn print_analysis(analysis: AnalysisResult) -> Result<String>{
     let mut converted_file_content = "".to_string();
 
     if let Some(contents) = file_content {
-        for (i, content) in contents.iter().enumerate(){
-            let mut file_content_string = String::new();
-            if let Some(inner_contents) = &content.file_content {
-                extract_inner_content(inner_contents, &mut file_content_string)?;
-            }
-            let converted_file_content_temp = format_analysis_to_json(content.file.to_string(), content.metrics.lines_count, file_content_string);
-            converted_file_content.push_str(&converted_file_content_temp);
-            if i != contents.len()-1 {
-                converted_file_content.push_str(",");
-            }
-        }
+        extract_folder_content(contents, &mut converted_file_content)?;
     }
     let folder_content = format!(
     r#","folder_content": [{}]"#, converted_file_content);
