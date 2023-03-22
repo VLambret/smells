@@ -153,7 +153,8 @@ fn build_json_metrics(metrics: &Metrics) -> String{
         "#, metrics.lines_count)
 }
 
-fn extract_inner_content(inner_contents: &Vec<AnalysisResult>, file_content_string: &mut String) -> Result<String> {
+fn extract_inner_content(inner_contents: &Vec<AnalysisResult>) -> Result<String> {
+    let mut file_content_string = String::new();
     for inner_content in inner_contents{
         let inner_result = print_analysis(inner_content.clone())?;
         file_content_string.push_str(&inner_result);
@@ -165,9 +166,9 @@ fn extract_inner_content(inner_contents: &Vec<AnalysisResult>, file_content_stri
 fn extract_folder_content(contents: Vec<AnalysisResult>, converted_file_content: &mut String) -> Result<String>{
     for (i, content) in contents.iter().enumerate(){
         let json_metrics = build_json_metrics(&content.metrics);
-        let mut file_content_string = String::new();
+        let mut file_content_string= String::new();
         if let Some(inner_contents) = &content.folder_content {
-            extract_inner_content(inner_contents, &mut file_content_string)?;
+            file_content_string = extract_inner_content(inner_contents)?;
         }
         let converted_file_content_temp = build_json_analysed_item(content.file.to_string(), json_metrics, file_content_string);
         converted_file_content.push_str(&converted_file_content_temp);
