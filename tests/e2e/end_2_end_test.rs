@@ -163,7 +163,6 @@ fn smells_can_count_lines_of_a_single_file_other_case() -> Result<(), Box<dyn st
 }
 
 #[test]
-#[ignore]
 fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::error::Error>>{
     // given
     let cmd_call = "smells";

@@ -53,7 +53,7 @@ fn analyse(folder: PathBuf) -> AnalysisResult{
     AnalysisResult{
         file: extract_key(&folder),
         metrics,
-        file_content: if file_is_empty(&folder) || file_is_current_folder(folder){
+        file_content: if file_is_empty(&folder) || file_is_current_folder(&folder){
             None
         } else {
             vec_content.push(file_content1);
@@ -62,7 +62,7 @@ fn analyse(folder: PathBuf) -> AnalysisResult{
     }
 }
 
-fn file_is_current_folder(file: PathBuf) -> bool{
+fn file_is_current_folder(file: &PathBuf) -> bool{
     if let Ok(_path) = file.read_dir(){
         let mut path_to_compare = PathBuf::new();
         path_to_compare.push(".");
@@ -105,14 +105,13 @@ fn extract_files_name(file: &PathBuf) -> String{
 
 fn get_file_line_metrics(file: &PathBuf) -> u32{
     let mut lines_metric = 0;
+    let mut path_to_compare = PathBuf::new();
+    path_to_compare.push(".");
+    let files_name = extract_files_name(&file);
+    let files_to_analyse = file.to_string_lossy().into_owned().to_string()+"/"+&files_name;
+    let file_reader = BufReader::new(File::open(files_to_analyse).unwrap());
     
     if file.exists() && !file_is_empty(file){
-        let mut path_to_compare = PathBuf::new();
-        path_to_compare.push(".");
-        let files_name = extract_files_name(&file); 
-        let files_to_analyse = file.to_string_lossy().into_owned().to_string()+"/"+&files_name;
-        let file_reader = BufReader::new(File::open(files_to_analyse).unwrap());
-
         if file.to_path_buf() != path_to_compare{ 
             for _ in file_reader.lines(){
                 lines_metric = lines_metric + 1;
