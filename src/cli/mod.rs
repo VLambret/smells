@@ -163,29 +163,32 @@ fn extract_inner_content(inner_contents: &Vec<AnalysisResult>) -> Result<String>
 }
 
 // build folder content array elements
-fn extract_folder_content(contents: Vec<AnalysisResult>, converted_file_content: &mut String) -> Result<String>{
+fn extract_folder_content(contents: Vec<AnalysisResult>) -> Result<String>{
     let mut elements: Vec<String> = Vec::new();
-    let mut result = String::new();
-    for (i, content) in contents.iter().enumerate(){
+    for content in contents.iter(){
         let json_metrics = build_json_metrics(&content.metrics);
         let mut file_content_string= String::new();
         if let Some(inner_contents) = &content.folder_content {
             file_content_string = extract_inner_content(inner_contents)?;
         }
         let converted_file_content_temp = build_json_analysed_item(content.file.to_string(), json_metrics, file_content_string);
-        converted_file_content.push_str(&converted_file_content_temp);
         elements.push(converted_file_content_temp);
     }
 
+    Ok(build_array_content(&mut elements))
+}
+
+fn build_array_content(elements: &mut Vec<String>) -> String {
+    let mut result = String::new();
     let mut skip_first_comma = true;
-    for element in elements{
+    for element in elements {
         if !skip_first_comma {
             result.push_str(", ");
         }
         result.push_str(element.as_str());
         skip_first_comma = false;
     }
-    Ok(result)
+    result
 }
 
 // build analysis result json AND print it
@@ -199,7 +202,7 @@ fn print_analysis(analysis: AnalysisResult) -> Result<String>{
 
     // build folder content
     if let Some(contents) = file_content {
-        extract_folder_content(contents, &mut converted_file_content)?;
+        converted_file_content = extract_folder_content(contents)?;
     }
     let folder_content = format!(
     r#","folder_content": [{}]"#, converted_file_content);
