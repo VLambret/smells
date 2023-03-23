@@ -12,7 +12,7 @@ pub struct CmdArgs{
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct AnalysisResult{
-    file: String,
+    item_key: String,
     metrics: Metrics,
     folder_content: Option<Vec<AnalysisResult>>
 }
@@ -28,101 +28,158 @@ pub fn smells() -> Result<()> {
     Ok(())
 }  
 
-fn do_analysis(file: PathBuf) -> Result<()> {
-    print_analysis(analyse(file))?;
+fn do_analysis(item: PathBuf) -> Result<()> {
+    print_analysis(analyse(item))?;
     Ok(())
 }
 
-fn analyse(folder: PathBuf) -> AnalysisResult{
+fn analyse(item: PathBuf) -> AnalysisResult{
     let metrics_content = Metrics{
-        lines_count: get_file_line_metrics(&folder)
+        lines_count: compute_lines_count_metric(&item)
     };
 
     let file_content1 = AnalysisResult{
-        file: extract_files_name(&folder),
+        item_key: extract_file_name_of_analysed_folder(&item),
         metrics: metrics_content,
         folder_content: None
     };
 
     let metrics = Metrics {
-        lines_count: get_file_line_metrics(&folder)
+        lines_count: compute_lines_count_metric(&item)
     };
 
-    let mut vec_content = Vec::new();
+    let mut folder_contents = Vec::new();
 
     AnalysisResult{
-        file: extract_key(&folder),
+        item_key: extract_analysed_item_key(&item),
         metrics,
-        folder_content: if file_is_empty(&folder) || file_is_current_folder(&folder){
+        folder_content: if folder_is_empty(&item) || analysed_item_is_in_current_folder(&item){
             None
         } else {
-            vec_content.push(file_content1);
-            Some(vec_content)
+            folder_contents.push(file_content1);
+            Some(folder_contents)
         },
     }
 }
 
-fn file_is_current_folder(file: &PathBuf) -> bool{
-    if let Ok(_path) = file.read_dir(){
-        let mut path_to_compare = PathBuf::new();
-        path_to_compare.push(".");
-        if file.to_path_buf() == path_to_compare{
+fn analysed_item_is_in_current_folder(item: &PathBuf) -> bool{
+    if let Ok(_path) = item.read_dir(){
+        let mut current_path = PathBuf::new();
+        current_path.push(".");
+        if item.to_path_buf() == current_path {
             return true;
         }
     }
     false
 }
 
-fn file_is_empty(folder_path: &PathBuf) -> bool {
-    if let Ok(mut entries) = std::fs::read_dir(folder_path) {
-        return entries.next().is_none();
+fn folder_is_empty(folder: &PathBuf) -> bool {
+    if let Ok(mut folder_entry) = std::fs::read_dir(folder) {
+        return folder_entry.next().is_none();
     }
     false
 }
 
-fn extract_key(file: &PathBuf) -> String{
-    // extract the file name of the target given by program parameter
-    let file_os_str = file.as_os_str();
-    let file_key = match file.file_name() {
-        Some(file_name) => file_name.to_owned(),
-        _ => file_os_str.to_owned(),
+fn extract_analysed_item_key(item: &PathBuf) -> String{
+    let item_as_os_str = item.as_os_str();
+    let item_key = match item.file_name() {
+        Some(item_name) => item_name.to_owned(),
+        _ => item_as_os_str.to_owned(),
     };
-    file_key.to_string_lossy().into_owned()
+    item_key.to_string_lossy().into_owned()
 }
 
-fn extract_files_name(file: &PathBuf) -> String{
-    // extract all files name of a folder
-    let mut files_name = "".to_string();
-    if let Ok(entries) = std::fs::read_dir(&file) {
-        for entry in entries {
-            if let Ok(entry) = entry {
-                files_name = extract_key(&entry.path());
+fn extract_file_name_of_analysed_folder(folder: &PathBuf) -> String{
+    let mut file_name = String::new();
+    if let Ok(files) = std::fs::read_dir(&folder) {
+        for file in files {
+            if let Ok(entry) = file {
+                file_name = extract_analysed_item_key(&entry.path());
             }
         }
     }
-    files_name
+    file_name
 }
 
-fn get_file_line_metrics(file: &PathBuf) -> u32{
-    let mut lines_metric = 0;
-    let mut path_to_compare = PathBuf::new();
-    path_to_compare.push(".");
-    let files_name = extract_files_name(&file);
-    let files_to_analyse = file.to_string_lossy().into_owned().to_string()+"/"+&files_name;
-    let file_reader = BufReader::new(File::open(files_to_analyse).unwrap());
+fn compute_lines_count_metric(folder: &PathBuf) -> u32{
+    // TODO: handle the unwrap()
+    let mut lines_count = 0;
+    let mut current_path = PathBuf::new();
+    current_path.push(".");
+    let file_name = extract_file_name_of_analysed_folder(&folder);
+    let file_to_analyse = folder.to_string_lossy().into_owned().to_string()+"/"+&file_name;
+    let file_reader = BufReader::new(File::open(file_to_analyse).unwrap());
     
-    if file.exists() && !file_is_empty(file){
-        if file.to_path_buf() != path_to_compare{ 
+    if folder.exists() && !folder_is_empty(folder){
+        if folder.to_path_buf() != current_path {
             for _ in file_reader.lines(){
-                lines_metric = lines_metric + 1;
+                lines_count = lines_count + 1;
             }
         }
     }
-    lines_metric
+    lines_count
 }
 
+// build json for each item of the folder content array
+fn build_json_item_analysis(item: &AnalysisResult) -> String {
+    let json_metrics = build_json_metrics(&item.metrics);
+    // TODO: remove the unwrap to handle the error correctly :-)
+    let item_to_json = match &item.folder_content {
+        // item is a folder
+        Some(folder_content) => {
+            let json_folder_content = build_inner_folder_content(folder_content).unwrap();
+            build_json_folder_analysis(item.item_key.to_string(), &json_metrics, &json_folder_content)
+        },
+        // item is a file
+        _ => build_json_file_analysis(item.item_key.to_string(), &json_metrics)
+    };
+    item_to_json
+}
 
-fn build_json_folder_analysis(file: String, json_metrics: &String, folder_content: &String) -> String{
+// build folder content array of the root folder
+// -> "folder_content" : [XXX]
+fn build_root_folder_content_array(items: Vec<AnalysisResult>) -> Result<String>{
+    let mut items_result: Vec<String> = Vec::new();
+    for item in items.iter(){
+        items_result.push(build_json_item_analysis(&item));
+    }
+    Ok(build_folder_content(&mut items_result))
+}
+
+// build content for each folder in the root folder content array (recursive content)
+// -> folder_content [ folder2_content : [XXX] ]
+fn build_inner_folder_content(folder_contents: &Vec<AnalysisResult>) -> Result<String>{
+    let mut folder_content = String::new();
+    for item in folder_contents {
+        folder_content.push_str(&print_analysis(item.clone())?);
+    }
+    Ok(folder_content.to_string())
+}
+
+// build the content that is in folder content array
+/* Result is (if only one file):
+{
+    "file0.txt": {
+        "metrics": {
+            "lines_metric": 0
+        }
+    }
+}
+*/
+fn build_folder_content(items: &mut Vec<String>) -> String {
+    let mut result = String::new();
+    let mut skip_first_comma = true;
+    for item in items {
+        if !skip_first_comma {
+            result.push_str(", ");
+        }
+        result.push_str(item.as_str());
+        skip_first_comma = false;
+    }
+    result
+}
+
+fn build_json_folder_analysis(folder: String, json_metrics: &String, folder_content: &String) -> String{
     // build analysis result json
     // build metrics
     format!(
@@ -131,7 +188,7 @@ fn build_json_folder_analysis(file: String, json_metrics: &String, folder_conten
                 {}
                 {}
             }}
-        }}"#, file, json_metrics, folder_content)
+        }}"#, folder, json_metrics, folder_content)
 }
 
 fn build_json_file_analysis(file: String, json_metrics: &String) -> String{
@@ -154,70 +211,23 @@ fn build_json_metrics(metrics: &Metrics) -> String{
         "#, metrics.lines_count)
 }
 
-fn extract_inner_content(inner_contents: &Vec<AnalysisResult>) -> Result<String> {
-    let mut file_content_string = String::new();
-    for inner_content in inner_contents{
-        let inner_result = print_analysis(inner_content.clone())?;
-        file_content_string.push_str(&inner_result);
-    }
-    Ok(file_content_string.to_string())
-}
-
-// build folder content array elements
-fn extract_folder_content(contents: Vec<AnalysisResult>) -> Result<String>{
-    let mut elements: Vec<String> = Vec::new();
-    for content in contents.iter(){
-        let element = build_json_element_analysis(&content);
-        elements.push(element);
-    }
-
-    Ok(build_array_content(&mut elements))
-}
-
-fn build_json_element_analysis(content: &&AnalysisResult) -> String {
-    let json_metrics = build_json_metrics(&content.metrics);
-
-    // TODO: remove the unwrap to handle the error correctly :-)
-    let element = match &content.folder_content {
-        Some(folder_content) => {
-            let json_folder_content = extract_inner_content(folder_content).unwrap();
-            build_json_folder_analysis(content.file.to_string(), &json_metrics, &json_folder_content)
-        },
-        _ => build_json_file_analysis(content.file.to_string(), &json_metrics)
-    };
-    element
-}
-
-fn build_array_content(elements: &mut Vec<String>) -> String {
-    let mut result = String::new();
-    let mut skip_first_comma = true;
-    for element in elements {
-        if !skip_first_comma {
-            result.push_str(", ");
-        }
-        result.push_str(element.as_str());
-        skip_first_comma = false;
-    }
-    result
-}
-
 // build analysis result json AND print it
 fn print_analysis(analysis: AnalysisResult) -> Result<String>{
     // build analysis result
     // build root item
-    let file_key = analysis.file;
-    let file_content = analysis.folder_content;
-    let mut converted_file_content = "".to_string();
+    let item_key = analysis.item_key;
+    let folder_content = analysis.folder_content;
+    let mut converted_file_content = String::new();
     let json_metrics = build_json_metrics(&analysis.metrics);
 
     // build folder content
-    if let Some(contents) = file_content {
-        converted_file_content = extract_folder_content(contents)?;
+    if let Some(items) = folder_content {
+        converted_file_content = build_root_folder_content_array(items)?;
     }
     let folder_content = format!(
     r#","folder_content": [{}]"#, converted_file_content);
         
-    let json_output = build_json_folder_analysis(file_key, &json_metrics, &folder_content);
+    let json_output = build_json_folder_analysis(item_key, &json_metrics, &folder_content);
     // print analysis result
     print_formatted_json(&json_output)?;
     Ok(json_output)

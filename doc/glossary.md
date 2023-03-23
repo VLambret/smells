@@ -1,4 +1,4 @@
-{
+```{
     "folder_with_multiple_files":{
         "metrics": {
             "lines_metric": 6
@@ -21,7 +21,7 @@
         ]
     }
 }
-
+```
 ## Metric
 
 ```
@@ -30,7 +30,7 @@
 
 The key is the type of the **metric**, and the content is its **value**
 
-## Metrics
+## Metrics
 
 ```
 "metrics": {
@@ -40,7 +40,7 @@ The key is the type of the **metric**, and the content is its **value**
 
 The set of metrics related to an **analyzed item**
 
-## Analyzed item
+## Analyzed item
 
 ```
 "folder_with_multiple_files":{
@@ -110,15 +110,13 @@ When the **analysed item** is a file.
     }
 ```
 
-
 When the **analysed item** is a folder.
 - The **key** is the base name of the folder
 - The content is an object containing:
     - the summary of the **metrics**
     - The **folder content**
 
-
-## Folder content
+## Folder content
 
 ```
         "folder_content":[
