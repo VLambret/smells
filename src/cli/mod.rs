@@ -152,11 +152,7 @@ fn build_json_item_analysis(item: &AnalysisResult) -> String {
 // build folder content array of the root folder
 // -> "folder_content" : [XXX]
 fn build_root_folder_content_array(items: Vec<AnalysisResult>) -> String{
-    let mut items_result: Vec<String> = Vec::new();
-    for item in items.iter(){
-        items_result.push(build_json_item_analysis(&item));
-    }
-    build_folder_content(&mut items_result)
+    items.iter().map(|item| build_json_item_analysis(item)).collect()
 }
 
 // build content for each folder in the root folder content array (recursive content)
@@ -175,18 +171,6 @@ fn build_inner_folder_content(folder_contents: &Vec<AnalysisResult>) -> String{
     }
 }
 */
-fn build_folder_content(items: &mut Vec<String>) -> String {
-    let mut result = String::new();
-    let mut skip_first_comma = true;
-    for item in items {
-        if !skip_first_comma {
-            result.push_str(", ");
-        }
-        result.push_str(item.as_str());
-        skip_first_comma = false;
-    }
-    result
-}
 
 fn build_json_folder_analysis(folder: String, json_metrics: &String, folder_content: &String) -> String{
     // build analysis result json
