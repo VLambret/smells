@@ -211,8 +211,8 @@ fn build_json_metrics(metrics: &Metrics) -> String{
         "#, metrics.lines_count)
 }
 
-// build analysis result json AND print it
-fn print_analysis(analysis: AnalysisResult) -> Result<String>{
+// build analysis result in json
+fn build_json_result_analysis(analysis: AnalysisResult) -> String{
     // build analysis result
     // build root item
     let item_key = analysis.item_key;
@@ -221,16 +221,20 @@ fn print_analysis(analysis: AnalysisResult) -> Result<String>{
     let json_metrics = build_json_metrics(&analysis.metrics);
 
     // build folder content
+    // TODO: handle unwrap()
     if let Some(items) = folder_content {
-        converted_file_content = build_root_folder_content_array(items)?;
+        converted_file_content = build_root_folder_content_array(items).unwrap();
     }
     let folder_content = format!(
-    r#","folder_content": [{}]"#, converted_file_content);
-        
-    let json_output = build_json_folder_analysis(item_key, &json_metrics, &folder_content);
-    // print analysis result
-    print_formatted_json(&json_output)?;
-    Ok(json_output)
+        r#","folder_content": [{}]"#, converted_file_content);
+    build_json_folder_analysis(item_key, &json_metrics, &folder_content)
+}
+
+// print analysis result json
+fn print_analysis(analysis: AnalysisResult) -> Result<String>{
+    let json_result_analysis = build_json_result_analysis(analysis);
+    print_formatted_json(&json_result_analysis)?;
+    Ok(json_result_analysis)
 }
 
 fn print_formatted_json(json_output: &String) -> Result<()>{
