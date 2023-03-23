@@ -124,8 +124,8 @@ fn compute_lines_count_metric(folder: &PathBuf) -> u32{
     lines_count
 }
 
-fn try_opening_file(file_to_analyse: String) -> Result<File, String>{
-    let file = match File::open(file_to_analyse){
+fn try_opening_file(file_to_open: String) -> Result<File, String>{
+    let file = match File::open(file_to_open){
         Ok(file) => file,
         Err(e) => {
             return Err(format!("Can't open the file: {}", e));
@@ -162,11 +162,7 @@ fn build_root_folder_content_array(items: Vec<AnalysisResult>) -> String{
 // build content for each folder in the root folder content array (recursive content)
 // -> folder_content [ folder2_content : [XXX] ]
 fn build_inner_folder_content(folder_contents: &Vec<AnalysisResult>) -> String{
-    let mut folder_content = String::new();
-    for item in folder_contents {
-        folder_content.push_str(&print_analysis(item.clone()));
-    }
-    folder_content.to_string()
+    folder_contents.iter().map(|item| print_analysis(item.clone())).collect::<String>()
 }
 
 // build the content that is in folder content array
