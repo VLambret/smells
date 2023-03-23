@@ -233,12 +233,24 @@ fn build_json_result_analysis(analysis: AnalysisResult) -> String{
 // print analysis result json
 fn print_analysis(analysis: AnalysisResult) -> Result<String>{
     let json_result_analysis = build_json_result_analysis(analysis);
-    print_formatted_json(&json_result_analysis)?;
+    print_formatted_json(&json_result_analysis);
     Ok(json_result_analysis)
 }
 
-fn print_formatted_json(json_output: &String) -> Result<()>{
-    let converted_json_output: Value = serde_json::from_str(json_output)?;
-    print!("{}", serde_json::to_string_pretty(&converted_json_output)?);
-    Ok(())
+fn print_formatted_json(json_output: &String){
+    match serde_json::from_str::<Value>(json_output){
+        Ok(converted_json_output) => {
+            match serde_json::to_string_pretty(&converted_json_output){
+                Ok(pretty_json) => {
+                    print!("{}", pretty_json);
+                }
+                Err(e) => {
+                    println!("Error for printing JSON: {}", e);
+                }
+            }
+        }
+        Err(e) => {
+            println!("Error for serializing JSON: {}", e);
+        }
+    }
 }
