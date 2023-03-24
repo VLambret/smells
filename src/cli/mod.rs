@@ -18,9 +18,15 @@ struct AnalysisResult{
     folder_content: Option<Vec<AnalysisResult>>
 }
 
+#[derive(Serialize, Deserialize)]
+struct FileMetrics {
+    file: String,
+    metrics: Metrics,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 struct Metrics{
-    lines_count: u32
+    lines_metric: u32
 }
 
 pub fn smells(){
@@ -54,7 +60,7 @@ fn analyse(item: PathBuf) -> AnalysisResult{
     }*/
 
     let metrics = Metrics{
-        lines_count: compute_lines_count_metric(&item)
+        lines_metric: compute_lines_count_metric(&item)
     };
 
     let file = AnalysisResult{
@@ -64,7 +70,7 @@ fn analyse(item: PathBuf) -> AnalysisResult{
     };
 
     let metrics_content = Metrics {
-    lines_count: compute_lines_count_metric(&item.clone())
+    lines_metric: compute_lines_count_metric(&item.clone())
     };
 
     AnalysisResult{
@@ -163,7 +169,7 @@ fn build_json_item_analysis(item: &AnalysisResult) -> String {
             build_json_folder_analysis(item.item_key.to_string(), &json_metrics, &json_folder_content)
         },
         // item is a file
-        _ => build_json_file_analysis(item.item_key.to_string(), &json_metrics)
+        _ => build_json_file_analysis(&item)
     };
     item_to_json
 }
@@ -193,19 +199,25 @@ fn build_json_folder_analysis(folder: String, json_metrics: &String, folder_cont
         }}"#, folder, json_metrics, folder_content)
 }
 
-fn build_json_file_analysis(file: String, json_metrics: &String) -> String{
-    format!(
-        r#"{{
-            "{}": {{
-                {}
-            }}
-        }}"#, file, json_metrics)
+fn build_json_file_analysis(file: &AnalysisResult) -> String{
+    // TODO: handle the unwrap() ?
+    let file_metrics = FileMetrics{
+        file: file.item_key.clone(),
+        metrics: file.metrics
+    };
+
+    serde_json::to_string(&json!(
+        {
+            file_metrics.file:{
+            "metrics": file_metrics.metrics
+            }
+        }
+    )).unwrap()
 }
 
 fn build_json_metrics(metrics: &Metrics) -> String {
     // build analysis result json
-    let lines_metric = json!({"lines_metric": metrics.lines_count});
-    format!(r#" "metrics":{}"#, lines_metric)
+    format!(r#" "metrics":{}"#, json!({"lines_metric": metrics.lines_metric}))
 }
 
 // build analysis result in json
