@@ -49,10 +49,14 @@ fn analyse(item: PathBuf) -> FolderAnalysis {
 
     // TODO: handle unwrap()
     if !folder_is_empty(&item) && !analysed_item_is_in_current_folder(&item) {
-        for entry in read_dir(&item).unwrap() {
-            let entry = entry.unwrap();
+        // sort entries based on the entry names
+        let dir = read_dir(&item).unwrap();
+        let mut entries: Vec<_> = dir.map(|e| e.unwrap()).collect();
+        entries.sort_by_key(|e| e.file_name());
+        //
+
+        for entry in entries{
             let path = entry.path();
-            if path.is_file() && !analysed_item_is_in_current_folder(&item) {}
             let metrics = Metrics {
                 lines_metric: compute_lines_count_metric(&path)
             };
@@ -61,7 +65,6 @@ fn analyse(item: PathBuf) -> FolderAnalysis {
                 file_key: extract_analysed_item_key(&path),
                 metrics
             });
-
 
             folder_contents.push(file);
         }
@@ -77,19 +80,6 @@ fn analyse(item: PathBuf) -> FolderAnalysis {
         metrics: metrics_content,
         folder_content: folder_contents
     }
-}
-
-fn summary_lines_metric(folder_contents: &Vec<Analysis>) -> usize {
-    let mut sum = 0;
-    for content in folder_contents{
-        match content{
-            Analysis::FileAnalysis(file) => {
-                sum = sum + file.metrics.lines_metric;
-            }
-            Analysis::FolderAnalysis(_) => continue
-        }
-    }
-    sum
 }
 
 fn analysed_item_is_in_current_folder(item: &PathBuf) -> bool{
@@ -119,6 +109,19 @@ fn extract_analysed_item_key(item: &PathBuf) -> String{
     item_key.to_string_lossy().into_owned()
 }
 
+fn summary_lines_metric(folder_contents: &Vec<Analysis>) -> usize {
+    folder_contents
+        .iter()
+        .filter_map(|content| {
+            if let Analysis::FileAnalysis(file) = content {
+                Some(file.metrics.lines_metric)
+            } else {
+                None
+            }
+        })
+        .sum()
+}
+
 fn compute_lines_count_metric(file_path: &PathBuf) -> usize {
     // TODO: handle the except
     let file = File::open(file_path).expect("failed to open file");
@@ -128,7 +131,6 @@ fn compute_lines_count_metric(file_path: &PathBuf) -> usize {
 
 fn build_json_folder_analysis(folder: &FolderAnalysis) -> Value{
     let mut folder_content_json = Vec::new();
-
     for item in &folder.folder_content{
         let json_item = match item{
             Analysis::FolderAnalysis(sub_folder) => build_json_folder_analysis(sub_folder),
