@@ -210,6 +210,45 @@ fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::e
 
 #[test]
 #[ignore]
+fn smells_can_analyses_folder_with_one_empty_folder() -> Result<(), Box<dyn std::error::Error>>{
+    // given
+    let cmd_call = "smells";
+    let args = "tests/data/folder_with_one_empty_folder";
+
+    // when
+    let mut cmd = Command::cargo_bin(cmd_call)?;
+    cmd.args(&[args]);
+
+    //then
+    let expected_stdout =
+    r#"{
+        "folder_with_one_empty_folder":{
+            "metrics": {
+                "lines_metric": 0
+            },
+            "folder_content":[
+                "folder_with_one_empty_folder":{
+                    "metrics": {
+                        "lines_metric": 0
+                },
+                "folder_content":[]
+           ]
+        }
+    }"#;
+
+    let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
+    let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
+
+    cmd.assert()
+        .code(0)
+        .stdout(json_expected_stdout_to_str)
+        .stderr("");
+    Ok(())
+}
+
+
+#[test]
+#[ignore]
 fn smells_can_analyses_folder_with_a_folder_and_a_file() -> Result<(), Box<dyn std::error::Error>>{
         // given
         let cmd_call = "smells tests/data/folder_with_multiple_files";
