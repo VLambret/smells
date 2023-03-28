@@ -47,20 +47,12 @@ fn do_analysis(item: PathBuf){
 fn analyse(item: PathBuf) -> FolderAnalysis {
     let mut folder_contents = Vec::new();
 
-    // TODO: handle unwrap()
     if !folder_is_empty(&item) && !analysed_item_is_in_current_folder(&item) {
-        // sort entries based on the entry names
-        let dir = read_dir(&item).unwrap();
-        let mut entries: Vec<_> = dir.map(|e| e.unwrap()).collect();
-        entries.sort_by_key(|e| e.file_name());
-        //
-
-        for entry in entries{
+        for entry in sort_files_of_a_path(&item){
             folder_contents.push(initialize_file_content(entry));
         }
     }
 
-    // TODO: handle metric for folder
     let metrics_content = Metrics {
         lines_metric: summary_lines_metric(&folder_contents)
     };
@@ -72,6 +64,16 @@ fn analyse(item: PathBuf) -> FolderAnalysis {
     }
 }
 
+// sort files based on the entry names
+fn sort_files_of_a_path(item: &PathBuf) -> Vec<DirEntry>{
+    // TODO: handle unwrap()
+    let dir = read_dir(&item).unwrap();
+    let mut entries: Vec<_> = dir.map(|e| e.unwrap()).collect();
+    entries.sort_by_key(|e| e.file_name());
+    entries
+}
+
+// create the file content
 fn initialize_file_content(entry: DirEntry) -> Analysis{
 
     let path = entry.path();
