@@ -2,7 +2,7 @@ use structopt::StructOpt;
 use std::path::PathBuf;
 use serde_json::{Value, json};
 use std::io::{BufRead, BufReader};
-use std::fs::{File, read_dir};
+use std::fs::{DirEntry, File, read_dir};
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, StructOpt)]
@@ -56,17 +56,7 @@ fn analyse(item: PathBuf) -> FolderAnalysis {
         //
 
         for entry in entries{
-            let path = entry.path();
-            let metrics = Metrics {
-                lines_metric: compute_lines_count_metric(&path)
-            };
-
-            let file = Analysis::FileAnalysis(FileAnalysis {
-                file_key: extract_analysed_item_key(&path),
-                metrics
-            });
-
-            folder_contents.push(file);
+            folder_contents.push(initialize_file_content(entry));
         }
     }
 
@@ -80,6 +70,19 @@ fn analyse(item: PathBuf) -> FolderAnalysis {
         metrics: metrics_content,
         folder_content: folder_contents
     }
+}
+
+fn initialize_file_content(entry: DirEntry) -> Analysis{
+
+    let path = entry.path();
+    let metrics = Metrics {
+        lines_metric: compute_lines_count_metric(&path)
+    };
+
+    Analysis::FileAnalysis(FileAnalysis {
+        file_key: extract_analysed_item_key(&path),
+        metrics
+    })
 }
 
 fn analysed_item_is_in_current_folder(item: &PathBuf) -> bool{
