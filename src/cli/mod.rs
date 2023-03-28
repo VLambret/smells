@@ -44,25 +44,8 @@ fn do_analysis(item: PathBuf){
     print_analysis(analyse(item));
 }
 
-fn analyse(item: PathBuf) -> Analysis {
-
+fn analyse(item: PathBuf) -> FolderAnalysis {
     let mut folder_contents = Vec::new();
-
-    /*for entry in std::fs::read_dir(item.clone()).unwrap(){
-        let path = entry.unwrap().path();
-        println!("{:?}", path);
-        let metrics = Metrics{
-            lines_count: compute_lines_count_metric(&path)
-        };
-
-        let file = AnalysisResult{
-            item_key: extract_file_name(&path),
-            metrics,
-            folder_content: None
-        };
-
-        folder_contents.push(file);
-    }*/
 
     let metrics = Metrics{
         lines_metric: compute_lines_count_metric(&item)
@@ -81,11 +64,11 @@ fn analyse(item: PathBuf) -> Analysis {
         folder_contents.push(file);
     }
 
-    Analysis::FolderAnalysis(FolderAnalysis {
+    FolderAnalysis {
         folder_key: extract_analysed_item_key(&item),
         metrics: metrics_content,
         folder_content: folder_contents
-    })
+    }
 }
 
 fn analysed_item_is_in_current_folder(item: &PathBuf) -> bool{
@@ -172,7 +155,6 @@ fn build_json_folder_analysis(folder: &FolderAnalysis) -> Value{
         };
         folder_content_json.push(json_item);
     }
-
    json!(
        {
            folder.folder_key.to_owned():{
@@ -193,18 +175,9 @@ fn build_json_file_analysis(file: &FileAnalysis) -> Value{
     )
 }
 
-// build analysis result in json
-fn build_json_result_analysis(analysis: &Analysis) -> Value{
-    let json_result= match analysis {
-            Analysis::FolderAnalysis(folder_analysis) => build_json_folder_analysis(&folder_analysis),
-            Analysis::FileAnalysis(file_analysis) => build_json_file_analysis(&file_analysis)
-    };
-    json_result
-}
-
 // print analysis result json
-fn print_analysis(analysis: Analysis){
-    let json_result_analysis = build_json_result_analysis(&analysis);
+fn print_analysis(analysis: FolderAnalysis){
+    let json_result_analysis = build_json_folder_analysis(&analysis);
     print_formatted_json(&serde_json::to_string(&json_result_analysis).unwrap());
 }
 
