@@ -12,15 +12,21 @@ pub struct CmdArgs{
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct AnalysisResult{
-    item_key: String,
-    metrics: Metrics,
-    folder_content: Option<Vec<AnalysisResult>>
+enum Analysis{
+    FileAnalysis(FileAnalysis),
+    FolderAnalysis(FolderAnalysis),
 }
 
-#[derive(Serialize, Deserialize)]
-struct FileMetrics {
-    file: String,
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct FolderAnalysis {
+    folder_key: String,
+    metrics: Metrics,
+    folder_content: Vec<Value>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct FileAnalysis {
+    file_key: String,
     metrics: Metrics,
 }
 
@@ -38,7 +44,7 @@ fn do_analysis(item: PathBuf){
     print_analysis(analyse(item));
 }
 
-fn analyse(item: PathBuf) -> AnalysisResult{
+fn analyse(item: PathBuf) -> Analysis {
 
     let mut folder_contents = Vec::new();
 
@@ -63,26 +69,24 @@ fn analyse(item: PathBuf) -> AnalysisResult{
         lines_metric: compute_lines_count_metric(&item)
     };
 
-    let file = AnalysisResult{
-        item_key: extract_file_name(&item),
-        metrics,
-        folder_content: None
-    };
+    let file = Analysis::FileAnalysis(FileAnalysis{
+        file_key: extract_file_name(&item),
+        metrics
+    });
 
     let metrics_content = Metrics {
     lines_metric: compute_lines_count_metric(&item.clone())
     };
 
-    AnalysisResult{
-        item_key: extract_analysed_item_key(&item),
-        metrics: metrics_content,
-        folder_content: if folder_is_empty(&item) || analysed_item_is_in_current_folder(&item){
-            None
-        } else {
-            folder_contents.push(file);
-            Some(folder_contents)
-        },
+    if !folder_is_empty(&item) && !analysed_item_is_in_current_folder(&item){
+        folder_contents.push(file);
     }
+
+    Analysis::FolderAnalysis(FolderAnalysis {
+        folder_key: extract_analysed_item_key(&item),
+        metrics: metrics_content,
+        folder_content: build_folder_content(folder_contents, &item)
+    })
 }
 
 fn analysed_item_is_in_current_folder(item: &PathBuf) -> bool{
@@ -159,89 +163,51 @@ fn try_opening_file(file_to_open: String) -> Result<File, String>{
     Ok(file)
 }
 
-// build json for each item of the folder content array
-fn build_json_item_analysis(item: &AnalysisResult) -> String {
-    let json_metrics = build_json_metrics(&item.metrics);
-    let item_to_json = match &item.folder_content {
-        // item is a folder
-        Some(folder_content) => {
-            let json_folder_content = build_inner_folder_content(folder_content);
-            build_json_folder_analysis(item.item_key.to_string(), &json_metrics, &json_folder_content)
-        },
-        // item is a file
-        _ => build_json_file_analysis(&item)
-    };
-    item_to_json
+fn build_json_folder_analysis(folder: &FolderAnalysis) -> Value{
+   json!(
+       {
+           folder.folder_key.to_owned():{
+           "metrics": folder.metrics,
+           "folder_content": folder.folder_content
+            }
+       }
+   )
 }
 
-// build json folder content of the root folder
-// -> "folder_content" : [XXX]
-fn build_root_folder_content(items: Vec<AnalysisResult>) -> String{
-    items.iter().map(|item| build_json_item_analysis(item)).collect()
-}
-
-// build content for each folder in the json root folder content (recursive content)
-// -> folder_content [ folder2_content : [XXX] ]
-fn build_inner_folder_content(folder_contents: &Vec<AnalysisResult>) -> String{
-    folder_contents.iter().map(|item| print_analysis(item.clone())).collect::<String>()
-}
-
-// build the content that is in folder content array
-fn build_json_folder_analysis(folder: String, json_metrics: &String, folder_content: &String) -> String{
-    // build analysis result json
-    // build metrics
-    format!(
-        r#"{{
-            "{}": {{
-                {}
-                {}
-            }}
-        }}"#, folder, json_metrics, folder_content)
-}
-
-fn build_json_file_analysis(file: &AnalysisResult) -> String{
-    // TODO: handle the unwrap() ?
-    let file_metrics = FileMetrics{
-        file: file.item_key.clone(),
-        metrics: file.metrics
-    };
-
-    serde_json::to_string(&json!(
+fn build_json_file_analysis(file: &FileAnalysis) -> Value{
+    json!(
         {
-            file_metrics.file:{
-            "metrics": file_metrics.metrics
+            file.file_key.to_owned():{
+            "metrics": file.metrics
             }
         }
-    )).unwrap()
+    )
 }
 
-fn build_json_metrics(metrics: &Metrics) -> String {
-    // build analysis result json
-    format!(r#" "metrics":{}"#, json!({"lines_metric": metrics.lines_metric}))
+fn build_folder_content(folder_contents: Vec<Analysis>, item: &PathBuf) -> Vec<Value> {
+    if !folder_is_empty(item) || !analysed_item_is_in_current_folder(item){
+        folder_contents
+            .iter()
+            .map(|content| build_json_result_analysis(&content))
+            .collect()
+    }else{
+        vec![json!({})]
+    }
 }
 
 // build analysis result in json
-fn build_json_result_analysis(analysis: AnalysisResult) -> String{
-    // build root item
-    let item_key = analysis.item_key;
-    let folder_content = analysis.folder_content;
-    let mut folder_content_result = String::new();
-    let json_metrics = build_json_metrics(&analysis.metrics);
-
-    // build folder content
-    if let Some(items) = folder_content {
-        folder_content_result = build_root_folder_content(items);
-    }
-    let folder_content = format!(
-        r#","folder_content": [{}]"#, folder_content_result);
-    build_json_folder_analysis(item_key, &json_metrics, &folder_content)
+fn build_json_result_analysis(analysis: &Analysis) -> Value{
+    let json_result= match analysis {
+            Analysis::FolderAnalysis(folder_analysis) => build_json_folder_analysis(&folder_analysis),
+            Analysis::FileAnalysis(file_analysis) => build_json_file_analysis(&file_analysis)
+    };
+    json_result
 }
 
 // print analysis result json
-fn print_analysis(analysis: AnalysisResult) -> String{
-    let json_result_analysis = build_json_result_analysis(analysis);
-    print_formatted_json(&json_result_analysis);
-    json_result_analysis
+fn print_analysis(analysis: Analysis){
+    let json_result_analysis = build_json_result_analysis(&analysis);
+    print_formatted_json(&serde_json::to_string(&json_result_analysis).unwrap());
 }
 
 fn print_formatted_json(json_output: &String){
