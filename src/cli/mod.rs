@@ -2,7 +2,7 @@ use structopt::StructOpt;
 use std::path::PathBuf;
 use serde_json::{Value, json};
 use std::io::{BufRead, BufReader};
-use std::fs::File;
+use std::fs::{File, read_dir};
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, StructOpt)]
@@ -47,21 +47,30 @@ fn do_analysis(item: PathBuf){
 fn analyse(item: PathBuf) -> FolderAnalysis {
     let mut folder_contents = Vec::new();
 
-    let metrics = Metrics{
-        lines_metric: compute_lines_count_metric(&item)
-    };
-
-    let file = Analysis::FileAnalysis(FileAnalysis{
-        file_key: extract_file_name(&item),
-        metrics
-    });
-
     let metrics_content = Metrics {
     lines_metric: compute_lines_count_metric(&item.clone())
     };
 
-    if !folder_is_empty(&item) && !analysed_item_is_in_current_folder(&item){
-        folder_contents.push(file);
+
+
+    // TODO: handle unwrap()
+    for entry in read_dir(&item).unwrap() {
+        let entry = entry.unwrap();
+        let path = entry.path();
+        if path.is_file() {
+        }
+            let metrics = Metrics{
+                lines_metric: compute_lines_count_metric(&item)
+            };
+
+            let file = Analysis::FileAnalysis(FileAnalysis{
+                file_key: extract_analysed_item_key(&path),
+                metrics
+            });
+
+            if !folder_is_empty(&item) && !analysed_item_is_in_current_folder(&item){
+                folder_contents.push(file);
+            }
     }
 
     FolderAnalysis {
