@@ -21,7 +21,7 @@ enum Analysis{
 struct FolderAnalysis {
     folder_key: String,
     metrics: Metrics,
-    folder_content: Vec<Value>,
+    folder_content: Vec<Analysis>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -47,7 +47,6 @@ fn do_analysis(item: PathBuf){
 fn analyse(item: PathBuf) -> Analysis {
 
     let mut folder_contents = Vec::new();
-
 
     /*for entry in std::fs::read_dir(item.clone()).unwrap(){
         let path = entry.unwrap().path();
@@ -85,7 +84,7 @@ fn analyse(item: PathBuf) -> Analysis {
     Analysis::FolderAnalysis(FolderAnalysis {
         folder_key: extract_analysed_item_key(&item),
         metrics: metrics_content,
-        folder_content: build_folder_content(folder_contents, &item)
+        folder_content: folder_contents
     })
 }
 
@@ -164,11 +163,21 @@ fn try_opening_file(file_to_open: String) -> Result<File, String>{
 }
 
 fn build_json_folder_analysis(folder: &FolderAnalysis) -> Value{
+    let mut folder_content_json = Vec::new();
+
+    for item in &folder.folder_content{
+        let json_item = match item{
+            Analysis::FolderAnalysis(sub_folder) => build_json_folder_analysis(sub_folder),
+            Analysis::FileAnalysis(sub_file) => build_json_file_analysis(sub_file)
+        };
+        folder_content_json.push(json_item);
+    }
+
    json!(
        {
            folder.folder_key.to_owned():{
            "metrics": folder.metrics,
-           "folder_content": folder.folder_content
+           "folder_content": folder_content_json
             }
        }
    )
@@ -182,17 +191,6 @@ fn build_json_file_analysis(file: &FileAnalysis) -> Value{
             }
         }
     )
-}
-
-fn build_folder_content(folder_contents: Vec<Analysis>, item: &PathBuf) -> Vec<Value> {
-    if !folder_is_empty(item) || !analysed_item_is_in_current_folder(item){
-        folder_contents
-            .iter()
-            .map(|content| build_json_result_analysis(&content))
-            .collect()
-    }else{
-        vec![json!({})]
-    }
 }
 
 // build analysis result in json
