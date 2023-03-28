@@ -32,7 +32,7 @@ struct FileAnalysis {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 struct Metrics{
-    lines_metric: u32
+    lines_metric: usize
 }
 
 pub fn smells(){
@@ -47,37 +47,49 @@ fn do_analysis(item: PathBuf){
 fn analyse(item: PathBuf) -> FolderAnalysis {
     let mut folder_contents = Vec::new();
 
-    let metrics_content = Metrics {
-    lines_metric: compute_lines_count_metric(&item.clone())
-    };
-
-
-
     // TODO: handle unwrap()
-    for entry in read_dir(&item).unwrap() {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        if path.is_file() {
-        }
-            let metrics = Metrics{
-                lines_metric: compute_lines_count_metric(&item)
+    if !folder_is_empty(&item) && !analysed_item_is_in_current_folder(&item) {
+        for entry in read_dir(&item).unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.is_file() && !analysed_item_is_in_current_folder(&item) {}
+            let metrics = Metrics {
+                lines_metric: compute_lines_count_metric(&path)
             };
 
-            let file = Analysis::FileAnalysis(FileAnalysis{
+            let file = Analysis::FileAnalysis(FileAnalysis {
                 file_key: extract_analysed_item_key(&path),
                 metrics
             });
 
-            if !folder_is_empty(&item) && !analysed_item_is_in_current_folder(&item){
-                folder_contents.push(file);
-            }
+
+            folder_contents.push(file);
+        }
     }
+
+    // TODO: handle metric for folder
+    let metrics_content = Metrics {
+        lines_metric: summary_lines_metric(&folder_contents)
+    };
 
     FolderAnalysis {
         folder_key: extract_analysed_item_key(&item),
         metrics: metrics_content,
         folder_content: folder_contents
     }
+}
+
+fn summary_lines_metric(folder_contents: &Vec<Analysis>) -> usize {
+    let mut sum = 0;
+    for content in folder_contents{
+        match content{
+            Analysis::FileAnalysis(file) => {
+                sum = sum + file.metrics.lines_metric;
+            }
+            Analysis::FolderAnalysis(_) => continue
+        }
+    }
+    sum
 }
 
 fn analysed_item_is_in_current_folder(item: &PathBuf) -> bool{
@@ -107,51 +119,11 @@ fn extract_analysed_item_key(item: &PathBuf) -> String{
     item_key.to_string_lossy().into_owned()
 }
 
-fn extract_file_name(file: &PathBuf) -> String{
-    let mut file_name = String::new();
-    if let Ok(files) = std::fs::read_dir(&file) {
-        for file in files {
-            if let Ok(entry) = file {
-                file_name = extract_analysed_item_key(&entry.path());
-            }
-        }
-    }
-    file_name
-}
-
-fn compute_lines_count_metric(folder: &PathBuf) -> u32{
-    let mut lines_count: u32 = 0;
-    let mut current_path = PathBuf::new();
-    current_path.push(".");
-    let file_name = extract_file_name(&folder);
-    let file_to_analyse = folder.to_string_lossy().into_owned().to_string()+"/"+&file_name;
-
-    match try_opening_file(file_to_analyse){
-        Ok(file) => {
-            let file_reader = BufReader::new(file);
-            if folder.exists() && !folder_is_empty(folder){
-                if folder.to_path_buf() != current_path {
-                    for _ in file_reader.lines(){
-                        lines_count = lines_count + 1;
-                    }
-                }
-            }
-        }
-        Err(e) => {
-            eprintln!("{}", e);
-        }
-    }
-    lines_count
-}
-
-fn try_opening_file(file_to_open: String) -> Result<File, String>{
-    let file = match File::open(file_to_open.clone()){
-        Ok(file) => file,
-        Err(e) => {
-            return Err(format!("Can't open {}: {}", file_to_open, e));
-        }
-    };
-    Ok(file)
+fn compute_lines_count_metric(file_path: &PathBuf) -> usize {
+    // TODO: handle the except
+    let file = File::open(file_path).expect("failed to open file");
+    let reader = BufReader::new(file);
+    reader.lines().count()
 }
 
 fn build_json_folder_analysis(folder: &FolderAnalysis) -> Value{
