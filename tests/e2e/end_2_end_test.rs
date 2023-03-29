@@ -209,7 +209,6 @@ fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::e
 }
 
 #[test]
-#[ignore]
 fn smells_can_analyses_folder_with_one_empty_folder() -> Result<(), Box<dyn std::error::Error>>{
     // given
     let cmd_call = "smells";
@@ -227,11 +226,14 @@ fn smells_can_analyses_folder_with_one_empty_folder() -> Result<(), Box<dyn std:
                 "lines_metric": 0
             },
             "folder_content":[
-                "folder_with_one_empty_folder":{
+                {
+                "empty_folder":{
                     "metrics": {
                         "lines_metric": 0
-                },
-                "folder_content":[]
+                    },
+                    "folder_content":[]
+                }
+           }
            ]
         }
     }"#;

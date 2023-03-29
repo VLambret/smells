@@ -49,7 +49,23 @@ fn analyse(item: PathBuf) -> FolderAnalysis {
 
     if !folder_is_empty(&item) && !analysed_item_is_in_current_folder(&item) {
         for entry in sort_files_of_a_path(&item){
-            folder_contents.push(initialize_file_content(entry));
+            if entry.path().is_file(){
+                folder_contents.push(initialize_file_content(entry));
+            }
+            else{
+                let metrics_content = Metrics {
+                    lines_metric: summary_lines_metric(&folder_contents)
+                };
+
+                let empty_folder = Analysis::FolderAnalysis(FolderAnalysis {
+                    folder_key: extract_analysed_item_key(&entry.path()),
+                    metrics: metrics_content,
+                    folder_content: folder_contents.clone()
+                });
+
+                folder_contents.push(empty_folder);
+
+            }
         }
     }
 
@@ -120,7 +136,9 @@ fn summary_lines_metric(folder_contents: &Vec<Analysis>) -> usize {
         .filter_map(|content| {
             if let Analysis::FileAnalysis(file) = content {
                 Some(file.metrics.lines_metric)
-            } else {
+            } else if let Analysis::FolderAnalysis(folder) = content{
+                Some(folder.metrics.lines_metric)
+            }else{
                 None
             }
         })
