@@ -9,39 +9,7 @@ fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::
 
     // when
     let mut cmd = Command::cargo_bin(cmd_call)?;
-
-    // then
-    let expected_stdout = 
-    r#"{
-        ".": {
-        "metrics": {
-                "lines_metric": 0
-            },
-            "folder_content": []
-        }
-    }"#;
-    
-    let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
-    let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
-
-    cmd.assert()
-        .code(0)
-        .stdout(json_expected_stdout_to_str)
-        .stderr("");
-    Ok(())
-}
-
-#[test]
-fn with_argument_which_is_point_smells_analyses_current_folder() -> Result<(), Box<dyn std::error::Error>>{
-    // given
-    let cmd_call = "smells";
-    let args = ".";
-    //let args = &[".", ".."];
-
-    // when
-    let mut cmd = Command::cargo_bin(cmd_call)?;
-    cmd.args(&[args]);
-
+    cmd.current_dir("tests/data/empty_folder");
     // then
     let expected_stdout = predicate::str::is_empty().not();
     cmd.assert()

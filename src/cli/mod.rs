@@ -45,30 +45,31 @@ fn do_analysis(root: PathBuf){
 }
 
 fn analyse_folder(item: PathBuf) -> FolderAnalysis {
-    let mut folder_contents: Vec<Analysis> = Vec::new();
-
-    if !folder_is_empty(&item) && !analysed_item_is_in_current_folder(&item) {
-        for entry in sort_files_of_a_path(&item){
-            let analysis: Analysis;
-            if entry.path().is_file(){
-                analysis = Analysis::FileAnalysis(analyse_file(entry));
-            }
-            else{
-                analysis = Analysis::FolderAnalysis(analyse_folder(entry.path()));
-            }
-            folder_contents.push(analysis);
-        }
-    }
+    let folder_content: Vec<Analysis> = sort_files_of_a_path(&item)
+        .iter()
+        .filter(|f| can_file_be_analysed(&f.path()))
+        .map(|f| analyse(&f))
+        .collect();
 
     let metrics_content = Metrics {
-        lines_metric: summary_lines_metric(&folder_contents)
+        lines_metric: summary_lines_metric(&folder_content)
     };
     let root_analysis = FolderAnalysis {
         folder_key: extract_analysed_item_key(&item),
         metrics: metrics_content,
-        folder_content: folder_contents
+        folder_content
     };
     root_analysis
+}
+
+fn analyse(entry: &DirEntry) -> Analysis {
+    let analysis: Analysis;
+    if entry.path().is_file() {
+        analysis = Analysis::FileAnalysis(analyse_file(entry));
+    } else {
+        analysis = Analysis::FolderAnalysis(analyse_folder(entry.path()));
+    }
+    analysis
 }
 
 fn analyse_root(root: PathBuf) -> FolderAnalysis{
@@ -85,7 +86,7 @@ fn sort_files_of_a_path(item: &PathBuf) -> Vec<DirEntry>{
 }
 
 // create the file content for the analysis
-fn analyse_file(entry: DirEntry) -> FileAnalysis{
+fn analyse_file(entry: &DirEntry) -> FileAnalysis{
 
     let path = entry.path();
     let metrics = Metrics {
@@ -98,22 +99,12 @@ fn analyse_file(entry: DirEntry) -> FileAnalysis{
     }
 }
 
-fn analysed_item_is_in_current_folder(item: &PathBuf) -> bool{
-    if let Ok(_path) = item.read_dir(){
-        let mut current_path = PathBuf::new();
-        current_path.push(".");
-        if item.to_path_buf() == current_path {
-            return true;
-        }
-    }
-    false
-}
-
-fn folder_is_empty(folder: &PathBuf) -> bool {
-    if let Ok(mut folder_entry) = std::fs::read_dir(folder) {
-        return folder_entry.next().is_none();
-    }
-    false
+fn can_file_be_analysed(item: &PathBuf) -> bool{
+    let file_name = match item.file_name(){
+        Some(file) => file,
+        _ => return false
+    };
+    !file_name.to_string_lossy().starts_with(".")
 }
 
 fn extract_analysed_item_key(item: &PathBuf) -> String{
