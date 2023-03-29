@@ -40,27 +40,39 @@ pub fn smells(){
     do_analysis(args.path);
 }  
 
-fn do_analysis(item: PathBuf){
-    print_analysis(analyse(item));
+fn do_analysis(root: PathBuf){
+    print_analysis(analyse_root(root));
 }
 
-fn analyse(item: PathBuf) -> FolderAnalysis {
+fn analyse_folder(item: PathBuf) -> FolderAnalysis {
     let mut folder_contents: Vec<Analysis> = Vec::new();
 
     if !folder_is_empty(&item) && !analysed_item_is_in_current_folder(&item) {
         for entry in sort_files_of_a_path(&item){
+            let analysis: Analysis;
             if entry.path().is_file(){
-                folder_contents.push(Analysis::FileAnalysis(initialize_file_content(entry)));
+                analysis = Analysis::FileAnalysis(analyse_file(entry));
             }
             else{
-                folder_contents.push(Analysis::FolderAnalysis(
-                    initialize_folder_content(entry.path(), &folder_contents)));
+                analysis = Analysis::FolderAnalysis(analyse_folder(entry.path()));
             }
+            folder_contents.push(analysis);
         }
     }
 
-    let main_analysis = initialize_folder_content(item, &folder_contents);
-    main_analysis
+    let metrics_content = Metrics {
+        lines_metric: summary_lines_metric(&folder_contents)
+    };
+    let root_analysis = FolderAnalysis {
+        folder_key: extract_analysed_item_key(&item),
+        metrics: metrics_content,
+        folder_content: folder_contents
+    };
+    root_analysis
+}
+
+fn analyse_root(root: PathBuf) -> FolderAnalysis{
+    analyse_folder(root)
 }
 
 // sort files based on the entry names
@@ -72,21 +84,8 @@ fn sort_files_of_a_path(item: &PathBuf) -> Vec<DirEntry>{
     entries
 }
 
-// create the folder content for the analysis
-fn initialize_folder_content(entry: PathBuf, folder_contents: &Vec<Analysis>) -> FolderAnalysis{
-    let metrics_content = Metrics {
-        lines_metric: summary_lines_metric(&folder_contents)
-    };
-
-    FolderAnalysis {
-        folder_key: extract_analysed_item_key(&entry),
-        metrics: metrics_content,
-        folder_content: folder_contents.to_vec()
-    }
-}
-
 // create the file content for the analysis
-fn initialize_file_content(entry: DirEntry) -> FileAnalysis{
+fn analyse_file(entry: DirEntry) -> FileAnalysis{
 
     let path = entry.path();
     let metrics = Metrics {
