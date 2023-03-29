@@ -252,40 +252,47 @@ fn smells_can_analyses_folder_with_one_empty_folder() -> Result<(), Box<dyn std:
 #[test]
 #[ignore]
 fn smells_can_analyses_folder_with_a_folder_and_a_file() -> Result<(), Box<dyn std::error::Error>>{
-        // given
-        let cmd_call = "smells tests/data/folder_with_multiple_files";
+    // given
+    let cmd_call = "smells";
+    let args = "tests/data/folder_with_folder_and_file";
 
-        // when
-        let mut cmd = Command::cargo_bin(cmd_call)?;
-    
-        //then
-        let expected_stdout =
+    // when
+    let mut cmd = Command::cargo_bin(cmd_call)?;
+    cmd.args(&[args]);
+
+    //then
+    let expected_stdout =
 r#"{
-    "folder_with_folder_and_file":{
-        "metrics": {
-            "lines_metric": 11,
-    },
-    "folder_content":[
-        "file1.txt": {
+        "folder_with_folder_and_file": {
             "metrics": {
-                "lines_metric": 1,
-            }
-        },
-        "folder": {
-            "metrics": {
-                "lines_metric": 10,
-            }
-            "folder_content":[
-                "file10.txt": {
+                "lines_metric": 11
+            },
+        "folder_content": [
+            {
+                "file1.txt": {
                     "metrics": {
-                        "lines_metric": 10,
+                        "lines_metric": 1
                     }
                 }
-            ]
+            },
+            {
+                "folder": {
+                    "metrics": {
+                        "lines_metric": 10
+                    },
+                "folder_content": [
+                {
+                    "file10.txt": {
+                        "metrics": {
+                            "lines_metric": 10
+                        }
+                    }
+                }]
+                }
+            }]
         }
-
-    ]
     }"#;
+
     cmd.assert()
     .code(0)
     .stdout(expected_stdout)
