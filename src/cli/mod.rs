@@ -45,28 +45,22 @@ fn do_analysis(item: PathBuf){
 }
 
 fn analyse(item: PathBuf) -> FolderAnalysis {
-    let mut folder_contents = Vec::new();
+    let mut folder_contents: Vec<Analysis> = Vec::new();
 
     if !folder_is_empty(&item) && !analysed_item_is_in_current_folder(&item) {
         for entry in sort_files_of_a_path(&item){
             if entry.path().is_file(){
-                folder_contents.push(initialize_file_content(entry));
+                folder_contents.push(Analysis::FileAnalysis(initialize_file_content(entry)));
             }
             else{
-                folder_contents.push(initialize_folder_content(entry, &folder_contents));
+                folder_contents.push(Analysis::FolderAnalysis(
+                    initialize_folder_content(entry.path(), &folder_contents)));
             }
         }
     }
 
-    let metrics_content = Metrics {
-        lines_metric: summary_lines_metric(&folder_contents)
-    };
-
-    FolderAnalysis {
-        folder_key: extract_analysed_item_key(&item),
-        metrics: metrics_content,
-        folder_content: folder_contents
-    }
+    let main_analysis = initialize_folder_content(item, &folder_contents);
+    main_analysis
 }
 
 // sort files based on the entry names
@@ -78,30 +72,31 @@ fn sort_files_of_a_path(item: &PathBuf) -> Vec<DirEntry>{
     entries
 }
 
-fn initialize_folder_content(entry: DirEntry, folder_contents: &Vec<Analysis>) -> Analysis{
+// create the folder content for the analysis
+fn initialize_folder_content(entry: PathBuf, folder_contents: &Vec<Analysis>) -> FolderAnalysis{
     let metrics_content = Metrics {
         lines_metric: summary_lines_metric(&folder_contents)
     };
 
-    Analysis::FolderAnalysis(FolderAnalysis {
-        folder_key: extract_analysed_item_key(&entry.path()),
+    FolderAnalysis {
+        folder_key: extract_analysed_item_key(&entry),
         metrics: metrics_content,
         folder_content: folder_contents.to_vec()
-    })
+    }
 }
 
-// create the file content
-fn initialize_file_content(entry: DirEntry) -> Analysis{
+// create the file content for the analysis
+fn initialize_file_content(entry: DirEntry) -> FileAnalysis{
 
     let path = entry.path();
     let metrics = Metrics {
         lines_metric: compute_lines_count_metric(&path)
     };
 
-    Analysis::FileAnalysis(FileAnalysis {
+    FileAnalysis {
         file_key: extract_analysed_item_key(&path),
         metrics
-    })
+    }
 }
 
 fn analysed_item_is_in_current_folder(item: &PathBuf) -> bool{
