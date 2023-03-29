@@ -53,18 +53,7 @@ fn analyse(item: PathBuf) -> FolderAnalysis {
                 folder_contents.push(initialize_file_content(entry));
             }
             else{
-                let metrics_content = Metrics {
-                    lines_metric: summary_lines_metric(&folder_contents)
-                };
-
-                let empty_folder = Analysis::FolderAnalysis(FolderAnalysis {
-                    folder_key: extract_analysed_item_key(&entry.path()),
-                    metrics: metrics_content,
-                    folder_content: folder_contents.clone()
-                });
-
-                folder_contents.push(empty_folder);
-
+                folder_contents.push(initialize_folder_content(entry, &folder_contents));
             }
         }
     }
@@ -87,6 +76,18 @@ fn sort_files_of_a_path(item: &PathBuf) -> Vec<DirEntry>{
     let mut entries: Vec<_> = dir.map(|e| e.unwrap()).collect();
     entries.sort_by_key(|e| e.file_name());
     entries
+}
+
+fn initialize_folder_content(entry: DirEntry, folder_contents: &Vec<Analysis>) -> Analysis{
+    let metrics_content = Metrics {
+        lines_metric: summary_lines_metric(&folder_contents)
+    };
+
+    Analysis::FolderAnalysis(FolderAnalysis {
+        folder_key: extract_analysed_item_key(&entry.path()),
+        metrics: metrics_content,
+        folder_content: folder_contents.to_vec()
+    })
 }
 
 // create the file content
