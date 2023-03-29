@@ -1,15 +1,25 @@
 .
 ├── doc
-│   ├── output.json
-│   └── project_structure.txt
+│   ── output.json
+│   └── project_structure.txt
 ├── LICENSE.txt
 ├── Makefile
 ├── README.md
-├── src
-│   ├── cli
-│   ├── gui
-│   ├── metrics
-│   └── output_formats
+src
+├── analysis.rs
+├── data_sources
+│         ├── file_system.rs
+│         └── git_history.rs
+├── formatters
+│         └── json.rs
+├── main.rs
+├── metrics
+│         ├── line_count.rs
+│         └── social_complexity.rs
+├── viewers
+│   ├── cli.rs
+│   ├── gui.rs
+│   └── web.rs
 └── test
     ├── data
     ├── e2e
@@ -18,5 +28,3 @@
         ├── gui
         ├── metrics
         └── output_formats
-
-14 directories, 5 files
