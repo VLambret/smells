@@ -1,5 +1,6 @@
 mod cli;
 mod formatters;
+mod metrics;
 
 use cli::cli_lib;
 

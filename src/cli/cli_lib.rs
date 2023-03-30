@@ -1,9 +1,9 @@
 use structopt::StructOpt;
 use std::path::PathBuf;
-use std::io::{BufRead, BufReader};
-use std::fs::{DirEntry, File, read_dir};
+use std::fs::{DirEntry, read_dir};
 use serde::{Serialize, Deserialize};
 use crate::formatters::json;
+use crate::metrics::line_count;
 
 #[derive(Debug, StructOpt)]
 pub struct CmdArgs{
@@ -52,7 +52,7 @@ fn analyse_folder(item: PathBuf) -> FolderAnalysis {
         .collect();
 
     let metrics_content = Metrics {
-        lines_metric: summary_lines_metric(&folder_content)
+        lines_metric: line_count::summary_lines_metric(&folder_content)
     };
     let root_analysis = FolderAnalysis {
         folder_key: extract_analysed_item_key(&item),
@@ -90,7 +90,7 @@ fn analyse_file(entry: &DirEntry) -> FileAnalysis{
 
     let path = entry.path();
     let metrics = Metrics {
-        lines_metric: compute_lines_count_metric(&path)
+        lines_metric: line_count::compute_lines_count_metric(&path)
     };
 
     FileAnalysis {
@@ -114,26 +114,4 @@ fn extract_analysed_item_key(item: &PathBuf) -> String{
         _ => item_as_os_str.to_owned(),
     };
     item_key.to_string_lossy().into_owned()
-}
-
-fn summary_lines_metric(folder_contents: &Vec<Analysis>) -> usize {
-    folder_contents
-        .iter()
-        .filter_map(|content| {
-            if let Analysis::FileAnalysis(file) = content {
-                Some(file.metrics.lines_metric)
-            } else if let Analysis::FolderAnalysis(folder) = content{
-                Some(folder.metrics.lines_metric)
-            }else{
-                None
-            }
-        })
-        .sum()
-}
-
-fn compute_lines_count_metric(file_path: &PathBuf) -> usize {
-    // TODO: handle the except
-    let file = File::open(file_path).expect("failed to open file");
-    let reader = BufReader::new(file);
-    reader.lines().count()
 }
