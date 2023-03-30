@@ -32,7 +32,7 @@ pub struct FileAnalysis {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct Metrics{
-    pub lines_metric: usize
+    pub lines_count: usize
 }
 
 pub fn smells(){
@@ -52,7 +52,7 @@ fn analyse_folder(item: PathBuf) -> FolderAnalysis {
         .collect();
 
     let metrics_content = Metrics {
-        lines_metric: line_count::summary_lines_metric(&folder_content)
+        lines_count: line_count::summary_lines_count_metric(&folder_content)
     };
     let root_analysis = FolderAnalysis {
         folder_key: extract_analysed_item_key(&item),
@@ -90,7 +90,7 @@ fn analyse_file(entry: &DirEntry) -> FileAnalysis{
 
     let path = entry.path();
     let metrics = Metrics {
-        lines_metric: line_count::compute_lines_count_metric(&path)
+        lines_count: line_count::compute_lines_count_metric(&path)
     };
 
     FileAnalysis {

@@ -3,14 +3,14 @@ use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use crate::cli::cli_lib::Analysis;
 
-pub fn summary_lines_metric(folder_contents: &Vec<Analysis>) -> usize {
+pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> usize {
     folder_contents
         .iter()
         .filter_map(|content| {
             if let Analysis::FileAnalysis(file) = content {
-                Some(file.metrics.lines_metric)
+                Some(file.metrics.lines_count)
             } else if let Analysis::FolderAnalysis(folder) = content{
-                Some(folder.metrics.lines_metric)
+                Some(folder.metrics.lines_count)
             }else{
                 None
             }
