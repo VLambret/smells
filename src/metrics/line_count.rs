@@ -1,6 +1,5 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::path::PathBuf;
 use crate::analysis::Analysis;
 
 pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> usize {
@@ -18,9 +17,8 @@ pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> usize {
         .sum()
 }
 
-pub fn compute_lines_count_metric(file_path: &PathBuf) -> usize {
-    // TODO: handle the except
-    let file = File::open(file_path).expect("failed to open file");
+pub fn compute_lines_count_metric(file: &File) -> usize {
+    //let file = File::open(file_path).expect("failed to open file");
     let reader = BufReader::new(file);
     reader.lines().count()
 }

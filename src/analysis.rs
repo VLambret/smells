@@ -4,6 +4,7 @@ use std::fs::{DirEntry, read_dir};
 use serde::{Serialize, Deserialize};
 use crate::formatters::json;
 use crate::metrics::line_count;
+use crate::data_sources::file_system;
 
 #[derive(Debug, StructOpt)]
 pub struct CmdArgs{
@@ -78,7 +79,7 @@ fn analyse_root(root: PathBuf) -> FolderAnalysis{
 
 // sort files based on the entry names
 fn sort_files_of_a_path(item: &PathBuf) -> Vec<DirEntry>{
-    // TODO: handle unwrap()
+    // TODO: handle unwrap() and FS
     let dir = read_dir(&item).unwrap();
     let mut entries: Vec<_> = dir.map(|e| e.unwrap()).collect();
     entries.sort_by_key(|e| e.file_name());
@@ -89,8 +90,10 @@ fn sort_files_of_a_path(item: &PathBuf) -> Vec<DirEntry>{
 fn analyse_file(entry: &DirEntry) -> FileAnalysis{
 
     let path = entry.path();
+    let file = file_system::get_file_from_path(&path);
     let metrics = Metrics {
-        lines_count: line_count::compute_lines_count_metric(&path)
+        // TODO: give a file insteadof path
+        lines_count: line_count::compute_lines_count_metric(&file)
     };
 
     FileAnalysis {
