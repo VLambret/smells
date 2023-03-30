@@ -218,7 +218,6 @@ fn smells_can_analyses_folder_with_one_empty_folder() -> Result<(), Box<dyn std:
 
 
 #[test]
-#[ignore]
 fn smells_can_analyses_folder_with_a_folder_and_a_file() -> Result<(), Box<dyn std::error::Error>>{
     // given
     let cmd_call = "smells";
@@ -261,9 +260,12 @@ r#"{
         }
     }"#;
 
+    let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
+    let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
+
     cmd.assert()
     .code(0)
-    .stdout(expected_stdout)
+    .stdout(json_expected_stdout_to_str)
     .stderr("");
 
     Ok(())

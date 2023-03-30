@@ -1,6 +1,8 @@
 mod cli;
-use crate::cli::smells;
+mod formatters;
+
+use cli::cli_lib;
 
 fn main() {
-    smells();
+    cli_lib::smells();
 }
