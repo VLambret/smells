@@ -38,7 +38,7 @@ pub struct Metrics{
 pub fn smells(){
     let args = CmdArgs::from_args();
     do_analysis(args.path);
-}  
+}
 
 fn do_analysis(root: PathBuf){
     json::print_analysis(analyse_root(root));

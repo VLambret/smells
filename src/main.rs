@@ -1,9 +1,9 @@
-mod cli;
 mod formatters;
 mod metrics;
+mod analysis;
 
-use cli::cli_lib;
+use crate::analysis::smells;
 
 fn main() {
-    cli_lib::smells();
+    smells();
 }

@@ -1,5 +1,5 @@
 use serde_json::{json, Value};
-use crate::cli::cli_lib::{Analysis, FileAnalysis, FolderAnalysis};
+use crate::analysis::{Analysis, FileAnalysis, FolderAnalysis};
 
 // print analysis result json
 pub fn print_analysis(analysis: FolderAnalysis){

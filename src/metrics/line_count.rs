@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
-use crate::cli::cli_lib::Analysis;
+use crate::analysis::Analysis;
 
 pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> usize {
     folder_contents
