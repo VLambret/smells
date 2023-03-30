@@ -1,6 +1,5 @@
 use structopt::StructOpt;
 use std::path::PathBuf;
-use serde_json::{Value, json};
 use std::io::{BufRead, BufReader};
 use std::fs::{DirEntry, File, read_dir};
 use serde::{Serialize, Deserialize};
@@ -13,27 +12,27 @@ pub struct CmdArgs{
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-enum Analysis{
+pub enum Analysis{
     FileAnalysis(FileAnalysis),
     FolderAnalysis(FolderAnalysis),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct FolderAnalysis {
-    folder_key: String,
-    metrics: Metrics,
-    folder_content: Vec<Analysis>,
+pub struct FolderAnalysis {
+    pub folder_key: String,
+    pub metrics: Metrics,
+    pub folder_content: Vec<Analysis>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-struct FileAnalysis {
-    file_key: String,
-    metrics: Metrics,
+pub struct FileAnalysis {
+    pub file_key: String,
+    pub metrics: Metrics,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
-struct Metrics{
-    lines_metric: usize
+pub struct Metrics{
+    pub lines_metric: usize
 }
 
 pub fn smells(){
@@ -42,7 +41,7 @@ pub fn smells(){
 }  
 
 fn do_analysis(root: PathBuf){
-    print_analysis(analyse_root(root));
+    json::print_analysis(analyse_root(root));
 }
 
 fn analyse_folder(item: PathBuf) -> FolderAnalysis {
@@ -137,39 +136,4 @@ fn compute_lines_count_metric(file_path: &PathBuf) -> usize {
     let file = File::open(file_path).expect("failed to open file");
     let reader = BufReader::new(file);
     reader.lines().count()
-}
-
-fn build_json_folder_analysis(folder: &FolderAnalysis) -> Value{
-    let mut folder_content_json = Vec::new();
-    for item in &folder.folder_content{
-        let json_item = match item{
-            Analysis::FolderAnalysis(sub_folder) => build_json_folder_analysis(sub_folder),
-            Analysis::FileAnalysis(sub_file) => build_json_file_analysis(sub_file)
-        };
-        folder_content_json.push(json_item);
-    }
-   json!(
-       {
-           folder.folder_key.to_owned():{
-           "metrics": folder.metrics,
-           "folder_content": folder_content_json
-            }
-       }
-   )
-}
-
-fn build_json_file_analysis(file: &FileAnalysis) -> Value{
-    json!(
-        {
-            file.file_key.to_owned():{
-            "metrics": file.metrics
-            }
-        }
-    )
-}
-
-// print analysis result json
-fn print_analysis(analysis: FolderAnalysis){
-    let json_result_analysis = build_json_folder_analysis(&analysis);
-    json::print_formatted_json(&serde_json::to_string(&json_result_analysis).unwrap());
 }
