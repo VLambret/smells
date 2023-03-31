@@ -38,21 +38,21 @@ fn build_json_file_analysis(file: &FileAnalysis) -> Value{
 
 fn format_json_output(json_output: &String) -> String{
     // TODO: remonter le from_str
-    match serde_json::from_str::<Value>(json_output){
+    return match serde_json::from_str::<Value>(json_output) {
         Ok(converted_json_output) => {
-            match serde_json::to_string_pretty(&converted_json_output){
+            match serde_json::to_string_pretty(&converted_json_output) {
                 Ok(pretty_json) => {
-                    return pretty_json;
+                    pretty_json
                 }
                 Err(..) => {
                     // if formatting fails we print the original version
-                    return json_output.to_owned();
+                    json_output.to_owned()
                 }
             }
         }
         Err(e) => {
             eprintln!("Error for serializing JSON: {}", e);
-            return e.to_string();
+            e.to_string()
         }
     }
 }
