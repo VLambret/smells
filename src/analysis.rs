@@ -25,21 +25,20 @@ pub mod models{
     }
 }
 
-
 pub mod public_interface{
     use std::path::PathBuf;
     use structopt::StructOpt;
-    use crate::analysis::internal_process::do_analysis;
+    use crate::analysis::internal_process::analyse_root;
+    use crate::analysis::models::FolderAnalysis;
 
     #[derive(Debug, StructOpt)]
     pub struct CmdArgs{
         #[structopt(default_value=".")]
-        path: PathBuf,
+        pub path: PathBuf,
     }
 
-    pub fn smells(){
-        let args = CmdArgs::from_args();
-        do_analysis(args.path);
+    pub fn do_analysis(root: PathBuf) -> FolderAnalysis{
+        analyse_root(root)
     }
 }
 
@@ -47,12 +46,7 @@ mod internal_process{
     use std::fs::{DirEntry, File, read_dir};
     use std::path::PathBuf;
     use crate::analysis::models::{Analysis, FileAnalysis, FolderAnalysis, Metrics};
-    use crate::formatters::json;
     use crate::metrics::line_count;
-
-    pub fn do_analysis(root: PathBuf){
-        json::print_analysis(analyse_root(root));
-    }
 
     fn analyse_folder(item: PathBuf) -> FolderAnalysis {
         let folder_content: Vec<Analysis> = sort_files_of_a_path(&item)
@@ -82,13 +76,13 @@ mod internal_process{
         analysis
     }
 
-    fn analyse_root(root: PathBuf) -> FolderAnalysis{
+    pub fn analyse_root(root: PathBuf) -> FolderAnalysis{
         analyse_folder(root)
     }
 
     // sort files based on the entry names
     fn sort_files_of_a_path(item: &PathBuf) -> Vec<DirEntry>{
-        // TODO: handle unwrap() and FS
+        // TODO: handle unwrap()
         let dir = read_dir(&item).unwrap();
         let mut entries: Vec<_> = dir.map(|e| e.unwrap()).collect();
         entries.sort_by_key(|e| e.file_name());

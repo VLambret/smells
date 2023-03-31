@@ -2,9 +2,9 @@ use serde_json::{json, Value};
 use crate::analysis::models::{Analysis, FileAnalysis, FolderAnalysis};
 
 // print analysis result json
-pub fn print_analysis(analysis: FolderAnalysis){
+pub fn convert_analysis_to_formatted_json(analysis: FolderAnalysis) -> String{
     let json_result_analysis = build_json_folder_analysis(&analysis);
-    print_formatted_json(&serde_json::to_string(&json_result_analysis).unwrap());
+    format_json_output(&serde_json::to_string(&json_result_analysis).unwrap())
 }
 
 fn build_json_folder_analysis(folder: &FolderAnalysis) -> Value{
@@ -36,22 +36,23 @@ fn build_json_file_analysis(file: &FileAnalysis) -> Value{
     )
 }
 
-fn print_formatted_json(json_output: &String){
+fn format_json_output(json_output: &String) -> String{
     // TODO: remonter le from_str
     match serde_json::from_str::<Value>(json_output){
         Ok(converted_json_output) => {
             match serde_json::to_string_pretty(&converted_json_output){
                 Ok(pretty_json) => {
-                    print!("{}", pretty_json);
+                    return pretty_json;
                 }
                 Err(..) => {
                     // if formatting fails we print the original version
-                    println!("{}", json_output);
+                    return json_output.to_owned();
                 }
             }
         }
         Err(e) => {
             eprintln!("Error for serializing JSON: {}", e);
+            return e.to_string();
         }
     }
 }
