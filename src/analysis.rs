@@ -1,32 +1,32 @@
 pub mod models{
     use serde::{Serialize, Deserialize};
     #[derive(Debug, Serialize, Deserialize, Clone)]
-    pub(crate) enum Analysis{
+    pub enum Analysis{
         FileAnalysis(FileAnalysis),
         FolderAnalysis(FolderAnalysis),
     }
 
     #[derive(Debug, Serialize, Deserialize, Clone)]
-    pub(crate) struct FolderAnalysis {
-        pub(crate) folder_key: String,
-        pub(crate) metrics: Metrics,
+    pub struct FolderAnalysis {
+        pub folder_key: String,
+        pub metrics: Metrics,
         pub folder_content: Vec<Analysis>,
     }
 
     #[derive(Debug, Serialize, Deserialize, Clone)]
-    pub(crate) struct FileAnalysis {
-        pub(crate) file_key: String,
-        pub(crate) metrics: Metrics,
+    pub struct FileAnalysis {
+        pub file_key: String,
+        pub metrics: Metrics,
     }
 
     #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
-    pub(crate) struct Metrics{
-        pub(crate) lines_count: usize
+    pub struct Metrics{
+        pub lines_count: usize
     }
 }
 
 
-mod public_interface{
+pub mod public_interface{
     use std::path::PathBuf;
     use structopt::StructOpt;
     use crate::analysis::internal_process::do_analysis;

@@ -1,8 +1,8 @@
+use crate::analysis::public_interface::smells;
+
 mod formatters;
 mod metrics;
 mod analysis;
-
-use crate::analysis::smells;
 
 fn main() {
     smells();

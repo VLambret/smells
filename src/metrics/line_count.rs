@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use crate::analysis::Analysis;
+use crate::analysis::models::Analysis;
 
 pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> usize {
     folder_contents
