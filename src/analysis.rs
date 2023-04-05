@@ -93,9 +93,9 @@ mod internal_process{
     fn analyse_file(entry: &DirEntry) -> FileAnalysis{
         // TODO: handle unwrap()
         let path = entry.path();
-        let file = File::open(&path).unwrap();
+        let mut file = File::open(&path).unwrap();
         let metrics = Metrics {
-            lines_count: line_count::compute_lines_count_metric(&file)
+            lines_count: line_count::compute_lines_count_metric(&mut file).expect("TODO: make metric optional")
         };
 
         FileAnalysis {

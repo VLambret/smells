@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use crate::analysis::models::Analysis;
 
 pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> usize {
@@ -17,8 +17,12 @@ pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> usize {
         .sum()
 }
 
-pub fn compute_lines_count_metric(file: &File) -> usize {
-    //let file = File::open(file_path).expect("failed to open file");
-    let reader = BufReader::new(file);
-    reader.lines().count()
+pub fn compute_lines_count_metric(file: &mut File) -> Result<usize, std::io::Error> {
+    let mut content = String::new();
+    file.read_to_string(&mut content)?;
+    Ok(count_lines(content))
+}
+
+fn count_lines(content: String) -> usize {
+    content.lines().count()
 }
