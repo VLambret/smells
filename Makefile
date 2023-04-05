@@ -6,6 +6,8 @@ build:
 	cargo build
 
 test:
+	mkdir -p tests/data/empty_folder
+	mkdir -p tests/data/folder_with_one_empty_folder/empty_folder
 	cargo test
 
 ################################################################################
