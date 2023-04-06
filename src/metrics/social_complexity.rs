@@ -35,7 +35,7 @@ mod tests{
     use tempdir::TempDir;
 
     #[rstest(file, expected_authors,
-    case("file0.txt", 0),  // file1.txt has 3 authors
+    case("file0.txt", 0),
     )]
     fn smells_get_number_of_authors_of_a_file(file: &str, expected_authors: u32){
         let repo = routine(file);
@@ -56,14 +56,12 @@ mod tests{
 
     fn create_temp_folder() -> PathBuf {
         let git_repo_path = "git_repo_test";
-        let temp_dir = TempDir::new("").unwrap();
-        let temp_git_repo = temp_dir.path().join(git_repo_path);
-        temp_git_repo
+        let temp_folder = TempDir::new(git_repo_path).unwrap();
+        temp_folder.path().to_path_buf()
     }
 
     fn initialize_repo_in_folder(temp_git_repo: PathBuf) -> Repository {
-        let repo = Repository::init(temp_git_repo).unwrap();
-        repo
+       Repository::init(temp_git_repo).unwrap()
     }
 
     fn create_initial_commit(repo: &Repository) {
@@ -84,7 +82,7 @@ mod tests{
     }
 
     fn create_file(repo: &Repository, file: &str) {
-        let path = repo.workdir().unwrap().join(file);
+        let path = repo.path().parent().unwrap().join(file);
         std::fs::write(&path, "").unwrap();
     }
 
