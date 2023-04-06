@@ -38,19 +38,8 @@ mod tests{
     case("file0.txt", 0),  // file1.txt has 3 authors
     )]
     fn smells_get_number_of_authors_of_a_file(file: &str, expected_authors: u32){
-        // Create a temporary directory for testing
-        let git_repo_path = "git_repo_test";
-        let temp_dir = TempDir::new("").unwrap();
-        let temp_git_repo = temp_dir.path().join(git_repo_path);
-
-
-        // Create directory
-        //let git_repo_path = "tests/git_repo_test";
-        //std::fs::create_dir(git_repo_path).unwrap();
-
-        // Initialize a repository in the directory
-        let repo = Repository::init(temp_git_repo).unwrap();
-
+        let temp_git_repo = create_temp_folder();
+        let repo = initialize_repo_in_folder(temp_git_repo);
         create_initial_commit(&repo);
         create_file(&repo, file);
         add_file_to_the_staging_area(&repo, file);
@@ -61,6 +50,18 @@ mod tests{
 
         // Assert that the actual number of authors matches the expected number of authors
        assert_eq!(get_number_of_authors_of_a_file(&repo, &committed_file_path), expected_authors);
+    }
+
+    fn initialize_repo_in_folder(temp_git_repo: PathBuf) -> Repository {
+        let repo = Repository::init(temp_git_repo).unwrap();
+        repo
+    }
+
+    fn create_temp_folder() -> PathBuf {
+        let git_repo_path = "git_repo_test";
+        let temp_dir = TempDir::new("").unwrap();
+        let temp_git_repo = temp_dir.path().join(git_repo_path);
+        temp_git_repo
     }
 
     fn create_initial_commit(repo: &Repository) {
