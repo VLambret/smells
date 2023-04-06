@@ -38,22 +38,19 @@ mod tests{
     case("file0.txt", 0),  // file1.txt has 3 authors
     )]
     fn smells_get_number_of_authors_of_a_file(file: &str, expected_authors: u32){
+        let repo = routine(file);
+        let committed_file_path = repo.path().join(file);
+        let numbers_of_authors_of_specified_file = get_number_of_authors_of_a_file(&repo, &committed_file_path);
+        assert_eq!(numbers_of_authors_of_specified_file, expected_authors);
+    }
+
+    fn routine(file: &str) -> Repository{
         let temp_git_repo = create_temp_folder();
         let repo = initialize_repo_in_folder(temp_git_repo);
         create_initial_commit(&repo);
         create_file(&repo, file);
         add_file_to_the_staging_area(&repo, file);
         commit_changes_to_repo(&repo);
-
-        // Get the path of the committed file
-        let committed_file_path = repo.path().join(file);
-
-        // Assert that the actual number of authors matches the expected number of authors
-       assert_eq!(get_number_of_authors_of_a_file(&repo, &committed_file_path), expected_authors);
-    }
-
-    fn initialize_repo_in_folder(temp_git_repo: PathBuf) -> Repository {
-        let repo = Repository::init(temp_git_repo).unwrap();
         repo
     }
 
@@ -62,6 +59,11 @@ mod tests{
         let temp_dir = TempDir::new("").unwrap();
         let temp_git_repo = temp_dir.path().join(git_repo_path);
         temp_git_repo
+    }
+
+    fn initialize_repo_in_folder(temp_git_repo: PathBuf) -> Repository {
+        let repo = Repository::init(temp_git_repo).unwrap();
+        repo
     }
 
     fn create_initial_commit(repo: &Repository) {
@@ -80,7 +82,6 @@ mod tests{
             &[])
             .unwrap();
     }
-
 
     fn create_file(repo: &Repository, file: &str) {
         let path = repo.workdir().unwrap().join(file);
@@ -107,5 +108,4 @@ mod tests{
             &[&parent],
         ).unwrap();
     }
-
 }
