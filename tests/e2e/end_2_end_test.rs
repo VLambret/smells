@@ -34,7 +34,8 @@ fn folder_to_analyse_can_be_specified_with_first_parameter() -> Result<(), Box<d
     r#"{
         "empty_folder": {
             "metrics": {
-                "lines_count": 0
+                "lines_count": 0,
+                "social_complexity": 0
             },
             "folder_content": []
         }
@@ -65,13 +66,15 @@ fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::E
     r#"{
         "single_file_folder": {
             "metrics": {
-                "lines_count": 0
+                "lines_count": 0,
+                "social_complexity": 0
             },
             "folder_content": [
                 {
                     "file0.txt": {
                         "metrics": {
-                            "lines_count": 0
+                            "lines_count": 0,
+                            "social_complexity": 0
                         }
                     }
                 }
@@ -105,13 +108,15 @@ fn smells_can_count_lines_of_a_single_file_other_case() -> Result<(), Box<dyn st
     r#"{
         "single_file_folder_other": {
             "metrics": {
-                "lines_count": 5
+                "lines_count": 5,
+                "social_complexity": 0
             },
             "folder_content": [
                 {
                     "file5.txt": {
                         "metrics": {
-                            "lines_count": 5
+                            "lines_count": 5,
+                            "social_complexity": 0
                         }
                     }
                 }
@@ -145,20 +150,23 @@ fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::e
     r#"{
         "folder_with_multiple_files":{
             "metrics": {
-                "lines_count": 6
+                "lines_count": 6,
+                "social_complexity": 0
             },
             "folder_content":[
                 {
                 "file1.txt": {
                     "metrics": {
-                        "lines_count": 1
+                        "lines_count": 1,
+                        "social_complexity": 0
                     }
                 }
                 },
                 {
                 "file5.txt": {
                     "metrics": {
-                        "lines_count": 5
+                        "lines_count": 5,
+                        "social_complexity": 0
                     }
                 }
                 }
@@ -191,13 +199,15 @@ fn smells_can_analyses_folder_with_one_empty_folder() -> Result<(), Box<dyn std:
     r#"{
         "folder_with_one_empty_folder":{
             "metrics": {
-                "lines_count": 0
+                "lines_count": 0,
+                "social_complexity": 0
             },
             "folder_content":[
                 {
                 "empty_folder":{
                     "metrics": {
-                        "lines_count": 0
+                        "lines_count": 0,
+                        "social_complexity": 0
                     },
                     "folder_content":[]
                 }
@@ -232,26 +242,30 @@ fn smells_can_analyses_folder_with_a_folder_and_a_file() -> Result<(), Box<dyn s
 r#"{
         "folder_with_folder_and_file": {
             "metrics": {
-                "lines_count": 11
+                "lines_count": 11,
+                "social_complexity": 0
             },
         "folder_content": [
             {
                 "file1.txt": {
                     "metrics": {
-                        "lines_count": 1
+                        "lines_count": 1,
+                        "social_complexity": 0
                     }
                 }
             },
             {
                 "folder": {
                     "metrics": {
-                        "lines_count": 10
+                        "lines_count": 10,
+                        "social_complexity": 0
                     },
                 "folder_content": [
                 {
                     "file10.txt": {
                         "metrics": {
-                            "lines_count": 10
+                            "lines_count": 10,
+                            "social_complexity": 0
                         }
                     }
                 }]

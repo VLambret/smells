@@ -21,7 +21,8 @@ pub mod models{
 
     #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
     pub struct Metrics{
-        pub lines_count: usize
+        pub lines_count: usize,
+        pub social_complexity: u32
     }
 }
 
@@ -46,7 +47,7 @@ mod internal_process{
     use std::fs::{DirEntry, File, read_dir};
     use std::path::PathBuf;
     use crate::analysis::models::{Analysis, FileAnalysis, FolderAnalysis, Metrics};
-    use crate::metrics::line_count;
+    use crate::metrics::{line_count, social_complexity};
 
     fn analyse_folder(item: PathBuf) -> FolderAnalysis {
         let folder_content: Vec<Analysis> = sort_files_of_a_path(&item)
@@ -56,7 +57,8 @@ mod internal_process{
             .collect();
 
         let metrics_content = Metrics {
-            lines_count: line_count::summary_lines_count_metric(&folder_content)
+            lines_count: line_count::summary_lines_count_metric(&folder_content),
+            social_complexity: social_complexity::social_complexity(".") // root_path to find the repo
         };
         let root_analysis = FolderAnalysis {
             folder_key: extract_analysed_item_key(&item),
@@ -95,7 +97,8 @@ mod internal_process{
         let path = entry.path();
         let mut file = File::open(&path).unwrap();
         let metrics = Metrics {
-            lines_count: line_count::compute_lines_count_metric(&mut file).expect("TODO: make metric optional")
+            lines_count: line_count::compute_lines_count_metric(&mut file).expect("TODO: make metric optional"),
+            social_complexity: social_complexity::social_complexity(".") // root_path to find the repo
         };
 
         FileAnalysis {
