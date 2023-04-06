@@ -1,19 +1,14 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use git2::Repository;
 
-pub fn social_complexity(root_path: &str) -> u32{
-    compute_social_complexity_of_a_file(PathBuf::from(root_path))
-}
-
-fn compute_social_complexity_of_a_file(analysed_file_path: PathBuf) -> u32{
+pub fn social_complexity(_root_path: &str) -> u32{
     return 0;
 }
 
-/*fn get_number_of_authors_of_a_file(repo_path: &PathBuf, file: &PathBuf) -> u32{
-    let repo = Repository::open(repo_path).expect("can't open repo");
-    let blame = repo.blame_file(&file, None).unwrap();
+fn get_number_of_authors_of_a_file(repo: &Repository, file: &PathBuf) -> u32{
     let mut authors = Vec::new();
-
+    let relative_file_path = get_relative_path(&repo,&file);
+    let blame = repo.blame_file(&relative_file_path, None).unwrap();
     for blame_hunk in blame.iter(){
         let signature = blame_hunk.final_signature();
         let name = signature.name().unwrap().to_owned();
@@ -22,10 +17,15 @@ fn compute_social_complexity_of_a_file(analysed_file_path: PathBuf) -> u32{
         }
     }
     authors.len() as u32
-}*/
+}
 
-fn get_number_of_authors_of_a_file(_repo_path: &Repository, _file: &PathBuf) -> u32{
-    return 0;
+fn get_relative_path(repo: &Repository, path: &PathBuf) -> PathBuf{
+    let mut relative_path = path.clone();
+    println!("{:?}", path);
+    if path.is_absolute(){
+        relative_path = path.strip_prefix(repo.path()).unwrap().to_path_buf();
+    }
+    relative_path
 }
 
 #[cfg(test)]
@@ -35,7 +35,7 @@ mod tests{
     use tempdir::TempDir;
 
     #[rstest(file, expected_authors,
-    case("file0.txt", 0),
+    case("file1.txt", 1),
     )]
     fn smells_get_number_of_authors_of_a_file(file: &str, expected_authors: u32){
         let repo = routine(file);
