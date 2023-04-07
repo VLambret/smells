@@ -24,30 +24,38 @@ fn get_relative_path(repo: &Repository, path: &PathBuf) -> PathBuf{
 #[cfg(test)]
 mod tests{
     use super::*;
-    use std::fs::{File, remove_dir, remove_dir_all};
-    use git2::{Signature, Time};
+    use std::fs::{File, remove_dir_all};
+    use git2::{Signature};
     use rstest::rstest;
     use tempdir::TempDir;
     use std::io::Write;
     use std::path::Path;
 
-    //TODO: generation auteur + utiliser le path du repo et pas le repo direct
+    //TODO: utiliser le path du repo et pas le repo direct
+    // + pk ca marche pas avec deux case ?
     #[rstest(file, expected_authors,
     case("file1.txt", 1),
-    //case("file2.txt", 2)
+    case("file2.txt", 2),
     )]
     fn smells_get_number_of_authors_of_a_file(file: &str, expected_authors: u32){
-        let author1 = generate_author(1);
-        let repo = setup_repo_with_an_empty_file(file, &author1);
-        author_commit_an_updated_file(&repo, file, &author1);
+        let mut authors = Vec::new();
+        for author_index in 1..=expected_authors{
+            authors.push(generate_author(author_index));
+        }
+
+        let repo = setup_repo_with_an_empty_file(file, &authors[0]);
+        for author in authors{
+            author_commit_an_updated_file(&repo, file, &author);
+        }
+
         let committed_file_path = repo.path().join(file);
         let numbers_of_authors_of_specified_file = get_number_of_authors_of_a_file(&repo, &committed_file_path);
         assert_eq!(numbers_of_authors_of_specified_file, expected_authors);
     }
 
     fn setup_repo_with_an_empty_file(file: &str, author: &Signature) -> Repository{
-        //let temp_git_repo = create_temp_folder();
-        let temp_git_repo = create_folder(); // concrete folder
+        let temp_git_repo = create_temp_folder();
+        //let temp_git_repo = create_folder(); // concrete folder
         let repo = initialize_repo_in_folder(temp_git_repo);
         create_initial_commit(&repo, author);
         create_file(&repo, file);
