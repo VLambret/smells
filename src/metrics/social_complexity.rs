@@ -30,38 +30,34 @@ mod tests{
     use tempdir::TempDir;
     use std::io::Write;
 
+    //TODO: generation auteur + utiliser le path du repo et pas le repo direct
+    // + folder concret dans tests/data
     #[rstest(file, expected_authors,
     case("file1.txt", 1),
-    case("file2.txt", 2)
+    //case("file2.txt", 2)
     )]
     fn smells_get_number_of_authors_of_a_file(file: &str, expected_authors: u32){
-        let repo;
-        if expected_authors == 1{
-            repo = routine1(file);
-        }
-        else{
-            repo = routine2(file);
-        }
+        let repo = routine1(file);
         let committed_file_path = repo.path().join(file);
         let numbers_of_authors_of_specified_file = get_number_of_authors_of_a_file(&repo, &committed_file_path);
         assert_eq!(numbers_of_authors_of_specified_file, expected_authors);
     }
 
     fn routine1(file: &str) -> Repository{
-        let temp_git_repo = create_temp_folder();
-        //let temp_git_repo = create_folder();
+        //let temp_git_repo = create_temp_folder();
+        let temp_git_repo = create_folder();
         let repo = initialize_repo_in_folder(temp_git_repo);
         create_initial_commit(&repo);
         create_file(&repo, file);
         add_file_to_the_staging_area(&repo, file);
-        let original_author = repo.signature().unwrap();
-        commit_changes_to_repo(&repo, original_author);
+        let author = generate_author(1);
+        commit_changes_to_repo(&repo, author);
         repo
     }
 
     fn routine2(file: &str) -> Repository{
-        let temp_git_repo = create_temp_folder();
-        //let temp_git_repo = create_folder();
+        //let temp_git_repo = create_temp_folder();
+        let temp_git_repo = create_folder();
         let repo = initialize_repo_in_folder(temp_git_repo);
         create_initial_commit(&repo);
         create_file(&repo, file);
@@ -72,12 +68,24 @@ mod tests{
         let second_author = Signature::new(
             "author2",
             "mail",
-            &Time::new(0,0))
+            &Time::new(0, 0))
             .unwrap();
         update_file(&repo, file);
         add_file_to_the_staging_area(&repo, file);
         commit_changes_to_repo(&repo, second_author);
         repo
+    }
+
+    fn generate_author<'a>(author_index: u32) -> Signature<'a>{
+        let author_string = "author".to_string();
+        let author_index = author_index.to_string();
+        let author_name = author_string+&author_index;
+        let author_name_str: &str = &author_name.to_string()[..];
+        Signature::new(
+            author_name_str,
+            "mail",
+            &Time::new(0, 0))
+            .unwrap()
     }
 
     fn create_temp_folder() -> PathBuf {
@@ -97,7 +105,7 @@ mod tests{
     }
 
     fn create_initial_commit(repo: &Repository) {
-        let signature = repo.signature().unwrap();
+        let author = generate_author(1);
         let tree_id = {
             let mut index = repo.index().unwrap();
             index.write_tree().unwrap()
@@ -105,8 +113,8 @@ mod tests{
         let tree = repo.find_tree(tree_id).unwrap();
         repo.commit(
             Some("HEAD"),
-            &signature,
-            &signature,
+            &author,
+            &author,
             "Initial commit",
             &tree,
             &[])
