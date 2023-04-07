@@ -24,11 +24,12 @@ fn get_relative_path(repo: &Repository, path: &PathBuf) -> PathBuf{
 #[cfg(test)]
 mod tests{
     use super::*;
-    use std::fs::File;
+    use std::fs::{File, remove_dir, remove_dir_all};
     use git2::{Signature, Time};
     use rstest::rstest;
     use tempdir::TempDir;
     use std::io::Write;
+    use std::path::Path;
 
     //TODO: generation auteur + utiliser le path du repo et pas le repo direct
     // + folder concret dans tests/data
@@ -47,15 +48,16 @@ mod tests{
         //let temp_git_repo = create_temp_folder();
         let temp_git_repo = create_folder();
         let repo = initialize_repo_in_folder(temp_git_repo);
-        create_initial_commit(&repo);
+        let author = generate_author(1);
+        create_initial_commit(&repo, &author);
         create_file(&repo, file);
         add_file_to_the_staging_area(&repo, file);
-        let author = generate_author(1);
+
         commit_changes_to_repo(&repo, author);
         repo
     }
 
-    fn routine2(file: &str) -> Repository{
+    /*fn routine2(file: &str) -> Repository{
         //let temp_git_repo = create_temp_folder();
         let temp_git_repo = create_folder();
         let repo = initialize_repo_in_folder(temp_git_repo);
@@ -74,18 +76,14 @@ mod tests{
         add_file_to_the_staging_area(&repo, file);
         commit_changes_to_repo(&repo, second_author);
         repo
-    }
+    }*/
 
-    fn generate_author<'a>(author_index: u32) -> Signature<'a>{
+    fn generate_author<'a>(author_index: u32) -> Signature<'a> {
         let author_string = "author".to_string();
-        let author_index = author_index.to_string();
-        let author_name = author_string+&author_index;
-        let author_name_str: &str = &author_name.to_string()[..];
-        Signature::new(
-            author_name_str,
-            "mail",
-            &Time::new(0, 0))
-            .unwrap()
+        let author_index_str = author_index.to_string();
+        let author_name = format!("{}{}", author_string, author_index_str);
+        let author_name_str = author_name.as_str();
+        Signature::now(author_name_str, "mail").unwrap()
     }
 
     fn create_temp_folder() -> PathBuf {
@@ -96,6 +94,9 @@ mod tests{
 
     fn create_folder() -> PathBuf{
         let git_repo_path = "tests/git_repo_test";
+        if Path::new(git_repo_path).exists(){
+            remove_dir_all(git_repo_path).unwrap();
+        }
         std::fs::create_dir(git_repo_path).unwrap();
         PathBuf::from(git_repo_path)
     }
@@ -104,8 +105,7 @@ mod tests{
        Repository::init(temp_git_repo).unwrap()
     }
 
-    fn create_initial_commit(repo: &Repository) {
-        let author = generate_author(1);
+    fn create_initial_commit(repo: &Repository, author: &Signature) {
         let tree_id = {
             let mut index = repo.index().unwrap();
             index.write_tree().unwrap()
