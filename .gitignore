@@ -1,5 +1,6 @@
 *.lock
 target
+tests/data/git_repo_test
 tests/git_repo_test
 
 # Added by cargo
