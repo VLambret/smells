@@ -17,7 +17,7 @@ fn get_number_of_authors_of_repo_dir(repo: &Repository, path: PathBuf) -> u32{
         //println!("{:?}", relative);
         if file_path.is_file(){
             // apres 1ere iter on n a plus un repo mais un file donc on peut pas open le repo dans la fct
-            authors_number = get_number_of_authors_of_a_file(repo, &relative.to_path_buf());
+            authors_number = get_file_social_complexity(repo, &relative.to_path_buf());
         } else {
             get_number_of_authors_of_repo_dir(&repo, file_path);
         }
@@ -25,7 +25,7 @@ fn get_number_of_authors_of_repo_dir(repo: &Repository, path: PathBuf) -> u32{
     authors_number
 }
 
-fn get_number_of_authors_of_a_file(repo: &Repository, file: &PathBuf) -> u32{
+fn get_file_social_complexity(repo: &Repository, file: &PathBuf) -> u32{
     let relative_file_path = get_relative_path(repo.path(),&file);
 
     let blame = match repo.blame_file(&relative_file_path, None){
@@ -52,38 +52,33 @@ mod tests{
     use std::fs::{File, remove_dir_all};
     use git2::{Commit, Error, Reference, Signature, Tree};
     use rstest::rstest;
-    use tempdir::TempDir;
     use std::io::Write;
-    use std::path::Path;
 
     fn get_git_repositories_path() -> PathBuf {
         PathBuf::from("tests/data/git_repositories")
     }
 
-    // TODO: refactor le test (?)
-    #[rstest(file, author_number,
-    case("file1.txt", 1),
-    case("file2.txt", 2),
-    case("file10.txt", 10),
-    case("file0.txt", 0)
+    #[rstest(expected_social_complexity,
+    case(0),
+    case(1),
+    case(2),
+    case(10)
     )]
-    fn smells_get_number_of_authors_of_a_file(file: &str, author_number: u32){
-        let mut authors = Vec::new();
-        for author_index in 1..=author_number {
-            authors.push(generate_author(author_index));
-        }
-
-        let repo_name = format!("repo_with_{}_authors", author_number);
+    fn file_social_complexity(expected_social_complexity: u32){
+        let repo_name = format!("repo_with_{}_authors", expected_social_complexity);
         let repo = create_git_test_repository(repo_name);
-        create_file(&repo, file);
-        for author in authors{
-            add_file_authored_by(&repo, file, &author);
+        let multi_author_file = "file.txt";
+
+        for author_seed in 1..=expected_social_complexity {
+            commit_line_change_authored_by(&repo, multi_author_file, &generate_author(author_seed));
         }
 
-        let committed_file_path = repo.path().join(file);
-        let numbers_of_authors_of_specified_file = get_number_of_authors_of_a_file(&repo, &committed_file_path);
-        assert_eq!(numbers_of_authors_of_specified_file, author_number);
+        let committed_file_path = repo.path().join(multi_author_file);
+        let actual_social_complexity = get_file_social_complexity(&repo, &committed_file_path);
+
+        assert_eq!(actual_social_complexity, expected_social_complexity);
     }
+
     // TODO: ca marche pas = erreur sur le StripPrefix
     #[rstest(path_to_repo, expected_authors,
     case("git_repo_test", 1), )]
@@ -114,13 +109,13 @@ mod tests{
         let root_path = repo.path().parent().unwrap().to_path_buf();
 
         for author in authors{
-            add_file_authored_by(&repo, file, &author);
+            commit_line_change_authored_by(&repo, file, &author);
         }
         //assert_eq!(get_number_of_authors_of_repo_dir(repo.path()), predicate::str::contains("1"));
         assert_eq!(get_number_of_authors_of_repo_dir(&repo, root_path), 1);
     }
 
-    fn add_file_authored_by(repo: &Repository, file: &str, author: &Signature){
+    fn commit_line_change_authored_by(repo: &Repository, file: &str, author: &Signature){
         update_file(&repo, file);
         add_file_to_the_staging_area(&repo, file);
         commit_changes_to_repo(&repo, author);
@@ -146,6 +141,7 @@ mod tests{
     fn update_file(repo: &Repository, file: &str) {
         let path = repo.path().parent().unwrap().join(file);
         let mut file = File::options()
+            .create(true)
             .append(true)
             .open(path)
             .unwrap();
