@@ -50,7 +50,7 @@ fn get_relative_path(path_to_repo: &Path, path: &PathBuf) -> PathBuf{
 mod tests{
     use super::*;
     use std::fs::{File, remove_dir_all};
-    use git2::{Commit; Reference, Signature, Tree};
+    use git2::{Commit, Reference, Signature, Tree};
     use rstest::rstest;
     use std::io::Write;
 
