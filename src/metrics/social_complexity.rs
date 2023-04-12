@@ -50,7 +50,7 @@ fn get_relative_path(path_to_repo: &Path, path: &PathBuf) -> PathBuf{
 mod tests{
     use super::*;
     use std::fs::{File, remove_dir_all};
-    use git2::{Signature};
+    use git2::{Commit, Error, Reference, Signature, Tree};
     use rstest::rstest;
     use tempdir::TempDir;
     use std::io::Write;
@@ -73,18 +73,11 @@ mod tests{
             authors.push(generate_author(author_index));
         }
 
-        // TODO: handle temp folder issue
-        let repo: Repository;
-        // TODO: remove if
-        if authors.len() > 0{
-            let repo_name = format!("repo_with_{}_authors", author_number);
-            repo = setup_repo_with_a_file(file, &authors[0], repo_name);
-            for author in authors{
-                author_commit_an_modified_file(&repo, file, &author);
-            }
-        }
-        else{
-            repo = create_git_test_repository("repo_without_commits".to_owned());
+        let repo_name = format!("repo_with_{}_authors", author_number);
+        let repo = create_git_test_repository(repo_name);
+        create_file(&repo, file);
+        for author in authors{
+            add_file_authored_by(&repo, file, &author);
         }
 
         let committed_file_path = repo.path().join(file);
@@ -102,42 +95,8 @@ mod tests{
         }
 
         let file = "file1.txt";
-        let repo = setup_repo_with_a_file(file, &authors[0], path_to_repo);
-        let root_path = repo.path().parent().unwrap().to_path_buf();
-
-        for author in authors{
-            author_commit_an_modified_file(&repo, file, &author);
-        }
-        //assert_eq!(get_number_of_authors_of_repo_dir(repo.path()), predicate::str::contains("1"));
-        assert_eq!(get_number_of_authors_of_repo_dir(&repo, root_path), 1);
-    }
-
-    fn setup_repo_with_a_file(file: &str, author: &Signature, repo_name: String) -> Repository{
-        let repo = create_git_test_repository(repo_name);
-        create_initial_commit(&repo, author);
-        create_file(&repo, file);
-        repo
-    }
-
-    fn author_commit_an_modified_file(repo: &Repository, file: &str, author: &Signature){
-        update_file(&repo, file);
-        add_file_to_the_staging_area(&repo, file);
-        commit_changes_to_repo(&repo, author);
-    }
-
-    fn generate_author<'a>(author_index: u32) -> Signature<'a> {
-        Signature::now(format!("author{}", author_index).as_str(), "mail").unwrap()
-    }
-    
-    fn create_git_test_repository(repo_name: String) -> Repository {
-        let path = get_git_repositories_path().join(repo_name);
-        if path.exists(){
-            remove_dir_all(&path).unwrap();
-        }
-        Repository::init(path).unwrap()
-    }
-
-    fn create_initial_commit(repo: &Repository, author: &Signature) {
+        let author = &authors[0];
+        let repo = create_git_test_repository(path_to_repo);
         let tree_id = {
             let mut index = repo.index().unwrap();
             index.write_tree().unwrap()
@@ -151,6 +110,32 @@ mod tests{
             &tree,
             &[])
             .unwrap();
+        create_file(&repo, file);
+        let root_path = repo.path().parent().unwrap().to_path_buf();
+
+        for author in authors{
+            add_file_authored_by(&repo, file, &author);
+        }
+        //assert_eq!(get_number_of_authors_of_repo_dir(repo.path()), predicate::str::contains("1"));
+        assert_eq!(get_number_of_authors_of_repo_dir(&repo, root_path), 1);
+    }
+
+    fn add_file_authored_by(repo: &Repository, file: &str, author: &Signature){
+        update_file(&repo, file);
+        add_file_to_the_staging_area(&repo, file);
+        commit_changes_to_repo(&repo, author);
+    }
+
+    fn generate_author<'a>(author_index: u32) -> Signature<'a> {
+        Signature::now(format!("author{}", author_index).as_str(), "mail").unwrap()
+    }
+
+    fn create_git_test_repository(repo_name: String) -> Repository {
+        let path = get_git_repositories_path().join(repo_name);
+        if path.exists(){
+            remove_dir_all(&path).unwrap();
+        }
+        Repository::init(path).unwrap()
     }
 
     fn create_file(repo: &Repository, file: &str) {
@@ -174,16 +159,33 @@ mod tests{
     }
 
     fn commit_changes_to_repo(repo: &Repository, author: &Signature){
-        let head = repo.head().unwrap();
-        let parent = repo.find_commit(head.target().unwrap()).unwrap();
-        let tree = repo.find_tree(repo.index().unwrap().write_tree().unwrap()).unwrap();
+        match repo.head() {
+            Ok(head) => {
+                let parent = repo.find_commit(head.target().unwrap()).unwrap();
+                let tree = repo.find_tree(repo.index().unwrap().write_tree().unwrap()).unwrap();
+                let parents = &[&parent];
+                create_test_commit(repo, &author, &tree, parents);
+            }
+            Err(_) => {
+                let tree_id = {
+                    let mut index = repo.index().unwrap();
+                    index.write_tree().unwrap()
+                };
+                let tree = repo.find_tree(tree_id).unwrap();
+                let parents = &[];
+                create_test_commit(repo, &author, &tree, parents);
+            }
+        }
+    }
+
+    fn create_test_commit(repo: &Repository, author: &Signature, tree: &Tree, parents: &[&Commit]) {
         repo.commit(
             Some("HEAD"),
             &author,
             &author,
-            "Test commit",
+            "Commit message",
             &tree,
-            &[&parent],
+            parents,
         ).unwrap();
     }
 }
