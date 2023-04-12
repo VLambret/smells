@@ -56,42 +56,46 @@ mod tests{
     use std::io::Write;
     use std::path::Path;
 
+    fn get_git_repositories_path() -> PathBuf {
+        PathBuf::from("tests/data/git_repositories")
+    }
+
     // TODO: refactor le test (?)
-    #[rstest(file, expected_authors,
+    #[rstest(file, author_number,
     case("file1.txt", 1),
     case("file2.txt", 2),
     case("file10.txt", 10),
     case("file0.txt", 0)
     )]
-    fn smells_get_number_of_authors_of_a_file(file: &str, expected_authors: u32){
+    fn smells_get_number_of_authors_of_a_file(file: &str, author_number: u32){
         let mut authors = Vec::new();
-        for author_index in 1..=expected_authors{
+        for author_index in 1..=author_number {
             authors.push(generate_author(author_index));
         }
 
         // TODO: handle temp folder issue
-        let git_temp_repo_path = "git_repo_test";
         let repo: Repository;
         // TODO: remove if
         if authors.len() > 0{
-            repo = setup_repo_with_a_file(file, &authors[0], git_temp_repo_path);
+            let repo_name = format!("repo_with_{}_authors", author_number);
+            repo = setup_repo_with_a_file(file, &authors[0], repo_name);
             for author in authors{
                 author_commit_an_modified_file(&repo, file, &author);
             }
         }
         else{
-            repo = initialize_repo_in_folder("tests/data");
+            repo = create_git_test_repository("repo_without_commits".to_owned());
         }
 
         let committed_file_path = repo.path().join(file);
         let numbers_of_authors_of_specified_file = get_number_of_authors_of_a_file(&repo, &committed_file_path);
-        assert_eq!(numbers_of_authors_of_specified_file, expected_authors);
+        assert_eq!(numbers_of_authors_of_specified_file, author_number);
     }
     // TODO: ca marche pas = erreur sur le StripPrefix
     #[rstest(path_to_repo, expected_authors,
     case("git_repo_test", 1), )]
     #[ignore]
-    fn smells_get_numbers_of_authors_of_files_of_a_repo(path_to_repo: &str, expected_authors: u32){
+    fn smells_get_numbers_of_authors_of_files_of_a_repo(path_to_repo: String, expected_authors: u32){
         let mut authors = Vec::new();
         for author_index in 1..=expected_authors{
             authors.push(generate_author(author_index));
@@ -108,10 +112,8 @@ mod tests{
         assert_eq!(get_number_of_authors_of_repo_dir(&repo, root_path), 1);
     }
 
-    fn setup_repo_with_a_file(file: &str, author: &Signature, git_repo_path: &str) -> Repository{
-        let temp_git_repo = create_temp_folder(git_repo_path);
-        //let temp_git_repo = create_folder(git_repo_path); // concrete folder
-        let repo = initialize_repo_in_folder(temp_git_repo.to_string_lossy().as_ref());
+    fn setup_repo_with_a_file(file: &str, author: &Signature, repo_name: String) -> Repository{
+        let repo = create_git_test_repository(repo_name);
         create_initial_commit(&repo, author);
         create_file(&repo, file);
         repo
@@ -126,37 +128,13 @@ mod tests{
     fn generate_author<'a>(author_index: u32) -> Signature<'a> {
         Signature::now(format!("author{}", author_index).as_str(), "mail").unwrap()
     }
-
-    fn create_temp_folder(git_repo_path: &str) -> PathBuf {
-        let temp_folder = TempDir::new(git_repo_path).unwrap();
-        temp_folder.path().to_path_buf()
-    }
-
-    fn create_temp_folder2() -> PathBuf {
-        let git_repo_path = "tests/data/git_repo_test";
-        let git_repo_absolute_path = std::env::current_dir().unwrap().join(git_repo_path);
-        println!("{:?}", git_repo_absolute_path);
-        let git_repo_absolute_path_as_str = git_repo_absolute_path.to_string_lossy();
-        println!("{:?}", git_repo_absolute_path_as_str);
-        let temp_folder = TempDir::new(git_repo_absolute_path_as_str.as_ref()).unwrap();
-        temp_folder.path().to_path_buf()
-    }
-
-    fn create_folder(git_repo_path: &str) -> PathBuf{
-        let git_repo_path = Path::new(git_repo_path).to_owned();
-        delete_folder_if_exists(&git_repo_path);
-        std::fs::create_dir(&git_repo_path).unwrap();
-        git_repo_path
-    }
-
-    fn delete_folder_if_exists(folder_path: &PathBuf){
-        if std::fs::metadata(&folder_path).is_ok() {
-            remove_dir_all(folder_path).unwrap();
+    
+    fn create_git_test_repository(repo_name: String) -> Repository {
+        let path = get_git_repositories_path().join(repo_name);
+        if path.exists(){
+            remove_dir_all(&path).unwrap();
         }
-    }
-
-    fn initialize_repo_in_folder(temp_git_repo: &str) -> Repository {
-       Repository::init(temp_git_repo).unwrap()
+        Repository::init(path).unwrap()
     }
 
     fn create_initial_commit(repo: &Repository, author: &Signature) {
