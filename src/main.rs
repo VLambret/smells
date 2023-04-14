@@ -7,6 +7,7 @@ mod formatters;
 mod metrics;
 mod analysis;
 mod viewers;
+mod data_sources;
 
 fn main() {
     let analysed_folder = CmdArgs::from_args().path;
