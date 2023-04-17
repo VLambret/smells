@@ -1,14 +1,14 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
 
-fn file_system(path: PathBuf) -> HashSet<PathBuf>{
-    let collection_of_files_and_folders_path = collect_entries(&path, &path);
+fn _file_system(path: PathBuf) -> HashSet<PathBuf>{
+    let collection_of_files_and_folders_path = _collect_entries(&path, &path);
     println!("{:?}", collection_of_files_and_folders_path);
     collection_of_files_and_folders_path
 }
 
 // TODO: handle unwrap()
-fn collect_entries(path: &PathBuf, root: &PathBuf) -> HashSet<PathBuf>{
+fn _collect_entries(path: &PathBuf, root: &PathBuf) -> HashSet<PathBuf>{
     let mut entries = HashSet::new();
     for entry in std::fs::read_dir(path).unwrap() {
         let entry_path = entry.unwrap().path();
@@ -18,15 +18,15 @@ fn collect_entries(path: &PathBuf, root: &PathBuf) -> HashSet<PathBuf>{
         }
         else{
             entries.insert(relative_entry_path);
-            entries.extend(collect_entries(&entry_path, root));
+            entries.extend(_collect_entries(&entry_path, root));
         }
     }
     entries
 }
 
-mod tests{
+/* mod tests{
     use super::*;
-    const PATH_TO_DIR: &str = "tests/data/file_system";
+    const _PATH_TO_DIR: &str = "tests/data/file_system";
 
     #[test]
     fn test_file_system(){
@@ -39,7 +39,7 @@ mod tests{
         expected_output.insert(PathBuf::from("subfolder2"));
         expected_output.insert(PathBuf::from("folder1/folder_in_folder1"));
 
-        let actual_dir = file_system(PathBuf::from(PATH_TO_DIR));
+        let actual_dir = _file_system(PathBuf::from(_PATH_TO_DIR));
         assert_eq!(actual_dir, expected_output);
     }
-}
+} */

@@ -3,30 +3,30 @@ use std::path::{Path, PathBuf};
 use git2::Repository;
 
 //print_number_of_authors_of_entire_repo()
-pub fn social_complexity(root_path: &str) -> u32{
+pub fn social_complexity(_root_path: &str) -> u32{
     return 0;
 }
 
 // TODO: handle unwrap() + link to social_complexity + on va open le repo dans social_complexity
 // print_number_of_authors_of_repo_dir2()
-fn get_number_of_authors_of_repo_dir(repo: &Repository, path: PathBuf) -> u32{
+fn _get_number_of_authors_of_repo_dir(repo: &Repository, path: PathBuf) -> u32{
     let mut authors_number = 0;
     for file in read_dir(path).unwrap(){
         let file_path = file.unwrap().path();
-        let relative = get_relative_path(repo.path(), &file_path);
+        let relative = _get_relative_path(repo.path(), &file_path);
         //println!("{:?}", relative);
         if file_path.is_file(){
             // apres 1ere iter on n a plus un repo mais un file donc on peut pas open le repo dans la fct
-            authors_number = get_file_social_complexity(repo, &relative.to_path_buf());
+            authors_number = _get_file_social_complexity(repo, &relative.to_path_buf());
         } else {
-            get_number_of_authors_of_repo_dir(&repo, file_path);
+            _get_number_of_authors_of_repo_dir(&repo, file_path);
         }
     }
     authors_number
 }
 
-fn get_file_social_complexity(repo: &Repository, file: &PathBuf) -> u32{
-    let relative_file_path = get_relative_path(repo.path(),&file);
+fn _get_file_social_complexity(repo: &Repository, file: &PathBuf) -> u32{
+    let relative_file_path = _get_relative_path(repo.path(),&file);
 
     let blame = match repo.blame_file(&relative_file_path, None){
         Ok(blame) => blame,
@@ -38,7 +38,7 @@ fn get_file_social_complexity(repo: &Repository, file: &PathBuf) -> u32{
     authors.len() as u32
 }
 
-fn get_relative_path(path_to_repo: &Path, path: &PathBuf) -> PathBuf{
+fn _get_relative_path(path_to_repo: &Path, path: &PathBuf) -> PathBuf{
     let mut relative_path = path.clone();
     if path.is_absolute(){
         relative_path = path.strip_prefix(path_to_repo).unwrap().to_path_buf();
@@ -74,7 +74,7 @@ mod tests{
         }
 
         let committed_file_path = repo.path().join(multi_author_file);
-        let actual_social_complexity = get_file_social_complexity(&repo, &committed_file_path);
+        let actual_social_complexity = _get_file_social_complexity(&repo, &committed_file_path);
 
         assert_eq!(actual_social_complexity, expected_social_complexity);
     }
@@ -112,7 +112,7 @@ mod tests{
             commit_line_change_authored_by(&repo, file, &author);
         }
         //assert_eq!(get_number_of_authors_of_repo_dir(repo.path()), predicate::str::contains("1"));
-        assert_eq!(get_number_of_authors_of_repo_dir(&repo, root_path), 1);
+        assert_eq!(_get_number_of_authors_of_repo_dir(&repo, root_path), 1);
     }
 
     fn commit_line_change_authored_by(repo: &Repository, file: &str, author: &Signature){

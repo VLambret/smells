@@ -1,6 +1,8 @@
+use std::path::Path;
 use assert_cmd::cmd::Command;
 use predicates::prelude::*;
 use serde_json::Value;
+
 
 #[test]
 fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::error::Error>>{
@@ -24,10 +26,12 @@ fn folder_to_analyse_can_be_specified_with_first_parameter() -> Result<(), Box<d
     // given
     let cmd_call = "smells";
     let args = "tests/data/empty_folder";
+    let args2 = Path::new("tests").join("data").join("empty_folder").display().to_string();
+    println!("{}", args2);
 
     // when
     let mut cmd = Command::cargo_bin(cmd_call)?;
-    cmd.args(&[args]);
+    cmd.args(&[args2]);
 
     // then
     let expected_stdout =
