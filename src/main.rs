@@ -14,7 +14,6 @@ mod data_sources;
 fn main() {
     let analysed_folder = CmdArgs::from_args().path;
     //let analysed_folder2: PathBuf = PathBuf::from("tests").join("data").join("empty_folder");
-    println!("analysed_folder: {}", analysed_folder.display());
     let analysis = do_analysis(analysed_folder);
     let formatted_json_output = convert_analysis_to_formatted_json(analysis);
     print_formatted_json_output(formatted_json_output);

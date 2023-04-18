@@ -25,13 +25,11 @@ fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::
 fn folder_to_analyse_can_be_specified_with_first_parameter() -> Result<(), Box<dyn std::error::Error>>{
     // given
     let cmd_call = "smells";
-    let args = "tests/data/empty_folder";
-    let args2 = Path::new("tests").join("data").join("empty_folder").display().to_string();
-    println!("{}", args2);
+    let args = Path::new("tests").join("data").join("empty_folder").display().to_string();
 
     // when
     let mut cmd = Command::cargo_bin(cmd_call)?;
-    cmd.args(&[args2]);
+    cmd.args(&[args]);
 
     // then
     let expected_stdout =
@@ -299,12 +297,12 @@ fn smells_must_not_access_to_a_file_with_no_permission() -> Result<(), Box<dyn s
        let mut cmd = Command::cargo_bin(cmd_call)?;
 
        //then
-       let excpected_stderr = "Error! Permission denied!";
+       let expected_stderr = "Error! Permission denied!";
 
        cmd.assert()
        .code(0)
        .stdout("")
-       .stderr(excpected_stderr);
+       .stderr(expected_stderr);
     Ok(())
 }
 

@@ -39,7 +39,6 @@ pub mod public_interface{
     }
 
     pub fn do_analysis(root: PathBuf) -> FolderAnalysis{
-        println!("analyse root {}", root.display());
         analyse_root(root)
     }
 }
@@ -52,7 +51,6 @@ mod internal_process{
     use crate::metrics::{line_count, social_complexity};
 
     fn analyse_folder(item: PathBuf) -> FolderAnalysis {
-        // println!("Analyzing folder: {:?}", item);
         let folder_content: Vec<Analysis> = sort_files_of_a_path(&item)
             .iter()
             .filter(|f| can_file_be_analysed(&f.path()))
@@ -82,17 +80,14 @@ mod internal_process{
     }
 
     pub fn analyse_root(root: PathBuf) -> FolderAnalysis{
-        //println!("Analyzing folder root: {:?}", root.display());
         analyse_folder(root)
     }
 
     // sort files based on the entry names
     fn sort_files_of_a_path(item: &PathBuf) -> Vec<DirEntry>{
         // TODO: handle unwrap()
-        //println!("sort_files_of_a_path: {:?}", item);
         let existing_proof = item.exists();
         let existing_proof2 = (PathBuf::from("tests").join("data").join("empty_folder")).exists();
-        println!("{}", env::current_dir().unwrap().display());
         let dir_result = read_dir(&item);
         let dir = dir_result.unwrap();
         let mut entries: Vec<_> = dir.map(|e| e.unwrap()).collect();
@@ -105,7 +100,6 @@ mod internal_process{
         // TODO: handle unwrap()
         let path = entry.path();
         let mut file = File::open(&path).unwrap();
-        println!("analyse_file: {:?}", path);
         // TODO: remove expect and make metric optional to handle errors when an executable is analyzed
         let metrics = Metrics {
             lines_count: line_count::compute_lines_count_metric(&mut file).expect("TODO: make metric optional"),

@@ -14,7 +14,6 @@ fn _get_number_of_authors_of_repo_dir(repo: &Repository, path: PathBuf) -> u32{
     for file in read_dir(path).unwrap(){
         let file_path = file.unwrap().path();
         let relative = _get_relative_path(repo.path(), &file_path);
-        //println!("{:?}", relative);
         if file_path.is_file(){
             // apres 1ere iter on n a plus un repo mais un file donc on peut pas open le repo dans la fct
             authors_number = _get_file_social_complexity(repo, &relative.to_path_buf());
@@ -53,9 +52,11 @@ mod tests{
     use git2::{Commit, Reference, Signature, Tree};
     use rstest::rstest;
     use std::io::Write;
+    use git2::{Repository, RepositoryInitOptions};
 
     fn get_git_repositories_path() -> PathBuf {
-        PathBuf::from("tests/data/git_repositories")
+        let test_path = PathBuf::from("tests").join("data").join("git_repositories");
+        test_path
     }
 
     #[rstest(expected_social_complexity,
@@ -72,7 +73,6 @@ mod tests{
         for author_seed in 1..=expected_social_complexity {
             commit_line_change_authored_by(&repo, multi_author_file, &generate_author(author_seed));
         }
-
         let committed_file_path = repo.path().join(multi_author_file);
         let actual_social_complexity = _get_file_social_complexity(&repo, &committed_file_path);
 
@@ -126,11 +126,13 @@ mod tests{
     }
 
     fn create_git_test_repository(repo_name: String) -> Repository {
-        let path = get_git_repositories_path().join(repo_name);
-        if path.exists(){
-            remove_dir_all(&path).unwrap();
+        // TODO : Repository::init doesn't work on Windows, it automatically add ./ to the path
+        let repo = std::env::current_dir().unwrap().join(PathBuf::from(r"tests\data\git_repositories").join(repo_name));
+        if repo.exists(){
+            remove_dir_all(&repo).unwrap();
         }
-        Repository::init(path).unwrap()
+        std::fs::create_dir_all(&repo);
+        Repository::init(repo).unwrap()
     }
 
     fn create_file(repo: &Repository, file: &str) {
