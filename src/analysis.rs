@@ -129,3 +129,10 @@ mod internal_process{
         item_key.to_string_lossy().into_owned()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    assert_eq!(FakeMetric4::)
+}

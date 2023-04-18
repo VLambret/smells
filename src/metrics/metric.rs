@@ -1,4 +1,20 @@
-#[cfg(test)]
+struct FakeMetric4 {
+    measurement_attribute: u32
+}
+
+impl FakeMetric4 {
+    fn new() -> FakeMetric4 {
+        FakeMetric4 {
+            measurement_attribute: 4,
+        }
+    }
+    fn get_value(&self) -> u32 {
+        return self.measurement_attribute;
+    }
+}
+
+
+/*#[cfg(test)]
 mod tests{
 
     struct FakeMetric{
@@ -51,4 +67,4 @@ mod tests{
         assert_eq!(folder_metric.get_value(), 10);
     }
 
-}
+}*/

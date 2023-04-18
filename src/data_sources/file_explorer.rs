@@ -1,6 +1,16 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
 
+fn fake_explorer() -> Vec<PathBuf> {
+    let path = PathBuf::from("tests".join("data"));
+    let mut files_to_analyze = Vec::new();
+    files_to_analyze.push(path.join("subfolder1"));
+    files_to_analyze.push(path.join("subfolder1").join("file1.txt"));
+    files_to_analyze.push(path.join("subfolder2"));
+    files_to_analyze
+}
+
+/*
 fn _file_system(path: PathBuf) -> HashSet<PathBuf>{
     let collection_of_files_and_folders_path = _collect_entries(&path, &path);
     println!("{:?}", collection_of_files_and_folders_path);
@@ -24,7 +34,7 @@ fn _collect_entries(path: &PathBuf, root: &PathBuf) -> HashSet<PathBuf>{
     entries
 }
 
-/* mod tests{
+mod tests{
     use super::*;
     const _PATH_TO_DIR: &str = "tests/data/file_system";
 
