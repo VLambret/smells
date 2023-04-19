@@ -1,14 +1,14 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
 
-fn fake_explorer() -> Vec<PathBuf> {
+/*fn fake_explorer() -> Vec<PathBuf> {
     let path = PathBuf::from("tests".join("data"));
     let mut files_to_analyze = Vec::new();
     files_to_analyze.push(path.join("subfolder1"));
     files_to_analyze.push(path.join("subfolder1").join("file1.txt"));
     files_to_analyze.push(path.join("subfolder2"));
     files_to_analyze
-}
+}*/
 
 /*
 fn _file_system(path: PathBuf) -> HashSet<PathBuf>{

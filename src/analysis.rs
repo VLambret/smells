@@ -1,28 +1,31 @@
 pub mod models{
     use serde::{Serialize, Deserialize};
-    #[derive(Debug, Serialize, Deserialize, Clone)]
+    #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
     pub enum Analysis{
         FileAnalysis(FileAnalysis),
         FolderAnalysis(FolderAnalysis),
     }
 
-    #[derive(Debug, Serialize, Deserialize, Clone)]
+    #[derive(Debug, Serialize, Deserialize, Clone,PartialEq)]
     pub struct FolderAnalysis {
         pub folder_key: String,
         pub metrics: Metrics,
         pub folder_content: Vec<Analysis>,
     }
 
-    #[derive(Debug, Serialize, Deserialize, Clone)]
+    #[derive(Debug, Serialize, Deserialize, Clone,PartialEq)]
     pub struct FileAnalysis {
         pub file_key: String,
         pub metrics: Metrics,
     }
 
-    #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+    #[derive(Debug, Serialize, Deserialize, Clone, Copy,PartialEq)]
     pub struct Metrics{
         pub lines_count: usize,
         pub social_complexity: u32
+    }
+
+    pub struct MetricsValue {
     }
 }
 
@@ -44,9 +47,12 @@ pub mod public_interface{
 }
 
 mod internal_process{
+    use std::collections::HashMap;
     use std::env;
     use std::fs::{DirEntry, File, read_dir};
     use std::path::PathBuf;
+    use std::ptr::null;
+    use predicates::str::is_empty;
     use crate::analysis::models::{Analysis, FileAnalysis, FolderAnalysis, Metrics};
     use crate::metrics::{line_count, social_complexity};
 
@@ -81,6 +87,37 @@ mod internal_process{
 
     pub fn analyse_root(root: PathBuf) -> FolderAnalysis{
         analyse_folder(root)
+    }
+
+    pub fn internal_analyse_root(files : Vec<PathBuf>, metrics : HashMap<String, Metrics> ) -> FolderAnalysis {
+        let mut value_lines_count_result_metrics : Option<usize> = None;
+        let mut value_social_complexity_result_metrics : Option<u32> = None;
+        let folder_key : String;
+
+        if metrics.is_empty() {
+            value_lines_count_result_metrics = Some(0);
+            value_social_complexity_result_metrics = Some(0);
+        };
+        let result_metrics = Metrics {
+            lines_count: value_lines_count_result_metrics.unwrap_or_else(|| {
+                panic!("The parameter 'lines_count' is required.")
+            }),
+            social_complexity: value_social_complexity_result_metrics.unwrap_or_else(|| {
+                panic!("The parameter 'social_complexity' is required.")
+            }),
+        };
+
+        match files.len() {
+            0 => folder_key = "".to_string(),
+            _ => folder_key = files[0].display().to_string(),
+        }
+
+        let result_folder_analysis = FolderAnalysis{
+            folder_key,
+            metrics : result_metrics,
+            folder_content : vec![]
+        };
+        result_folder_analysis
     }
 
     // sort files based on the entry names
@@ -132,7 +169,59 @@ mod internal_process{
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+    use crate::analysis::internal_process::internal_analyse_root;
+    use crate::analysis::models::{Analysis, FolderAnalysis, Metrics};
 
-    assert_eq!(FakeMetric4::)
+    #[test]
+    fn test_internal_analyse_root_without_files_and_empty_metrics_should_return_an_empty_analysis() {
+        // Given
+        let files_to_analyze = vec![];
+        let metrics = HashMap::new();
+        // When
+        let actual_result_analysis = internal_analyse_root(files_to_analyze, metrics);
+        // Then
+        let expected_result_analysis = FolderAnalysis {
+            folder_key: "".to_string(),
+            metrics: Metrics {
+                lines_count: 0,
+                social_complexity: 0
+            },
+            folder_content: vec![],
+        };
+        assert_eq!(actual_result_analysis, expected_result_analysis);
+    }
+
+    #[test]
+    fn test_internal_analyse_root_with_1_empty_folder_and_empty_metrics_should_return_an_empty_metric_for_this_folder() {
+        // Given
+        let files_to_analyze = vec![PathBuf::from("test_folder")];
+        let metrics = HashMap::new();
+        // When
+        let actual_result_analysis = internal_analyse_root(files_to_analyze, metrics);
+        // Then
+        let expected_result_analysis = FolderAnalysis {
+            folder_key: "test_folder".to_string(),
+            metrics: Metrics {
+                lines_count: 0,
+                social_complexity: 0
+            },
+            folder_content: vec![],
+        };
+        assert_eq!(actual_result_analysis, expected_result_analysis);
+    }
+
+    #[test]
+    fn test_internal_analyse_root_with_2_empty_folders_and_empty_metrics_should_return_an_empty_metric_for_these_folders() {
+        // Given
+        let files_to_analyze = vec![PathBuf::from("test_folder"), PathBuf::from("test_folder2")];
+        let metrics = HashMap::new();
+        // When
+        let actual_result_analysis = internal_analyse_root(files_to_analyze, metrics);
+        // Then
+        let expected_result_analysis = FolderAnalysis {
+
+        }
+    }
 }
