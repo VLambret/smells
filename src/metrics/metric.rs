@@ -1,17 +1,20 @@
-struct FakeMetric4 {
-    measurement_attribute: u32
+pub trait IMetric {
+    fn new() -> Self;
+    fn analyze() -> u32;
 }
 
-impl FakeMetric4 {
-    fn new() -> FakeMetric4 {
-        FakeMetric4 {
-            measurement_attribute: 4,
-        }
+pub struct FakeMetric4;
+
+impl IMetric for FakeMetric4 {
+    fn new() -> Self {
+        FakeMetric4
     }
-    fn get_value(&self) -> u32 {
-        return self.measurement_attribute;
+    fn analyze() -> u32 {
+        4
     }
 }
+
+
 
 
 /*#[cfg(test)]

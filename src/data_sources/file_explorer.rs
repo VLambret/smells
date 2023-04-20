@@ -1,55 +1,69 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
 
-/*fn fake_explorer() -> Vec<PathBuf> {
-    let path = PathBuf::from("tests".join("data"));
-    let mut files_to_analyze = Vec::new();
-    files_to_analyze.push(path.join("subfolder1"));
-    files_to_analyze.push(path.join("subfolder1").join("file1.txt"));
-    files_to_analyze.push(path.join("subfolder2"));
-    files_to_analyze
-}*/
-
-/*
-fn _file_system(path: PathBuf) -> HashSet<PathBuf>{
-    let collection_of_files_and_folders_path = _collect_entries(&path, &path);
-    println!("{:?}", collection_of_files_and_folders_path);
-    collection_of_files_and_folders_path
+pub(crate) trait IFileExplorer {
+    fn new(files_to_analyze: Vec<PathBuf>) -> Self;
+    fn discover(&self, root: &PathBuf) -> Vec<PathBuf>;
 }
 
-// TODO: handle unwrap()
-fn _collect_entries(path: &PathBuf, root: &PathBuf) -> HashSet<PathBuf>{
-    let mut entries = HashSet::new();
-    for entry in std::fs::read_dir(path).unwrap() {
-        let entry_path = entry.unwrap().path();
-        let relative_entry_path = entry_path.strip_prefix(root).unwrap().to_owned();
-        if entry_path.is_file() {
-            entries.insert(relative_entry_path);
-        }
-        else{
-            entries.insert(relative_entry_path);
-            entries.extend(_collect_entries(&entry_path, root));
-        }
+pub(crate) struct FakeFileExplorer {
+    files_to_analyze: Vec<PathBuf>,
+}
+
+impl IFileExplorer for FakeFileExplorer {
+    fn new(files_to_analyze: Vec<PathBuf>) -> Self {
+        FakeFileExplorer { files_to_analyze }
     }
-    entries
+
+    fn discover(&self, root: &PathBuf) -> Vec<PathBuf> {
+        self.files_to_analyze.clone()
+    }
 }
 
-mod tests{
-    use super::*;
-    const _PATH_TO_DIR: &str = "tests/data/file_system";
+#[cfg(test)]
+mod file_explorer_tests {
+    use std::path::PathBuf;
+    use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
 
     #[test]
-    fn test_file_system(){
-        let mut expected_output = HashSet::new();
-        expected_output.insert(PathBuf::from("file3.txt"));
-        expected_output.insert(PathBuf::from("subfolder1/file1.txt"));
-        expected_output.insert(PathBuf::from("subfolder2/file2.txt"));
-        expected_output.insert(PathBuf::from("folder1"));
-        expected_output.insert(PathBuf::from("subfolder1"));
-        expected_output.insert(PathBuf::from("subfolder2"));
-        expected_output.insert(PathBuf::from("folder1/folder_in_folder1"));
-
-        let actual_dir = _file_system(PathBuf::from(_PATH_TO_DIR));
-        assert_eq!(actual_dir, expected_output);
+    fn test_fake_file_explorer_with_empty_list_of_files_should_return_an_empty_list() {
+        // Given
+        let root = PathBuf::from("test_folder");
+        let files_to_analyze = vec![];
+        // When
+        let expected_files_to_analyze: Vec<PathBuf> = vec![];
+        let fake_explorer1 = FakeFileExplorer::new(files_to_analyze);
+        // Then
+        assert_eq!(fake_explorer1.discover(&root), expected_files_to_analyze)
     }
-} */
+
+    #[test]
+    fn test_fake_file_explorer_with_single_file_should_return_a_single_file() {
+        // Given
+        let root = PathBuf::from("test_folder");
+        let files_to_analyze = vec![PathBuf::from("test_file")];
+        // When
+        let expected_files_to_analyze: Vec<PathBuf> = vec![PathBuf::from("test_file")];
+        let fake_explorer1 = FakeFileExplorer::new(files_to_analyze);
+        // Then
+        assert_eq!(fake_explorer1.discover(&root), expected_files_to_analyze)
+    }
+
+    #[test]
+    fn test_fake_file_explorer_with_multiple_files_should_return_all_files() {
+        // Given
+        let root = PathBuf::from("test_folder");
+        let files_to_analyze = vec![
+            PathBuf::from("test_file1"),
+            PathBuf::from("test_file2"),
+        ];
+        // When
+        let expected_files_to_analyze: Vec<PathBuf> = vec![
+            PathBuf::from("test_file1"),
+            PathBuf::from("test_file2"),
+        ];
+        let fake_explorer1 = FakeFileExplorer::new(files_to_analyze);
+        // Then
+        assert_eq!(fake_explorer1.discover(&root), expected_files_to_analyze);
+    }
+}
