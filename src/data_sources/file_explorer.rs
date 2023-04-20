@@ -1,22 +1,23 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
 
-pub(crate) trait IFileExplorer {
-    fn new(files_to_analyze: Vec<PathBuf>) -> Self;
+pub trait IFileExplorer {
     fn discover(&self, root: &PathBuf) -> Vec<PathBuf>;
 }
 
-pub(crate) struct FakeFileExplorer {
+pub struct FakeFileExplorer {
     files_to_analyze: Vec<PathBuf>,
 }
 
 impl IFileExplorer for FakeFileExplorer {
-    fn new(files_to_analyze: Vec<PathBuf>) -> Self {
-        FakeFileExplorer { files_to_analyze }
-    }
-
     fn discover(&self, root: &PathBuf) -> Vec<PathBuf> {
         self.files_to_analyze.clone()
+    }
+}
+
+impl FakeFileExplorer{
+    pub(crate) fn new(files_to_analyze: Vec<PathBuf>) -> Self {
+        FakeFileExplorer { files_to_analyze }
     }
 }
 
@@ -31,9 +32,9 @@ mod file_explorer_tests {
         let root = PathBuf::from("test_folder");
         let files_to_analyze = vec![];
         // When
-        let expected_files_to_analyze: Vec<PathBuf> = vec![];
         let fake_explorer1 = FakeFileExplorer::new(files_to_analyze);
         // Then
+        let expected_files_to_analyze: Vec<PathBuf> = vec![];
         assert_eq!(fake_explorer1.discover(&root), expected_files_to_analyze)
     }
 

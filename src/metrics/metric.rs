@@ -1,18 +1,43 @@
+use std::fmt::Error;
+use crate::data_sources::file_explorer::FakeFileExplorer;
+
 pub trait IMetric {
-    fn new() -> Self;
-    fn analyze() -> u32;
+    fn analyze(&self) -> u32;
+    fn get_key(&self) -> String;
 }
 
-pub struct FakeMetric4;
+pub struct FakeMetric4{
+    pub(crate) metric_key: String
+}
 
 impl IMetric for FakeMetric4 {
-    fn new() -> Self {
-        FakeMetric4
-    }
-    fn analyze() -> u32 {
+    fn analyze(&self) -> u32 {
         4
     }
+
+    fn get_key(&self) -> String {
+        self.metric_key.to_owned()
+    }
 }
+
+impl FakeMetric4{
+    pub fn new() -> FakeMetric4 {
+        FakeMetric4{
+            metric_key: String::from("fake4")
+        }
+    }
+}
+
+/*pub struct BrokenMetric;
+
+impl IMetric for BrokenMetric {
+    fn new() -> Self {
+        BrokenMetric
+    }
+    fn analyze() -> Result<u32, &'static str> {
+        Err("This metric is broken!")
+    }
+}*/
 
 
 

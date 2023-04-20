@@ -121,11 +121,12 @@ mod internal_process{
     }
 
     //pub fn internal_analyse_root<T : IMetric>(files : Vec<PathBuf>, metrics : Vec<T>) -> RootAnalysis {
-    pub fn internal_analyse_root(files : Vec<PathBuf>, metrics : Vec<FakeMetric4>) -> RootAnalysis {
+    pub fn internal_analyse_root(files : Vec<PathBuf>, metrics : Vec<Box<dyn IMetric>>) -> RootAnalysis {
         let mut result_file_metrics = HashMap::new();
-        if metrics.len() != 0 {
-            result_file_metrics.insert("fake4".to_string(), FakeMetric4::analyze());
+        for metric in metrics{
+            result_file_metrics.insert(metric.get_key(), metric.analyze());
         }
+
         let result_files_analysis = files
             .into_iter()
             .map(|file| AnalysisTest::FileAnalysisTest(FileAnalysisTest {
@@ -208,7 +209,7 @@ mod tests {
         let actual_result_analysis = internal_analyse_root(fake_file_explorer.discover(&root), metrics);
         // Then
         let expected_result_analysis = RootAnalysis {
-            folder_key: "folder_to_analyze".to_string(),
+            folder_key: String::from("folder_to_analyze"),
             metrics: HashMap::new(),
             folder_content: vec![],
         };
@@ -228,11 +229,11 @@ mod tests {
 
         // Then
         let first_file_analysis = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
-            file_key: "f1".to_string(),
+            file_key: String::from("f1"),
             metrics: HashMap::new()
         });
         let second_file_analysis = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
-            file_key: "f2".to_string(),
+            file_key: String::from("f2"),
             metrics: HashMap::new(),
         });
         let expected_file_analysis = vec![first_file_analysis, second_file_analysis];
@@ -250,7 +251,7 @@ mod tests {
         let root = PathBuf::from("folder_to_analyze");
         let files = vec![PathBuf::from("f1")];
         let fake_file_explorer = FakeFileExplorer::new(files);
-        let metrics = vec![FakeMetric4];
+        let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric4::new())];
 
         // When
         let actual_root_analysis = internal_analyse_root(fake_file_explorer.discover(&root), metrics);
