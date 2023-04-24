@@ -27,7 +27,9 @@ pub struct BrokenMetric{
     pub metric_key: String
 }
 impl IMetric for BrokenMetric {
-    fn analyze(&self) -> Result<u32, String> {Err(String::from("Error"))}
+    fn analyze(&self) -> Result<u32, String> {
+        Err(String::from("Analysis error"))
+    }
     fn get_key(&self) -> String { self.metric_key.to_owned() }
 }
 impl BrokenMetric {

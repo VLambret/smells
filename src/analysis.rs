@@ -1,5 +1,7 @@
 pub mod models{
     use std::collections::HashMap;
+    use std::fmt;
+    use std::io::ErrorKind;
     use serde::{Serialize, Deserialize};
 
     #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -21,12 +23,34 @@ pub mod models{
         pub folder_content: Vec<Analysis>,
     }
 
+    pub type AnalysisError = String;
+
+    // TODO: rename variants
     #[derive(Debug, Serialize, Deserialize, Clone,PartialEq)]
     pub enum MetricsValueType {
-        Int(u32),
-        Map(HashMap<String, MetricsValueType>),
-        String(String),
+        Score(u32),
+        Error(AnalysisError),
     }
+
+    #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+    pub enum MetricOrError {
+        MetricsValueType(MetricsValueType),
+        Error(String),
+    }
+
+
+/*    impl serde::Serialize for MetricOrError {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: serde::Serializer,
+        {
+            match self {
+                MetricOrError::MetricsValueType(metric) => serializer.serialize_newtype_variant("MetricOrError", 0, "Metric", metric),
+                MetricOrError::Error(err) => serializer.serialize_newtype_variant("MetricOrError", 1, "Error", err),
+            }
+        }
+    }*/
+
 
     #[derive(Debug, Serialize, Deserialize, Clone,PartialEq)]
     pub struct RootAnalysis {
@@ -38,7 +62,7 @@ pub mod models{
     #[derive(Debug, Serialize, Deserialize, Clone,PartialEq)]
     pub struct FileAnalysisTest {
         pub file_key: String,
-        pub metrics: HashMap<String, MetricsValueType>,
+        pub metrics: HashMap<String,MetricsValueType>,
     }
 
     #[derive(Debug, Serialize, Deserialize, Clone,PartialEq)]
@@ -80,7 +104,7 @@ mod internal_process{
     use std::collections::HashMap;
     use std::fs::{DirEntry, File, read_dir};
     use std::path::PathBuf;
-    use crate::analysis::models::{Analysis, FileAnalysis, FolderAnalysis, RootAnalysis, Metrics, MetricsValueType, FileAnalysisTest, AnalysisTest};
+    use crate::analysis::models::{Analysis, FileAnalysis, FolderAnalysis, RootAnalysis, Metrics, MetricsValueType, FileAnalysisTest, AnalysisTest, MetricOrError};
     use crate::metrics::{line_count, social_complexity};
     use crate::metrics::metric::IMetric;
 
@@ -122,8 +146,8 @@ mod internal_process{
             .iter()
             .map(|metric| {
                 let result_metric_analyze = match metric.analyze() {
-                    Ok(file_metric) => MetricsValueType::Int(file_metric),
-                    Err(error) => MetricsValueType::String(error.to_string()),
+                    Ok(file_metric) => MetricsValueType::Score(file_metric),
+                    Err(error) => MetricsValueType::Error(error.to_string()),
                 };
                 (metric.get_key(), result_metric_analyze)
             })
@@ -194,9 +218,10 @@ mod internal_process{
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
+    use std::io::{Error, ErrorKind};
     use std::path::PathBuf;
     use crate::analysis::internal_process::internal_analyse_root;
-    use crate::analysis::models::{AnalysisTest, FileAnalysisTest, RootAnalysis, MetricsValueType};
+    use crate::analysis::models::{AnalysisTest, FileAnalysisTest, RootAnalysis, MetricsValueType, MetricOrError, AnalysisError};
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
     use crate::metrics::metric::{BrokenMetric, FakeMetric, IMetric};
 
@@ -260,7 +285,7 @@ mod tests {
 
         // Then
         let mut expected_metrics = HashMap::new();
-        expected_metrics.insert(String::from("fake4"), MetricsValueType::Int(4));
+        expected_metrics.insert(String::from("fake4"), MetricsValueType::Score(4));
 
         let expected_file_analysis = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
             file_key: "f1".to_string(),
@@ -287,8 +312,8 @@ mod tests {
 
         // Then
         let mut expected_metrics = HashMap::new();
-        expected_metrics.insert(String::from("fake4"), MetricsValueType::Int(4));
-        expected_metrics.insert(String::from("fake10"), MetricsValueType::Int(10));
+        expected_metrics.insert(String::from("fake4"), MetricsValueType::Score(4));
+        expected_metrics.insert(String::from("fake10"), MetricsValueType::Score(10));
 
         let expected_file_analysis = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
             file_key: "f1".to_string(),
@@ -315,7 +340,8 @@ mod tests {
 
         // Then
         let mut expected_metrics = HashMap::new();
-        expected_metrics.insert(String::from("broken"), MetricsValueType::String("Error".to_string()));
+        let error_value = MetricsValueType::Error("Analysis error".to_string());
+        expected_metrics.insert(String::from("broken"),error_value);
 
         let expected_file_analysis = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
             file_key: "f1".to_string(),
@@ -323,7 +349,7 @@ mod tests {
         });
         let expected_root_analysis = RootAnalysis {
             folder_key: "folder_to_analyze".to_string(),
-            metrics: expected_metrics,
+            metrics: expected_metrics.clone(),
             folder_content: vec![expected_file_analysis],
         };
         assert_eq!(expected_root_analysis, actual_root_analysis);
