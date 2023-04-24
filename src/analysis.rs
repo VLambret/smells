@@ -142,24 +142,23 @@ mod internal_process{
     }
 
     pub fn internal_analyse_root(files : Vec<PathBuf>, metrics : Vec<Box<dyn IMetric>>) -> RootAnalysis {
-        let result_file_metrics:HashMap<String, MetricsValueType> = metrics
-            .iter()
-            .map(|metric| {
-                let result_metric_analyze = match metric.analyze() {
+        let mut result_file_metrics = HashMap::new();
+        let mut result_files_analysis = Vec::new();
+
+        for file in files {
+            for metric in &metrics {
+                let result_metric_analyze = match metric.analyze(&file) {
                     Ok(file_metric) => MetricsValueType::Score(file_metric),
                     Err(error) => MetricsValueType::Error(error.to_string()),
                 };
-                (metric.get_key(), result_metric_analyze)
-            })
-            .collect();
-
-        let result_files_analysis = files
-            .into_iter()
-            .map(|file| AnalysisTest::FileAnalysisTest(FileAnalysisTest {
+                result_file_metrics.insert(metric.get_key(), result_metric_analyze);
+            }
+            let file_analysis_test = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
                 file_key: file.to_string_lossy().to_string(),
                 metrics: result_file_metrics.clone(),
-            }))
-           .collect();
+            });
+            result_files_analysis.push(file_analysis_test);
+        }
 
         RootAnalysis {
             folder_key : "folder_to_analyze".to_string(),
@@ -223,7 +222,7 @@ mod tests {
     use crate::analysis::internal_process::internal_analyse_root;
     use crate::analysis::models::{AnalysisTest, FileAnalysisTest, RootAnalysis, MetricsValueType, MetricOrError, AnalysisError};
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
-    use crate::metrics::metric::{BrokenMetric, FakeMetric, IMetric};
+    use crate::metrics::metric::{BrokenMetric, FakeMetric, IMetric, LinesCountMetric};
 
     #[test]
     fn test_internal_analyse_root_without_files_and_empty_metrics_should_return_an_empty_analysis() {
@@ -350,6 +349,30 @@ mod tests {
         let expected_root_analysis = RootAnalysis {
             folder_key: "folder_to_analyze".to_string(),
             metrics: expected_metrics.clone(),
+            folder_content: vec![expected_file_analysis],
+        };
+        assert_eq!(expected_root_analysis, actual_root_analysis);
+    }
+
+    #[test]
+    fn internal_analyse_root_with_one_5_lines_file_should_return_1_LinesCount_analysis_with_5_lines() {
+        // Given
+        let root = PathBuf::from("tests").join("data").join("folder_with_multiple_files");
+        let files = vec![PathBuf::from("tests").join("data").join("folder_with_multiple_files").join("file5.txt")];
+        let fake_file_explorer = FakeFileExplorer::new(files);
+        let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(LinesCountMetric::new())];
+
+        // When
+        let actual_root_analysis = internal_analyse_root(fake_file_explorer.discover(&root), metrics);
+        let mut expected_metrics = HashMap::new();
+        expected_metrics.insert(String::from("lines_count"),MetricsValueType::Score(5));
+        let expected_file_analysis = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
+            file_key: r"tests\data\folder_with_multiple_files\file5.txt".to_string(),
+            metrics: expected_metrics.clone()
+        });
+        let expected_root_analysis = RootAnalysis {
+            folder_key: "folder_to_analyze".to_string(),
+            metrics: expected_metrics,
             folder_content: vec![expected_file_analysis],
         };
         assert_eq!(expected_root_analysis, actual_root_analysis);
