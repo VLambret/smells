@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::path::PathBuf;
 
 pub trait IFileExplorer {
@@ -10,13 +9,13 @@ pub struct FakeFileExplorer {
 }
 
 impl IFileExplorer for FakeFileExplorer {
-    fn discover(&self, root: &PathBuf) -> Vec<PathBuf> {
+    fn discover(&self, _root: &PathBuf) -> Vec<PathBuf> {
         self.files_to_analyze.clone()
     }
 }
 
 impl FakeFileExplorer{
-    pub(crate) fn new(files_to_analyze: Vec<PathBuf>) -> Self {
+    pub fn new(files_to_analyze: Vec<PathBuf>) -> Self {
         FakeFileExplorer { files_to_analyze }
     }
 }

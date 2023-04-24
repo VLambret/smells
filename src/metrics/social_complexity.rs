@@ -131,7 +131,8 @@ mod tests{
         if repo.exists(){
             remove_dir_all(&repo).unwrap();
         }
-        std::fs::create_dir_all(&repo);
+        //TODO: handle unwrap()
+        std::fs::create_dir_all(&repo).unwrap();
         Repository::init(repo).unwrap()
     }
 

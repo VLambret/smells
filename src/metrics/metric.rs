@@ -1,48 +1,7 @@
-use std::fmt::Error;
-use crate::data_sources::file_explorer::FakeFileExplorer;
-
 pub trait IMetric {
     fn analyze(&self) -> Result<u32, String>;
     fn get_key(&self) -> String;
 }
-
-pub struct FakeMetric4{
-}
-impl FakeMetric4 {
-    pub fn new() -> FakeMetric4 {
-        FakeMetric4 {
-        }
-    }
-}
-impl IMetric for FakeMetric4 {
-    fn analyze(&self) -> Result<u32, String> {
-        Ok(4)
-    }
-    fn get_key(&self) -> String {
-        String::from("fake4")
-    }
-}
-
-
-pub struct FakeMetric10{
-    pub(crate) metric_key: String
-}
-impl IMetric for FakeMetric10 {
-    fn analyze(&self) -> Result<u32, String> {
-        Ok(10)
-    }
-    fn get_key(&self) -> String {
-        self.metric_key.to_owned()
-    }
-}
-impl FakeMetric10 {
-    pub fn new() -> FakeMetric10 {
-        FakeMetric10 {
-            metric_key: String::from("fake10")
-        }
-    }
-}
-
 pub struct FakeMetric{
     pub(crate) metric_key: String,
     pub(crate) metric_value: u32

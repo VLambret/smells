@@ -1,9 +1,11 @@
 *.lock
 target
 tests/data/git_repositories
+tests\\data\\git_repositories
 
 # Added by cargo
 
+.idea/vcs.xml
 /target
 
 # backlog

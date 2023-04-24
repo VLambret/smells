@@ -1,7 +1,6 @@
 pub mod models{
     use std::collections::HashMap;
     use serde::{Serialize, Deserialize};
-    use crate::metrics::metric::{IMetric, FakeMetric4};
 
     #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
     pub enum Analysis{
@@ -79,14 +78,11 @@ pub mod public_interface{
 
 mod internal_process{
     use std::collections::HashMap;
-    use std::env;
     use std::fs::{DirEntry, File, read_dir};
     use std::path::PathBuf;
-    use std::ptr::null;
-    use predicates::str::is_empty;
     use crate::analysis::models::{Analysis, FileAnalysis, FolderAnalysis, RootAnalysis, Metrics, MetricsValueType, FileAnalysisTest, AnalysisTest};
     use crate::metrics::{line_count, social_complexity};
-    use crate::metrics::metric::{FakeMetric4, IMetric};
+    use crate::metrics::metric::IMetric;
 
     fn analyse_folder(item: PathBuf) -> FolderAnalysis {
         let folder_content: Vec<Analysis> = sort_files_of_a_path(&item)
@@ -200,9 +196,9 @@ mod tests {
     use std::collections::HashMap;
     use std::path::PathBuf;
     use crate::analysis::internal_process::internal_analyse_root;
-    use crate::analysis::models::{Analysis, AnalysisTest, FileAnalysisTest, FolderAnalysis, RootAnalysis, Metrics, MetricsValueType};
+    use crate::analysis::models::{AnalysisTest, FileAnalysisTest, RootAnalysis, MetricsValueType};
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
-    use crate::metrics::metric::{BrokenMetric, FakeMetric, FakeMetric10, FakeMetric4, IMetric};
+    use crate::metrics::metric::{BrokenMetric, FakeMetric, IMetric};
 
     #[test]
     fn test_internal_analyse_root_without_files_and_empty_metrics_should_return_an_empty_analysis() {
@@ -223,7 +219,7 @@ mod tests {
     }
 
     #[test]
-    fn test_internal_analyse_root_with_2_files_and_empty_metrics_should_return_an_empty_metric_for_these_files() {
+    fn internal_analyse_root_with_2_files_and_empty_metrics_should_return_an_empty_metric_for_these_files() {
         // Given
         let root = PathBuf::from("folder_to_analyze");
         let files = vec![PathBuf::from("f1"), PathBuf::from("f2")];
@@ -252,12 +248,12 @@ mod tests {
     }
 
     #[test]
-    fn test_internal_analyse_root_with_1_file1_and_FakeMetric4_should_return_1_analysis_with_4() {
+    fn internal_analyse_root_with_1_file_and_fake_metric4_should_return_1_analysis_with_4() {
         // Given
         let root = PathBuf::from("folder_to_analyze");
         let files = vec![PathBuf::from("f1")];
         let fake_file_explorer = FakeFileExplorer::new(files);
-        let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric4::new())];
+        let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric::new(4))];
 
         // When
         let actual_root_analysis = internal_analyse_root(fake_file_explorer.discover(&root), metrics);
@@ -275,16 +271,16 @@ mod tests {
             metrics: expected_metrics,
             folder_content: vec![expected_file_analysis],
         };
-        assert_eq!(expected_root_analysis, actual_root_analysis );
+        assert_eq!(expected_root_analysis, actual_root_analysis);
     }
 
     #[test]
-    fn test_internal_analyse_root_with_1_file_and_FakeMetric4_and_FakeMetric10_should_return_1_analysis_with_4_and_10() {
+    fn internal_analyse_root_with_1_file_and_fake_metric4_and_fake_metric10_should_return_1_analysis_with_4_and_10() {
         // Given
         let root = PathBuf::from("folder_to_analyze");
         let files = vec![PathBuf::from("f1")];
         let fake_file_explorer = FakeFileExplorer::new(files);
-        let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric4::new()), Box::new(FakeMetric10::new())];
+        let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric::new(4)), Box::new(FakeMetric::new(10))];
 
         // When
         let actual_root_analysis = internal_analyse_root(fake_file_explorer.discover(&root), metrics);
@@ -303,11 +299,11 @@ mod tests {
             metrics: expected_metrics,
             folder_content: vec![expected_file_analysis],
         };
-        assert_eq!(expected_root_analysis, actual_root_analysis );
+        assert_eq!(expected_root_analysis, actual_root_analysis);
     }
 
     #[test]
-    fn test_internal_analyse_root_with_1_file_and_BrokenMetric_should_return_1_analysis_with_an_error() {
+    fn internal_analyse_root_with_1_file_and_broken_metric_should_return_1_analysis_with_an_error() {
         // Given
         let root = PathBuf::from("folder_to_analyze");
         let files = vec![PathBuf::from("f1")];
@@ -324,34 +320,6 @@ mod tests {
         let expected_file_analysis = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
             file_key: "f1".to_string(),
             metrics: expected_metrics.clone(),
-        });
-        let expected_root_analysis = RootAnalysis {
-            folder_key: "folder_to_analyze".to_string(),
-            metrics: expected_metrics,
-            folder_content: vec![expected_file_analysis],
-        };
-        assert_eq!(expected_root_analysis, actual_root_analysis);
-
-    }
-
-    #[test]
-    fn test_internal_analyse_root_with_1_file_and_FakeMetric_with_5_should_return_1_analysis_with_5() {
-        // Given
-        let root = PathBuf::from("folder_to_analyze");
-        let files = vec![PathBuf::from("f1")];
-        let fake_file_explorer = FakeFileExplorer::new(files);
-        let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric::new(5))];
-
-        // When
-        let actual_root_analysis = internal_analyse_root(fake_file_explorer.discover(&root), metrics);
-
-        // Then
-        let mut expected_metrics = HashMap::new();
-        expected_metrics.insert(String::from("fake5"), MetricsValueType::Int(5));
-
-        let expected_file_analysis = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
-            file_key: "f1".to_string(),
-            metrics: expected_metrics.clone()
         });
         let expected_root_analysis = RootAnalysis {
             folder_key: "folder_to_analyze".to_string(),
