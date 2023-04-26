@@ -42,7 +42,8 @@ pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> usize {
                 None
             }
         })
-        .sum()
+        .reduce(|a, b| a + b)
+        .unwrap_or(0)
 }
 
 #[cfg(test)]
