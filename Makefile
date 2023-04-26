@@ -6,9 +6,7 @@ build:
 	cargo build
 
 test:
-	mkdir -p tests/data/empty_folder
-	mkdir -p tests/data/folder_with_one_empty_folder/empty_folder
-	cargo test
+	cargo test --offline
 
 ################################################################################
 # BACKLOG
@@ -23,3 +21,17 @@ backlog.png: backlog.dot
 backlog.dot: backlog.py
 	python3 $^ > $@
 	cat $@
+
+################################################################################
+# DOCKER
+################################################################################*
+
+IMAGE_NAME:=smells:latest
+CONTAINER_NAME:=smells
+
+docker_build_image: ## Build an image from a Dockerfile
+	docker build -t $(IMAGE_NAME) .
+ 
+docker_shell: ## Start a shell inside the container
+	echo $(PWD)
+	docker run -it --rm --name $(CONTAINER_NAME) $(IMAGE_NAME) /bin/bash
