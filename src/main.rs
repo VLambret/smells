@@ -1,15 +1,15 @@
 //use std::path::PathBuf;
 
-use structopt::StructOpt;
-use crate::analysis::public_interface::{CmdArgs, do_analysis};
+use crate::analysis::public_interface::{do_analysis, CmdArgs};
 use crate::formatters::json::convert_analysis_to_formatted_json;
 use crate::viewers::cli::print_formatted_json_output;
+use structopt::StructOpt;
 
+mod analysis;
+mod data_sources;
 mod formatters;
 mod metrics;
-mod analysis;
 mod viewers;
-mod data_sources;
 
 fn main() {
     let analysed_folder = CmdArgs::from_args().path;
@@ -26,7 +26,8 @@ mod main_tests {
     #[test]
     fn test_path_portability() {
         assert_eq!(
-            PathBuf::from("dir1\\dir2").display().to_string(),"dir1\\dir2".to_string()
+            PathBuf::from("dir1\\dir2").display().to_string(),
+            "dir1\\dir2".to_string()
         );
     }
 }

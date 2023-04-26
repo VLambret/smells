@@ -1,11 +1,10 @@
-use std::path::Path;
 use assert_cmd::cmd::Command;
 use predicates::prelude::*;
 use serde_json::Value;
-
+use std::path::Path;
 
 #[test]
-fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::error::Error>>{
+fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::error::Error>> {
     // given
     let cmd_call = "smells";
 
@@ -14,26 +13,27 @@ fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::
     cmd.current_dir("tests/data/empty_folder");
     // then
     let expected_stdout = predicate::str::is_empty().not();
-    cmd.assert()
-        .code(0)
-        .stdout(expected_stdout)
-        .stderr("");
+    cmd.assert().code(0).stdout(expected_stdout).stderr("");
     Ok(())
 }
 
 #[test]
-fn folder_to_analyse_can_be_specified_with_first_parameter() -> Result<(), Box<dyn std::error::Error>>{
+fn folder_to_analyse_can_be_specified_with_first_parameter(
+) -> Result<(), Box<dyn std::error::Error>> {
     // given
     let cmd_call = "smells";
-    let args = Path::new("tests").join("data").join("empty_folder").display().to_string();
+    let args = Path::new("tests")
+        .join("data")
+        .join("empty_folder")
+        .display()
+        .to_string();
 
     // when
     let mut cmd = Command::cargo_bin(cmd_call)?;
     cmd.args(&[args]);
 
     // then
-    let expected_stdout =
-    r#"{
+    let expected_stdout = r#"{
         "empty_folder": {
             "metrics": {
                 "lines_count": 0,
@@ -54,7 +54,7 @@ fn folder_to_analyse_can_be_specified_with_first_parameter() -> Result<(), Box<d
 }
 
 #[test]
-fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::Error>>{
+fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::Error>> {
     // given
     let cmd_call = "smells";
     let args = "tests/data/single_file_folder";
@@ -64,8 +64,7 @@ fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::E
     cmd.args(&[args]);
 
     //then
-    let expected_stdout = 
-    r#"{
+    let expected_stdout = r#"{
         "single_file_folder": {
             "metrics": {
                 "lines_count": 0,
@@ -88,15 +87,15 @@ fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::E
     let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
 
     cmd.assert()
-    .code(0)
-    .stdout(predicates::ord::eq(json_expected_stdout_to_str))
-    .stderr("");  
+        .code(0)
+        .stdout(predicates::ord::eq(json_expected_stdout_to_str))
+        .stderr("");
 
     Ok(())
 }
 
 #[test]
-fn smells_can_count_lines_of_a_single_file_other_case() -> Result<(), Box<dyn std::error::Error>>{
+fn smells_can_count_lines_of_a_single_file_other_case() -> Result<(), Box<dyn std::error::Error>> {
     // given
     let cmd_call = "smells";
     let args = "tests/data/single_file_folder_other";
@@ -106,8 +105,7 @@ fn smells_can_count_lines_of_a_single_file_other_case() -> Result<(), Box<dyn st
     cmd.args(&[args]);
 
     //then
-    let expected_stdout = 
-    r#"{
+    let expected_stdout = r#"{
         "single_file_folder_other": {
             "metrics": {
                 "lines_count": 5,
@@ -124,21 +122,21 @@ fn smells_can_count_lines_of_a_single_file_other_case() -> Result<(), Box<dyn st
                 }
             ]
         }
-    }"#;  
+    }"#;
 
     let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
     let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
 
     cmd.assert()
-    .code(0)
-    .stdout(json_expected_stdout_to_str)
-    .stderr(""); 
+        .code(0)
+        .stdout(json_expected_stdout_to_str)
+        .stderr("");
 
     Ok(())
 }
 
 #[test]
-fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::error::Error>>{
+fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::error::Error>> {
     // given
     let cmd_call = "smells";
     let args = "tests/data/folder_with_multiple_files";
@@ -148,8 +146,7 @@ fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::e
     cmd.args(&[args]);
 
     //then
-    let expected_stdout =
-    r#"{
+    let expected_stdout = r#"{
         "folder_with_multiple_files":{
             "metrics": {
                 "lines_count": 6,
@@ -174,20 +171,20 @@ fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::e
                 }
             ]
         }
-    }"#;  
+    }"#;
 
     let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
     let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
 
     cmd.assert()
-    .code(0)
-    .stdout(json_expected_stdout_to_str)
-    .stderr("");
+        .code(0)
+        .stdout(json_expected_stdout_to_str)
+        .stderr("");
     Ok(())
 }
 
 #[test]
-fn smells_can_analyses_folder_with_one_empty_folder() -> Result<(), Box<dyn std::error::Error>>{
+fn smells_can_analyses_folder_with_one_empty_folder() -> Result<(), Box<dyn std::error::Error>> {
     // given
     let cmd_call = "smells";
     let args = "tests/data/folder_with_one_empty_folder";
@@ -197,8 +194,7 @@ fn smells_can_analyses_folder_with_one_empty_folder() -> Result<(), Box<dyn std:
     cmd.args(&[args]);
 
     //then
-    let expected_stdout =
-    r#"{
+    let expected_stdout = r#"{
         "folder_with_one_empty_folder":{
             "metrics": {
                 "lines_count": 0,
@@ -228,9 +224,8 @@ fn smells_can_analyses_folder_with_one_empty_folder() -> Result<(), Box<dyn std:
     Ok(())
 }
 
-
 #[test]
-fn smells_can_analyses_folder_with_a_folder_and_a_file() -> Result<(), Box<dyn std::error::Error>>{
+fn smells_can_analyses_folder_with_a_folder_and_a_file() -> Result<(), Box<dyn std::error::Error>> {
     // given
     let cmd_call = "smells";
     let args = "tests/data/folder_with_folder_and_file";
@@ -240,8 +235,7 @@ fn smells_can_analyses_folder_with_a_folder_and_a_file() -> Result<(), Box<dyn s
     cmd.args(&[args]);
 
     //then
-    let expected_stdout =
-r#"{
+    let expected_stdout = r#"{
         "folder_with_folder_and_file": {
             "metrics": {
                 "lines_count": 11,
@@ -280,35 +274,32 @@ r#"{
     let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
 
     cmd.assert()
-    .code(0)
-    .stdout(json_expected_stdout_to_str)
-    .stderr("");
+        .code(0)
+        .stdout(json_expected_stdout_to_str)
+        .stderr("");
 
     Ok(())
 }
 
 #[test]
 #[ignore]
-fn smells_must_not_access_to_a_file_with_no_permission() -> Result<(), Box<dyn std::error::Error>>{
-       // given
-       let cmd_call = "smells tests/data/folder_with_no_permission";
+fn smells_must_not_access_to_a_file_with_no_permission() -> Result<(), Box<dyn std::error::Error>> {
+    // given
+    let cmd_call = "smells tests/data/folder_with_no_permission";
 
-       // when
-       let mut cmd = Command::cargo_bin(cmd_call)?;
+    // when
+    let mut cmd = Command::cargo_bin(cmd_call)?;
 
-       //then
-       let expected_stderr = "Error! Permission denied!";
+    //then
+    let expected_stderr = "Error! Permission denied!";
 
-       cmd.assert()
-       .code(0)
-       .stdout("")
-       .stderr(expected_stderr);
+    cmd.assert().code(0).stdout("").stderr(expected_stderr);
     Ok(())
 }
 
 #[test]
 #[ignore]
-fn with_two_arguments_smells_shows_an_error() -> Result<(), Box<dyn std::error::Error>>{
+fn with_two_arguments_smells_shows_an_error() -> Result<(), Box<dyn std::error::Error>> {
     // given
     let cmd_call = "smells . another_argument";
 
@@ -318,10 +309,7 @@ fn with_two_arguments_smells_shows_an_error() -> Result<(), Box<dyn std::error::
     //then
     let expected_stderr = "Error! Argument number error!";
 
-       cmd.assert()
-       .code(0)
-       .stdout("")
-       .stderr(expected_stderr);
+    cmd.assert().code(0).stdout("").stderr(expected_stderr);
 
     Ok(())
 }

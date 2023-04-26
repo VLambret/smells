@@ -103,10 +103,12 @@ mod internal_process {
         Analysis, AnalysisTest, FileAnalysis, FileAnalysisTest, FolderAnalysis, MetricOrError,
         Metrics, MetricsValueType, RootAnalysis,
     };
+    use crate::metrics::line_count::count_lines;
     use crate::metrics::metric::IMetric;
     use crate::metrics::{line_count, social_complexity};
     use std::collections::HashMap;
     use std::fs::{read_dir, DirEntry, File};
+    use std::io::Read;
     use std::path::PathBuf;
 
     fn analyse_folder(item: PathBuf) -> FolderAnalysis {
@@ -175,8 +177,6 @@ mod internal_process {
     // sort files based on the entry names
     fn sort_files_of_a_path(item: &PathBuf) -> Vec<DirEntry> {
         // TODO: handle unwrap()
-        let existing_proof = item.exists();
-        let existing_proof2 = (PathBuf::from("tests").join("data").join("empty_folder")).exists();
         let dir_result = read_dir(&item);
         let dir = dir_result.unwrap();
         let mut entries: Vec<_> = dir.map(|e| e.unwrap()).collect();
@@ -190,9 +190,10 @@ mod internal_process {
         let path = entry.path();
         let mut file = File::open(&path).unwrap();
         // TODO: remove expect and make metric optional to handle errors when an executable is analyzed
+        let mut content = String::new();
+        file.read_to_string(&mut content).unwrap();
         let metrics = Metrics {
-            lines_count: line_count::compute_lines_count_metric(&mut file)
-                .expect("TODO: make metric optional"),
+            lines_count: count_lines(content) as usize,
             social_complexity: social_complexity::social_complexity("."), // root_path to find the repo
         };
 
@@ -228,7 +229,8 @@ mod tests {
         RootAnalysis,
     };
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
-    use crate::metrics::metric::{BrokenMetric, FakeMetric, IMetric, LinesCountMetric};
+    use crate::metrics::line_count::LinesCountMetric;
+    use crate::metrics::metric::{BrokenMetric, FakeMetric, IMetric};
     use std::collections::HashMap;
     use std::io::{Error, ErrorKind};
     use std::path::PathBuf;

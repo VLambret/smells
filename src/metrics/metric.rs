@@ -1,41 +1,18 @@
+use crate::metrics::line_count;
 use std::fs::File;
 use std::path::PathBuf;
-use crate::metrics::line_count;
 
 pub trait IMetric {
-    fn analyze(&self, file_path : &PathBuf) -> Result<u32, String>;
+    fn analyze(&self, file_path: &PathBuf) -> Result<u32, String>;
     fn get_key(&self) -> String;
 }
-pub struct LinesCountMetric {
-    metric_key: String,
-    metric_value: u32,
-}
 
-impl IMetric for LinesCountMetric {
-    fn analyze(&self, file_path : &PathBuf) -> Result<u32, String> {
-        let mut file = File::open(file_path).unwrap(); // TODO : remove unwrap
-        Ok(line_count::compute_lines_count_metric(&mut file).expect("TODO: make metric optional") as u32)
-    }
-    fn get_key(&self) -> String {
-        self.metric_key.clone()
-    }
-}
-
-impl LinesCountMetric {
-    pub fn new() -> LinesCountMetric {
-        LinesCountMetric {
-            metric_key : "lines_count".to_string(),
-            metric_value : 0,
-        }
-    }
-}
-
-pub struct FakeMetric{
+pub struct FakeMetric {
     pub(crate) metric_key: String,
-    pub(crate) metric_value: u32
+    pub(crate) metric_value: u32,
 }
 impl IMetric for FakeMetric {
-    fn analyze(&self, file_path : &PathBuf) -> Result<u32, String> {
+    fn analyze(&self, file_path: &PathBuf) -> Result<u32, String> {
         Ok(self.metric_value)
     }
     fn get_key(&self) -> String {
@@ -43,33 +20,32 @@ impl IMetric for FakeMetric {
     }
 }
 impl FakeMetric {
-    pub fn new(metric_value :u32) -> FakeMetric {
+    pub fn new(metric_value: u32) -> FakeMetric {
         FakeMetric {
             metric_key: format!("fake{}", metric_value),
-            metric_value
+            metric_value,
         }
     }
 }
 
-pub struct BrokenMetric{
-    pub metric_key: String
+pub struct BrokenMetric {
+    pub metric_key: String,
 }
 impl IMetric for BrokenMetric {
-    fn analyze(&self, file_path : &PathBuf) -> Result<u32, String> {
+    fn analyze(&self, file_path: &PathBuf) -> Result<u32, String> {
         Err(String::from("Analysis error"))
     }
-    fn get_key(&self) -> String { self.metric_key.to_owned() }
+    fn get_key(&self) -> String {
+        self.metric_key.to_owned()
+    }
 }
 impl BrokenMetric {
     pub fn new() -> BrokenMetric {
         BrokenMetric {
-            metric_key: String::from("broken")
+            metric_key: String::from("broken"),
         }
     }
 }
-
-
-
 
 /*#[cfg(test)]
 mod tests{

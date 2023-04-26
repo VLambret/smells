@@ -1,6 +1,34 @@
 use std::fs::File;
 use std::io::Read;
+use std::path::PathBuf;
+
 use crate::analysis::models::Analysis;
+use crate::metrics::line_count;
+use crate::metrics::metric::IMetric;
+
+pub struct LinesCountMetric {}
+
+impl IMetric for LinesCountMetric {
+    fn analyze(&self, file_path: &PathBuf) -> Result<u32, String> {
+        let mut file = File::open(file_path).unwrap(); // TODO : remove unwrap
+        let mut content = String::new();
+        file.read_to_string(&mut content).unwrap(); // TODO : remove unwrap
+        Ok(count_lines(content))
+    }
+    fn get_key(&self) -> String {
+        String::from("lines_count")
+    }
+}
+
+impl LinesCountMetric {
+    pub fn new() -> LinesCountMetric {
+        LinesCountMetric {}
+    }
+}
+
+pub fn count_lines(mut content: String) -> u32 {
+    content.lines().count() as u32
+}
 
 pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> usize {
     folder_contents
@@ -8,39 +36,34 @@ pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> usize {
         .filter_map(|content| {
             if let Analysis::FileAnalysis(file) = content {
                 Some(file.metrics.lines_count)
-            } else if let Analysis::FolderAnalysis(folder) = content{
+            } else if let Analysis::FolderAnalysis(folder) = content {
                 Some(folder.metrics.lines_count)
-            }else{
+            } else {
                 None
             }
         })
         .sum()
 }
 
-pub fn compute_lines_count_metric(file: &mut File) -> Result<usize, std::io::Error> {
-    let mut content = String::new();
-    file.read_to_string(&mut content)?;
-    Ok(count_lines(content))
-}
-
-fn count_lines(content: String) -> usize {
-    content.lines().count()
-}
-
 #[cfg(test)]
-mod tests{
+mod tests {
     use rstest::rstest;
+
     use super::*;
-    #[rstest(input, expected,
-    case("", 0),
-    case("line1", 1),
-    case("line1\nline2", 2),
-    case("line1\nline2\nline3", 3),
-    case("\n", 1),
-    case("\n\n\n", 3)
+
+    #[rstest(
+        input,
+        expected,
+        case("", 0),
+        case("line1", 1),
+        case("line1\nline2", 2),
+        case("line1\nline2\nline3", 3),
+        case("\n", 1),
+        case("\n\n\n", 3)
     )]
     fn test_count_lines(input: &str, expected: usize) {
-        let line_count = count_lines(input.to_owned());
+        let content = input.to_owned();
+        let line_count = content.lines().count();
         assert_eq!(line_count, expected);
     }
 }
