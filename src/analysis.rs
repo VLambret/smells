@@ -230,7 +230,7 @@ mod tests {
     };
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
     use crate::metrics::line_count::LinesCountMetric;
-    use crate::metrics::metric::{BrokenMetric, IMetric};
+    use crate::metrics::metric::IMetric;
     use std::collections::HashMap;
     use std::io::{Error, ErrorKind};
     use std::path::PathBuf;
@@ -239,6 +239,7 @@ mod tests {
         pub(crate) metric_key: String,
         pub(crate) metric_value: u32,
     }
+
     impl IMetric for FakeMetric {
         fn analyze(&self, file_path: &PathBuf) -> Result<u32, String> {
             Ok(self.metric_value)
@@ -247,11 +248,33 @@ mod tests {
             self.metric_key.to_owned()
         }
     }
+
     impl FakeMetric {
         pub fn new(metric_value: u32) -> FakeMetric {
             FakeMetric {
                 metric_key: format!("fake{}", metric_value),
                 metric_value,
+            }
+        }
+    }
+
+    pub struct BrokenMetric {
+        pub metric_key: String,
+    }
+
+    impl IMetric for BrokenMetric {
+        fn analyze(&self, file_path: &PathBuf) -> Result<u32, String> {
+            Err(String::from("Analysis error"))
+        }
+        fn get_key(&self) -> String {
+            self.metric_key.to_owned()
+        }
+    }
+
+    impl BrokenMetric {
+        pub fn new() -> BrokenMetric {
+            BrokenMetric {
+                metric_key: String::from("broken"),
             }
         }
     }
