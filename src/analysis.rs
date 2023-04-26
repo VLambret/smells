@@ -230,10 +230,31 @@ mod tests {
     };
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
     use crate::metrics::line_count::LinesCountMetric;
-    use crate::metrics::metric::{BrokenMetric, FakeMetric, IMetric};
+    use crate::metrics::metric::{BrokenMetric, IMetric};
     use std::collections::HashMap;
     use std::io::{Error, ErrorKind};
     use std::path::PathBuf;
+
+    pub struct FakeMetric {
+        pub(crate) metric_key: String,
+        pub(crate) metric_value: u32,
+    }
+    impl IMetric for FakeMetric {
+        fn analyze(&self, file_path: &PathBuf) -> Result<u32, String> {
+            Ok(self.metric_value)
+        }
+        fn get_key(&self) -> String {
+            self.metric_key.to_owned()
+        }
+    }
+    impl FakeMetric {
+        pub fn new(metric_value: u32) -> FakeMetric {
+            FakeMetric {
+                metric_key: format!("fake{}", metric_value),
+                metric_value,
+            }
+        }
+    }
 
     #[test]
     fn test_internal_analyse_root_without_files_and_empty_metrics_should_return_an_empty_analysis()

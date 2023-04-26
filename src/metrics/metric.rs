@@ -7,27 +7,6 @@ pub trait IMetric {
     fn get_key(&self) -> String;
 }
 
-pub struct FakeMetric {
-    pub(crate) metric_key: String,
-    pub(crate) metric_value: u32,
-}
-impl IMetric for FakeMetric {
-    fn analyze(&self, file_path: &PathBuf) -> Result<u32, String> {
-        Ok(self.metric_value)
-    }
-    fn get_key(&self) -> String {
-        self.metric_key.to_owned()
-    }
-}
-impl FakeMetric {
-    pub fn new(metric_value: u32) -> FakeMetric {
-        FakeMetric {
-            metric_key: format!("fake{}", metric_value),
-            metric_value,
-        }
-    }
-}
-
 pub struct BrokenMetric {
     pub metric_key: String,
 }
