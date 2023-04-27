@@ -33,7 +33,12 @@ pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> usize {
         .iter()
         .filter_map(|content| {
             if let Analysis::FileAnalysis(file) = content {
-                Some(file.metrics.lines_count)
+                file.metrics
+                    .get("lines_count")
+                    .and_then(|metric_value| match metric_value {
+                        MetricsValueType::Score(score) => Some(*score as usize),
+                        MetricsValueType::Error(_) => None,
+                    })
             } else if let Analysis::FolderAnalysis(folder) = content {
                 folder
                     .metrics

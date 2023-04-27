@@ -64,7 +64,7 @@ pub mod models {
     #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
     pub struct FileAnalysis {
         pub file_key: String,
-        pub metrics: Metrics,
+        pub metrics: HashMap<String, MetricsValueType>,
     }
 
     #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
@@ -93,8 +93,8 @@ pub mod public_interface {
 
 mod internal_process {
     use crate::analysis::models::{
-        Analysis, AnalysisTest, FileAnalysis, FileAnalysisTest, FolderAnalysis, Metrics,
-        MetricsValueType, RootAnalysis,
+        Analysis, AnalysisTest, FileAnalysis, FileAnalysisTest, FolderAnalysis, MetricsValueType,
+        RootAnalysis,
     };
     use crate::metrics::line_count::count_lines;
     use crate::metrics::metric::IMetric;
@@ -112,14 +112,14 @@ mod internal_process {
             .collect();
 
         let mut metrics_content = HashMap::new();
-        let line_count_metric =
-            MetricsValueType::Score(line_count::summary_lines_count_metric(&folder_content) as u32);
-
-        let social_complexity_metric =
-            MetricsValueType::Score(social_complexity::social_complexity("") as u32);
-
-        metrics_content.insert("lines_count".to_string(), line_count_metric);
-        metrics_content.insert("social_complexity".to_string(), social_complexity_metric);
+        metrics_content.insert(
+            "lines_count".to_string(),
+            MetricsValueType::Score(line_count::summary_lines_count_metric(&folder_content) as u32),
+        );
+        metrics_content.insert(
+            "social_complexity".to_string(),
+            MetricsValueType::Score(social_complexity::social_complexity("") as u32),
+        );
 
         let root_analysis = FolderAnalysis {
             folder_key: extract_analysed_item_key(&item),
@@ -191,14 +191,20 @@ mod internal_process {
         // TODO: remove expect and make metric optional to handle errors when an executable is analyzed
         let mut content = String::new();
         file.read_to_string(&mut content).unwrap();
-        let metrics = Metrics {
-            lines_count: count_lines(content) as usize,
-            social_complexity: social_complexity::social_complexity("."), // root_path to find the repo
-        };
+
+        let mut metrics_content = HashMap::new();
+        metrics_content.insert(
+            "lines_count".to_string(),
+            MetricsValueType::Score(count_lines(content)),
+        );
+        metrics_content.insert(
+            "social_complexity".to_string(),
+            MetricsValueType::Score(social_complexity::social_complexity("") as u32),
+        );
 
         FileAnalysis {
             file_key: extract_analysed_item_key(&path),
-            metrics,
+            metrics: metrics_content,
         }
     }
 
