@@ -81,11 +81,11 @@ mod internal_process {
         let mut metrics_content = HashMap::new();
         metrics_content.insert(
             "lines_count".to_string(),
-            MetricsValueType::Score(line_count::summary_lines_count_metric(&folder_content) as u32),
+            MetricsValueType::Score(line_count::summary_lines_count_metric(&folder_content)),
         );
         metrics_content.insert(
             "social_complexity".to_string(),
-            MetricsValueType::Score(social_complexity::social_complexity("") as u32),
+            MetricsValueType::Score(social_complexity::social_complexity("")),
         );
 
         let root_analysis = RootAnalysis {
@@ -166,7 +166,7 @@ mod internal_process {
         );
         metrics_content.insert(
             "social_complexity".to_string(),
-            MetricsValueType::Score(social_complexity::social_complexity("") as u32),
+            MetricsValueType::Score(social_complexity::social_complexity("")),
         );
 
         FileAnalysis {

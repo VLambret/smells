@@ -28,7 +28,7 @@ pub fn count_lines(content: String) -> u32 {
     content.lines().count() as u32
 }
 
-pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> usize {
+pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> u32 {
     folder_contents
         .iter()
         .filter_map(|content| get_lines_count_value(content))
@@ -36,12 +36,12 @@ pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> usize {
         .unwrap_or(0)
 }
 
-fn get_lines_count_value(content: &Analysis) -> Option<usize> {
+fn get_lines_count_value(content: &Analysis) -> Option<u32> {
     if let Analysis::FileAnalysis(file) = content {
         file.metrics
             .get("lines_count")
             .and_then(|metric_value| match metric_value {
-                MetricsValueType::Score(score) => Some(*score as usize),
+                MetricsValueType::Score(score) => Some(*score),
                 MetricsValueType::Error(_) => None,
             })
     } else if let Analysis::FolderAnalysis(folder) = content {
@@ -49,7 +49,7 @@ fn get_lines_count_value(content: &Analysis) -> Option<usize> {
             .metrics
             .get("lines_count")
             .and_then(|metric_value| match metric_value {
-                MetricsValueType::Score(score) => Some(*score as usize),
+                MetricsValueType::Score(score) => Some(*score),
                 MetricsValueType::Error(_) => None,
             })
     } else {
@@ -71,9 +71,9 @@ mod tests {
         case("\n", 1),
         case("\n\n\n", 3)
     )]
-    fn test_count_lines(input: &str, expected: usize) {
+    fn test_count_lines(input: &str, expected: u32) {
         let content = input.to_owned();
-        let line_count = content.lines().count();
+        let line_count = content.lines().count() as u32;
         assert_eq!(line_count, expected);
     }
 }
