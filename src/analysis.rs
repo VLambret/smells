@@ -5,14 +5,21 @@ pub mod models {
     #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
     pub enum Analysis {
         FileAnalysis(FileAnalysis),
-        FolderAnalysis(FolderAnalysis),
+        FolderAnalysis(RootAnalysis),
     }
 
+    // TODO: distinguish root to folders
     #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-    pub struct FolderAnalysis {
+    pub struct RootAnalysis {
         pub folder_key: String,
         pub metrics: HashMap<String, MetricsValueType>,
         pub folder_content: Vec<Analysis>,
+    }
+
+    #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+    pub struct FileAnalysis {
+        pub file_key: String,
+        pub metrics: HashMap<String, MetricsValueType>,
     }
 
     pub type AnalysisError = String;
@@ -35,30 +42,11 @@ pub mod models {
             }
         }
     }
-
-    #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-    pub struct RootAnalysis {
-        pub folder_key: String,
-        pub metrics: HashMap<String, MetricsValueType>,
-        pub folder_content: Vec<Analysis>,
-    }
-
-    #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-    pub struct FileAnalysisTest {
-        pub file_key: String,
-        pub metrics: HashMap<String, MetricsValueType>,
-    }
-
-    #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-    pub struct FileAnalysis {
-        pub file_key: String,
-        pub metrics: HashMap<String, MetricsValueType>,
-    }
 }
 
 pub mod public_interface {
     use crate::analysis::internal_process::analyse_root;
-    use crate::analysis::models::FolderAnalysis;
+    use crate::analysis::models::RootAnalysis;
     use std::path::PathBuf;
     use structopt::StructOpt;
 
@@ -68,15 +56,13 @@ pub mod public_interface {
         pub path: PathBuf,
     }
 
-    pub fn do_analysis(root: PathBuf) -> FolderAnalysis {
+    pub fn do_analysis(root: PathBuf) -> RootAnalysis {
         analyse_root(root)
     }
 }
 
 mod internal_process {
-    use crate::analysis::models::{
-        Analysis, FileAnalysis, FolderAnalysis, MetricsValueType, RootAnalysis,
-    };
+    use crate::analysis::models::{Analysis, FileAnalysis, MetricsValueType, RootAnalysis};
     use crate::metrics::line_count::count_lines;
     use crate::metrics::metric::IMetric;
     use crate::metrics::{line_count, social_complexity};
@@ -85,7 +71,7 @@ mod internal_process {
     use std::io::Read;
     use std::path::PathBuf;
 
-    fn analyse_folder(item: PathBuf) -> FolderAnalysis {
+    fn analyse_folder(item: PathBuf) -> RootAnalysis {
         let folder_content: Vec<Analysis> = sort_files_of_a_path(&item)
             .iter()
             .filter(|f| can_file_be_analysed(&f.path()))
@@ -102,7 +88,7 @@ mod internal_process {
             MetricsValueType::Score(social_complexity::social_complexity("") as u32),
         );
 
-        let root_analysis = FolderAnalysis {
+        let root_analysis = RootAnalysis {
             folder_key: extract_analysed_item_key(&item),
             metrics: metrics_content,
             folder_content,
@@ -120,7 +106,7 @@ mod internal_process {
         analysis
     }
 
-    pub fn analyse_root(root: PathBuf) -> FolderAnalysis {
+    pub fn analyse_root(root: PathBuf) -> RootAnalysis {
         analyse_folder(root)
     }
 
