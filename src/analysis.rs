@@ -43,12 +43,6 @@ pub mod models {
     }
 
     #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-    pub enum MetricOrError {
-        MetricsValueType(MetricsValueType),
-        Error(String),
-    }
-
-    #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
     pub struct RootAnalysis {
         pub folder_key: String,
         pub metrics: HashMap<String, MetricsValueType>,
