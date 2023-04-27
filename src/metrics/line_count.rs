@@ -31,28 +31,30 @@ pub fn count_lines(content: String) -> u32 {
 pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> usize {
     folder_contents
         .iter()
-        .filter_map(|content| {
-            if let Analysis::FileAnalysis(file) = content {
-                file.metrics
-                    .get("lines_count")
-                    .and_then(|metric_value| match metric_value {
-                        MetricsValueType::Score(score) => Some(*score as usize),
-                        MetricsValueType::Error(_) => None,
-                    })
-            } else if let Analysis::FolderAnalysis(folder) = content {
-                folder
-                    .metrics
-                    .get("lines_count")
-                    .and_then(|metric_value| match metric_value {
-                        MetricsValueType::Score(score) => Some(*score as usize),
-                        MetricsValueType::Error(_) => None,
-                    })
-            } else {
-                None
-            }
-        })
+        .filter_map(|content| get_lines_count_value(content))
         .reduce(|a, b| a + b)
         .unwrap_or(0)
+}
+
+fn get_lines_count_value(content: &Analysis) -> Option<usize> {
+    if let Analysis::FileAnalysis(file) = content {
+        file.metrics
+            .get("lines_count")
+            .and_then(|metric_value| match metric_value {
+                MetricsValueType::Score(score) => Some(*score as usize),
+                MetricsValueType::Error(_) => None,
+            })
+    } else if let Analysis::FolderAnalysis(folder) = content {
+        folder
+            .metrics
+            .get("lines_count")
+            .and_then(|metric_value| match metric_value {
+                MetricsValueType::Score(score) => Some(*score as usize),
+                MetricsValueType::Error(_) => None,
+            })
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
