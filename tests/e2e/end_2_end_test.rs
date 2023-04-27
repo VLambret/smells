@@ -71,7 +71,7 @@ fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::E
     let mut cmd = Command::cargo_bin(cmd_call)?;
     cmd.args(&[args]);
 
-    //then
+    // Then
     let expected_stdout = r#"{
         "single_file_folder": {
             "metrics": {
@@ -91,14 +91,14 @@ fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::E
         }
     }"#;
 
-    let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
-    let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
+    /*    cmd.assert()
+    .code(0)
+    .stdout(predicates::ord::eq(json_expected_stdout_to_str))
+    .stderr("");*/
 
-    cmd.assert()
-        .code(0)
-        .stdout(predicates::ord::eq(json_expected_stdout_to_str))
-        .stderr("");
-
+    let expected_stdout_json = string_to_json(expected_stdout);
+    let actual_stdout_json = stdout_to_json(&mut cmd);
+    assert_eq!(actual_stdout_json, expected_stdout_json);
     Ok(())
 }
 
@@ -132,14 +132,9 @@ fn smells_can_count_lines_of_a_single_file_other_case() -> Result<(), Box<dyn st
         }
     }"#;
 
-    let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
-    let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
-
-    cmd.assert()
-        .code(0)
-        .stdout(json_expected_stdout_to_str)
-        .stderr("");
-
+    let expected_stdout_json = string_to_json(expected_stdout);
+    let actual_stdout_json = stdout_to_json(&mut cmd);
+    assert_eq!(actual_stdout_json, expected_stdout_json);
     Ok(())
 }
 
@@ -181,13 +176,9 @@ fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::e
         }
     }"#;
 
-    let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
-    let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
-
-    cmd.assert()
-        .code(0)
-        .stdout(json_expected_stdout_to_str)
-        .stderr("");
+    let expected_stdout_json = string_to_json(expected_stdout);
+    let actual_stdout_json = stdout_to_json(&mut cmd);
+    assert_eq!(actual_stdout_json, expected_stdout_json);
     Ok(())
 }
 
@@ -222,13 +213,9 @@ fn smells_can_analyses_folder_with_one_empty_folder() -> Result<(), Box<dyn std:
         }
     }"#;
 
-    let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
-    let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
-
-    cmd.assert()
-        .code(0)
-        .stdout(json_expected_stdout_to_str)
-        .stderr("");
+    let expected_stdout_json = string_to_json(expected_stdout);
+    let actual_stdout_json = stdout_to_json(&mut cmd);
+    assert_eq!(actual_stdout_json, expected_stdout_json);
     Ok(())
 }
 
@@ -278,14 +265,9 @@ fn smells_can_analyses_folder_with_a_folder_and_a_file() -> Result<(), Box<dyn s
         }
     }"#;
 
-    let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
-    let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
-
-    cmd.assert()
-        .code(0)
-        .stdout(json_expected_stdout_to_str)
-        .stderr("");
-
+    let expected_stdout_json = string_to_json(expected_stdout);
+    let actual_stdout_json = stdout_to_json(&mut cmd);
+    assert_eq!(actual_stdout_json, expected_stdout_json);
     Ok(())
 }
 

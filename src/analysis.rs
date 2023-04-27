@@ -138,7 +138,7 @@ mod internal_process {
             MetricsValueType::Score(line_count::summary_lines_count_metric(&folder_content) as u32);
 
         let social_complexity_metric =
-            MetricsValueType::Score(line_count::summary_lines_count_metric(&folder_content) as u32);
+            MetricsValueType::Score(social_complexity::social_complexity("") as u32);
 
         metrics_content.insert("lines_count".to_string(), line_count_metric);
         metrics_content.insert("social_complexity".to_string(), social_complexity_metric);
