@@ -1,10 +1,8 @@
+use crate::analysis::models::{Analysis, MetricsValueType};
+use crate::metrics::metric::IMetric;
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
-
-use crate::analysis::models::{Analysis, MetricsValueType};
-use crate::metrics::line_count;
-use crate::metrics::metric::IMetric;
 
 pub struct LinesCountMetric {}
 
@@ -26,7 +24,7 @@ impl LinesCountMetric {
     }
 }
 
-pub fn count_lines(mut content: String) -> u32 {
+pub fn count_lines(content: String) -> u32 {
     content.lines().count() as u32
 }
 
@@ -55,8 +53,6 @@ pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> usize {
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
-
-    use super::*;
 
     #[rstest(
         input,

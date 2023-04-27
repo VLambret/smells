@@ -51,13 +51,13 @@ fn _get_relative_path(path_to_repo: &Path, path: &PathBuf) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use git2::{Commit, Reference, Signature, Tree};
-    use git2::{Repository, RepositoryInitOptions};
+    use git2::Repository;
+    use git2::{Commit, Signature, Tree};
     use rstest::rstest;
     use std::fs::{remove_dir_all, File};
     use std::io::Write;
 
-    fn get_git_repositories_path() -> PathBuf {
+    fn _get_git_repositories_path() -> PathBuf {
         let test_path = PathBuf::from("tests").join("data").join("git_repositories");
         test_path
     }

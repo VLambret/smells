@@ -1,9 +1,6 @@
 pub mod models {
-    use serde::ser::SerializeStruct;
     use serde::{Deserialize, Serialize, Serializer};
     use std::collections::HashMap;
-    use std::fmt;
-    use std::io::ErrorKind;
 
     #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
     pub enum Analysis {
@@ -23,19 +20,6 @@ pub mod models {
         pub metrics: HashMap<String, MetricsValueType>,
         pub folder_content: Vec<Analysis>,
     }
-
-    /*    impl Serialize for FolderAnalysis {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: Serializer,
-        {
-            let mut state = serializer.serialize_struct("FolderAnalysis", 3)?;
-            state.serialize_field("folder_key", &self.folder_key)?;
-            state.serialize_field("metrics", &self.metrics)?;
-            state.serialize_field("folder_content", &self.folder_content)?;
-            state.end()
-        }
-    }*/
 
     pub type AnalysisError = String;
 
@@ -88,11 +72,6 @@ pub mod models {
         pub lines_count: usize,
         pub social_complexity: u32,
     }
-
-    pub struct MetricsTest {
-        code: u32,
-        nom: Metrics,
-    }
 }
 
 pub mod public_interface {
@@ -114,12 +93,11 @@ pub mod public_interface {
 
 mod internal_process {
     use crate::analysis::models::{
-        Analysis, AnalysisTest, FileAnalysis, FileAnalysisTest, FolderAnalysis, MetricOrError,
-        Metrics, MetricsValueType, RootAnalysis,
+        Analysis, AnalysisTest, FileAnalysis, FileAnalysisTest, FolderAnalysis, Metrics,
+        MetricsValueType, RootAnalysis,
     };
     use crate::metrics::line_count::count_lines;
     use crate::metrics::metric::IMetric;
-    use crate::metrics::social_complexity::social_complexity;
     use crate::metrics::{line_count, social_complexity};
     use std::collections::HashMap;
     use std::fs::{read_dir, DirEntry, File};
@@ -165,7 +143,7 @@ mod internal_process {
         analyse_folder(root)
     }
 
-    pub fn internal_analyse_root(
+    pub fn _internal_analyse_root(
         root: &PathBuf,
         files: Vec<PathBuf>,
         metrics: Vec<Box<dyn IMetric>>,
@@ -244,25 +222,21 @@ mod internal_process {
 
 #[cfg(test)]
 mod tests {
-    use crate::analysis::internal_process::internal_analyse_root;
-    use crate::analysis::models::{
-        AnalysisError, AnalysisTest, FileAnalysisTest, MetricOrError, MetricsValueType,
-        RootAnalysis,
-    };
+    use crate::analysis::internal_process::_internal_analyse_root;
+    use crate::analysis::models::{AnalysisTest, FileAnalysisTest, MetricsValueType, RootAnalysis};
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
     use crate::metrics::line_count::LinesCountMetric;
     use crate::metrics::metric::IMetric;
     use std::collections::HashMap;
-    use std::io::{Error, ErrorKind};
     use std::path::PathBuf;
 
     pub struct FakeMetric {
-        pub(crate) metric_key: String,
-        pub(crate) metric_value: u32,
+        pub metric_key: String,
+        pub metric_value: u32,
     }
 
     impl IMetric for FakeMetric {
-        fn analyze(&self, file_path: &PathBuf) -> Result<u32, String> {
+        fn analyze(&self, _file_path: &PathBuf) -> Result<u32, String> {
             Ok(self.metric_value)
         }
         fn get_key(&self) -> String {
@@ -284,7 +258,7 @@ mod tests {
     }
 
     impl IMetric for BrokenMetric {
-        fn analyze(&self, file_path: &PathBuf) -> Result<u32, String> {
+        fn analyze(&self, _file_path: &PathBuf) -> Result<u32, String> {
             Err(String::from("Analysis error"))
         }
         fn get_key(&self) -> String {
@@ -310,7 +284,7 @@ mod tests {
         let metrics = vec![];
         // When
         let actual_result_analysis =
-            internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
+            _internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
         // Then
         let expected_result_analysis = RootAnalysis {
             folder_key: String::from("folder_to_analyze"),
@@ -331,7 +305,7 @@ mod tests {
 
         // When
         let actual_result_analysis =
-            internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
+            _internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
 
         // Then
         let first_file_analysis = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
@@ -361,7 +335,7 @@ mod tests {
 
         // When
         let actual_root_analysis =
-            internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
+            _internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
 
         // Then
         let mut expected_metrics = HashMap::new();
@@ -391,7 +365,7 @@ mod tests {
 
         // When
         let actual_root_analysis =
-            internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
+            _internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
 
         // Then
         let mut expected_metrics = HashMap::new();
@@ -421,7 +395,7 @@ mod tests {
 
         // When
         let actual_root_analysis =
-            internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
+            _internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
 
         // Then
         let mut expected_metrics = HashMap::new();
@@ -441,7 +415,7 @@ mod tests {
     }
 
     #[test]
-    fn internal_analyse_root_with_one_5_lines_file_should_return_one_LinesCount_analysis_with_5() {
+    fn internal_analyse_root_with_one_5_lines_file_should_return_one_lines_count_analysis_with_5() {
         // Given
         let root = PathBuf::from("tests")
             .join("data")
@@ -455,7 +429,7 @@ mod tests {
 
         // When
         let actual_root_analysis =
-            internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
+            _internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
 
         let mut expected_metrics = HashMap::new();
         expected_metrics.insert(String::from("lines_count"), MetricsValueType::Score(5));
