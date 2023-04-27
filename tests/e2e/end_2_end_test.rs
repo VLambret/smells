@@ -3,6 +3,18 @@ use predicates::prelude::*;
 use serde_json::Value;
 use std::path::Path;
 
+fn string_to_json(expected_stdout: &str) -> Value {
+    let expected_stdout_json: Value = serde_json::from_str(expected_stdout).unwrap();
+    expected_stdout_json
+}
+
+fn stdout_to_json(cmd: &mut Command) -> Value {
+    let actual_stdout = cmd.output().unwrap().stdout;
+    let actual_stdout_str = String::from_utf8(actual_stdout).unwrap();
+    let actual_stdout_json: Value = string_to_json(&actual_stdout_str);
+    actual_stdout_json
+}
+
 #[test]
 fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::error::Error>> {
     // given
@@ -31,8 +43,6 @@ fn folder_to_analyse_can_be_specified_with_first_parameter(
     // when
     let mut cmd = Command::cargo_bin(cmd_call)?;
     cmd.args(&[args]);
-
-    // then
     let expected_stdout = r#"{
         "empty_folder": {
             "metrics": {
@@ -43,13 +53,11 @@ fn folder_to_analyse_can_be_specified_with_first_parameter(
         }
     }"#;
 
-    let json_expected_stdout: Value = serde_json::from_str(expected_stdout).unwrap();
-    let json_expected_stdout_to_str = serde_json::to_string_pretty(&json_expected_stdout).unwrap();
+    // then
 
-    cmd.assert()
-        .code(0)
-        .stdout(json_expected_stdout_to_str)
-        .stderr("");
+    let expected_stdout_json = string_to_json(expected_stdout);
+    let actual_stdout_json = stdout_to_json(&mut cmd);
+    assert_eq!(actual_stdout_json, expected_stdout_json);
     Ok(())
 }
 

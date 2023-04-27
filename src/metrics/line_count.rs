@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
 
-use crate::analysis::models::Analysis;
+use crate::analysis::models::{Analysis, MetricsValueType};
 use crate::metrics::line_count;
 use crate::metrics::metric::IMetric;
 
@@ -37,7 +37,13 @@ pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> usize {
             if let Analysis::FileAnalysis(file) = content {
                 Some(file.metrics.lines_count)
             } else if let Analysis::FolderAnalysis(folder) = content {
-                Some(folder.metrics.lines_count)
+                folder
+                    .metrics
+                    .get("lines_count")
+                    .and_then(|metric_value| match metric_value {
+                        MetricsValueType::Score(score) => Some(*score as usize),
+                        MetricsValueType::Error(_) => None,
+                    })
             } else {
                 None
             }

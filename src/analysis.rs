@@ -1,5 +1,6 @@
 pub mod models {
-    use serde::{Deserialize, Serialize};
+    use serde::ser::SerializeStruct;
+    use serde::{Deserialize, Serialize, Serializer};
     use std::collections::HashMap;
     use std::fmt;
     use std::io::ErrorKind;
@@ -19,17 +20,42 @@ pub mod models {
     #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
     pub struct FolderAnalysis {
         pub folder_key: String,
-        pub metrics: Metrics,
+        pub metrics: HashMap<String, MetricsValueType>,
         pub folder_content: Vec<Analysis>,
     }
+
+    /*    impl Serialize for FolderAnalysis {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: Serializer,
+        {
+            let mut state = serializer.serialize_struct("FolderAnalysis", 3)?;
+            state.serialize_field("folder_key", &self.folder_key)?;
+            state.serialize_field("metrics", &self.metrics)?;
+            state.serialize_field("folder_content", &self.folder_content)?;
+            state.end()
+        }
+    }*/
 
     pub type AnalysisError = String;
 
     // TODO: rename variants
-    #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+    #[derive(Debug, Deserialize, Clone, PartialEq)]
     pub enum MetricsValueType {
         Score(u32),
         Error(AnalysisError),
+    }
+
+    impl Serialize for MetricsValueType {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            match self {
+                MetricsValueType::Score(score) => serializer.serialize_u32(*score),
+                MetricsValueType::Error(error) => serializer.serialize_str(error),
+            }
+        }
     }
 
     #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -37,18 +63,6 @@ pub mod models {
         MetricsValueType(MetricsValueType),
         Error(String),
     }
-
-    /*    impl serde::Serialize for MetricOrError {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: serde::Serializer,
-        {
-            match self {
-                MetricOrError::MetricsValueType(metric) => serializer.serialize_newtype_variant("MetricOrError", 0, "Metric", metric),
-                MetricOrError::Error(err) => serializer.serialize_newtype_variant("MetricOrError", 1, "Error", err),
-            }
-        }
-    }*/
 
     #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
     pub struct RootAnalysis {
@@ -105,6 +119,7 @@ mod internal_process {
     };
     use crate::metrics::line_count::count_lines;
     use crate::metrics::metric::IMetric;
+    use crate::metrics::social_complexity::social_complexity;
     use crate::metrics::{line_count, social_complexity};
     use std::collections::HashMap;
     use std::fs::{read_dir, DirEntry, File};
@@ -118,10 +133,16 @@ mod internal_process {
             .map(|f| analyse(&f))
             .collect();
 
-        let metrics_content = Metrics {
-            lines_count: line_count::summary_lines_count_metric(&folder_content),
-            social_complexity: social_complexity::social_complexity("."), // root_path to find the repo
-        };
+        let mut metrics_content = HashMap::new();
+        let line_count_metric =
+            MetricsValueType::Score(line_count::summary_lines_count_metric(&folder_content) as u32);
+
+        let social_complexity_metric =
+            MetricsValueType::Score(line_count::summary_lines_count_metric(&folder_content) as u32);
+
+        metrics_content.insert("lines_count".to_string(), line_count_metric);
+        metrics_content.insert("social_complexity".to_string(), social_complexity_metric);
+
         let root_analysis = FolderAnalysis {
             folder_key: extract_analysed_item_key(&item),
             metrics: metrics_content,
