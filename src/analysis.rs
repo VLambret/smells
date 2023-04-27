@@ -9,12 +9,6 @@ pub mod models {
     }
 
     #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-    pub enum AnalysisTest {
-        FileAnalysisTest(FileAnalysisTest),
-        FolderAnalysisTest(RootAnalysis),
-    }
-
-    #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
     pub struct FolderAnalysis {
         pub folder_key: String,
         pub metrics: HashMap<String, MetricsValueType>,
@@ -46,7 +40,7 @@ pub mod models {
     pub struct RootAnalysis {
         pub folder_key: String,
         pub metrics: HashMap<String, MetricsValueType>,
-        pub folder_content: Vec<AnalysisTest>,
+        pub folder_content: Vec<Analysis>,
     }
 
     #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -59,12 +53,6 @@ pub mod models {
     pub struct FileAnalysis {
         pub file_key: String,
         pub metrics: HashMap<String, MetricsValueType>,
-    }
-
-    #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
-    pub struct Metrics {
-        pub lines_count: usize,
-        pub social_complexity: u32,
     }
 }
 
@@ -87,8 +75,7 @@ pub mod public_interface {
 
 mod internal_process {
     use crate::analysis::models::{
-        Analysis, AnalysisTest, FileAnalysis, FileAnalysisTest, FolderAnalysis, MetricsValueType,
-        RootAnalysis,
+        Analysis, FileAnalysis, FolderAnalysis, MetricsValueType, RootAnalysis,
     };
     use crate::metrics::line_count::count_lines;
     use crate::metrics::metric::IMetric;
@@ -153,7 +140,7 @@ mod internal_process {
                 };
                 result_file_metrics.insert(metric.get_key(), result_metric_analyze);
             }
-            let file_analysis_test = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
+            let file_analysis_test = Analysis::FileAnalysis(FileAnalysis {
                 file_key: file.file_name().unwrap().to_string_lossy().into_owned(), // TODO unwrap
                 metrics: result_file_metrics.clone(),
             });
@@ -223,7 +210,7 @@ mod internal_process {
 #[cfg(test)]
 mod tests {
     use crate::analysis::internal_process::_internal_analyse_root;
-    use crate::analysis::models::{AnalysisTest, FileAnalysisTest, MetricsValueType, RootAnalysis};
+    use crate::analysis::models::{Analysis, FileAnalysis, MetricsValueType, RootAnalysis};
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
     use crate::metrics::line_count::LinesCountMetric;
     use crate::metrics::metric::IMetric;
@@ -308,11 +295,11 @@ mod tests {
             _internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
 
         // Then
-        let first_file_analysis = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
+        let first_file_analysis = Analysis::FileAnalysis(FileAnalysis {
             file_key: String::from("f1"),
             metrics: HashMap::new(),
         });
-        let second_file_analysis = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
+        let second_file_analysis = Analysis::FileAnalysis(FileAnalysis {
             file_key: String::from("f2"),
             metrics: HashMap::new(),
         });
@@ -341,7 +328,7 @@ mod tests {
         let mut expected_metrics = HashMap::new();
         expected_metrics.insert(String::from("fake4"), MetricsValueType::Score(4));
 
-        let expected_file_analysis = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
+        let expected_file_analysis = Analysis::FileAnalysis(FileAnalysis {
             file_key: "f1".to_string(),
             metrics: expected_metrics.clone(),
         });
@@ -372,7 +359,7 @@ mod tests {
         expected_metrics.insert(String::from("fake4"), MetricsValueType::Score(4));
         expected_metrics.insert(String::from("fake10"), MetricsValueType::Score(10));
 
-        let expected_file_analysis = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
+        let expected_file_analysis = Analysis::FileAnalysis(FileAnalysis {
             file_key: "f1".to_string(),
             metrics: expected_metrics.clone(),
         });
@@ -402,7 +389,7 @@ mod tests {
         let error_value = MetricsValueType::Error("Analysis error".to_string());
         expected_metrics.insert(String::from("broken"), error_value);
 
-        let expected_file_analysis = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
+        let expected_file_analysis = Analysis::FileAnalysis(FileAnalysis {
             file_key: "f1".to_string(),
             metrics: expected_metrics.clone(),
         });
@@ -433,7 +420,7 @@ mod tests {
 
         let mut expected_metrics = HashMap::new();
         expected_metrics.insert(String::from("lines_count"), MetricsValueType::Score(5));
-        let expected_file_analysis = AnalysisTest::FileAnalysisTest(FileAnalysisTest {
+        let expected_file_analysis = Analysis::FileAnalysis(FileAnalysis {
             file_key: "file5.txt".to_string(),
             metrics: expected_metrics.clone(),
         });
