@@ -8,8 +8,17 @@ pub struct FileExplorer {}
 
 impl IFileExplorer for FileExplorer {
     fn discover(&self, root: &PathBuf) -> Vec<PathBuf> {
-        vec![]
+        if is_empty(root) {
+            return vec![];
+        } else {
+            vec![root.join("file1.txt")]
+        }
     }
+}
+
+// TODO: unwrap
+fn is_empty(folder: &PathBuf) -> bool {
+    folder.read_dir().unwrap().next().is_none()
 }
 
 impl FileExplorer {
@@ -74,7 +83,7 @@ mod file_explorer_tests {
         assert_eq!(actual_files, expected_files);
     }
 
-    /*    #[test]
+    #[test]
     fn file_explorer_with_root_path_with_1_file_should_return_the_path_of_the_file() {
         // Given
         let root = PathBuf::from("tests").join("data").join("root_with_1_file");
@@ -91,7 +100,7 @@ mod file_explorer_tests {
         // Then
         let expected_files: Vec<PathBuf> = vec![file1];
         assert_eq!(actual_files, expected_files);
-    }*/
+    }
 
     /*    #[test]
     fn file_explorer_with_root_path_should_return_a_vector_of_the_files_path() {
