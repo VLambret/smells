@@ -1,4 +1,5 @@
 use std::fs::read_dir;
+use std::io;
 use std::path::PathBuf;
 
 pub trait IFileExplorer {
@@ -7,12 +8,17 @@ pub trait IFileExplorer {
 
 pub struct FileExplorer {}
 
+// TODO: (Vec<PathBuf>, Vec<std::io::Error>)
 impl IFileExplorer for FileExplorer {
     fn discover(&self, root: &PathBuf) -> Vec<PathBuf> {
         let mut files = vec![];
-        // TODO: unwrap
         for file in read_dir(root).unwrap() {
-            files.push(file.unwrap().path());
+            let file = file.unwrap().path();
+            if file.is_file() {
+                files.push(file);
+            } else {
+                files.extend(self.discover(&file));
+            }
         }
         files
     }
@@ -66,11 +72,14 @@ mod file_explorer_tests {
     #[test]
     fn file_explorer_with_root_path_without_files_should_return_an_empty_vector() {
         // Given
-        let root = PathBuf::from("tests").join("data").join("empty_root");
+        let root = PathBuf::from("tests")
+            .join("data")
+            .join("file_explorer")
+            .join("empty_root");
         if root.exists() {
             fs::remove_dir_all(&root).unwrap();
         }
-        fs::create_dir(&root).unwrap();
+        fs::create_dir_all(&root).unwrap();
 
         // When
         let actual_files = FileExplorer::new().discover(&root);
@@ -83,11 +92,14 @@ mod file_explorer_tests {
     #[test]
     fn file_explorer_with_root_path_with_1_file_should_return_the_path_of_the_file() {
         // Given
-        let root = PathBuf::from("tests").join("data").join("root_with_1_file");
+        let root = PathBuf::from("tests")
+            .join("data")
+            .join("file_explorer")
+            .join("root_with_1_file");
         if root.exists() {
             fs::remove_dir_all(&root).unwrap();
         }
-        fs::create_dir(&root).unwrap();
+        fs::create_dir_all(&root).unwrap();
         let file1 = root.join("file1.txt");
         File::create(&file1).unwrap();
 
@@ -104,11 +116,12 @@ mod file_explorer_tests {
         // Given
         let root = PathBuf::from("tests")
             .join("data")
+            .join("file_explorer")
             .join("root_with_2_files");
         if root.exists() {
             fs::remove_dir_all(&root).unwrap();
         }
-        fs::create_dir(&root).unwrap();
+        fs::create_dir_all(&root).unwrap();
         let file1 = root.join("file1.txt");
         let file2 = root.join("file2.txt");
         File::create(&file1).unwrap();
@@ -119,6 +132,32 @@ mod file_explorer_tests {
 
         // Then
         let expected_files: Vec<PathBuf> = vec![file1, file2];
+        assert_eq!(actual_files, expected_files);
+    }
+
+    #[test]
+    fn file_explorer_with_root_path_with_1_subfolder_and_1_file_should_return_the_path_of_the_file()
+    {
+        // Given
+        let root = PathBuf::from("tests")
+            .join("data")
+            .join("file_explorer")
+            .join("root_with_1_folder_and_1_file");
+        if root.exists() {
+            fs::remove_dir_all(&root).unwrap();
+        }
+        fs::create_dir_all(&root).unwrap();
+        let subfolder = root.join("subfolder");
+        let file1 = subfolder.join("file1.txt");
+
+        fs::create_dir(&subfolder).unwrap();
+        File::create(&file1).unwrap();
+
+        // When
+        let actual_files = FileExplorer::new().discover(&root);
+
+        // Then
+        let expected_files: Vec<PathBuf> = vec![file1];
         assert_eq!(actual_files, expected_files);
     }
 
