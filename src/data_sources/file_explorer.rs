@@ -9,22 +9,13 @@ pub struct FileExplorer {}
 
 impl IFileExplorer for FileExplorer {
     fn discover(&self, root: &PathBuf) -> Vec<PathBuf> {
-        if is_empty(root) {
-            return vec![];
-        } else {
-            let mut files = vec![];
-            // TODO: unwrap
-            for file in read_dir(root).unwrap() {
-                files.push(file.unwrap().path());
-            }
-            files
+        let mut files = vec![];
+        // TODO: unwrap
+        for file in read_dir(root).unwrap() {
+            files.push(file.unwrap().path());
         }
+        files
     }
-}
-
-// TODO: unwrap
-fn is_empty(folder: &PathBuf) -> bool {
-    folder.read_dir().unwrap().next().is_none()
 }
 
 impl FileExplorer {
