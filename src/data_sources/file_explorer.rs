@@ -1,3 +1,4 @@
+use std::fs::read_dir;
 use std::path::PathBuf;
 
 pub trait IFileExplorer {
@@ -11,7 +12,12 @@ impl IFileExplorer for FileExplorer {
         if is_empty(root) {
             return vec![];
         } else {
-            vec![root.join("file1.txt")]
+            let mut files = vec![];
+            // TODO: unwrap
+            for file in read_dir(root).unwrap() {
+                files.push(file.unwrap().path());
+            }
+            files
         }
     }
 }
@@ -99,6 +105,29 @@ mod file_explorer_tests {
 
         // Then
         let expected_files: Vec<PathBuf> = vec![file1];
+        assert_eq!(actual_files, expected_files);
+    }
+
+    #[test]
+    fn file_explorer_with_root_path_with_2_files_should_return_the_paths_of_the_files() {
+        // Given
+        let root = PathBuf::from("tests")
+            .join("data")
+            .join("root_with_2_files");
+        if root.exists() {
+            fs::remove_dir_all(&root).unwrap();
+        }
+        fs::create_dir(&root).unwrap();
+        let file1 = root.join("file1.txt");
+        let file2 = root.join("file2.txt");
+        File::create(&file1).unwrap();
+        File::create(&file2).unwrap();
+
+        // When
+        let actual_files = FileExplorer::new().discover(&root);
+
+        // Then
+        let expected_files: Vec<PathBuf> = vec![file1, file2];
         assert_eq!(actual_files, expected_files);
     }
 
