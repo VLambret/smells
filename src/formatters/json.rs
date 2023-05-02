@@ -9,7 +9,7 @@ pub fn convert_analysis_to_formatted_json(analysis: RootAnalysis) -> String {
 
 fn build_json_folder_analysis(folder: &RootAnalysis) -> Value {
     let mut folder_content_json = Vec::new();
-    for item in &folder.folder_content {
+    for item in &folder.content {
         let json_item = match item {
             Analysis::FolderAnalysis(sub_folder) => build_json_folder_analysis(sub_folder),
             Analysis::FileAnalysis(sub_file) => build_json_file_analysis(sub_file),
@@ -18,7 +18,7 @@ fn build_json_folder_analysis(folder: &RootAnalysis) -> Value {
     }
     json!(
         {
-            folder.folder_key.to_owned():{
+            folder.id.to_owned():{
             "metrics": folder.metrics,
             "folder_content": folder_content_json
              }
@@ -29,7 +29,7 @@ fn build_json_folder_analysis(folder: &RootAnalysis) -> Value {
 fn build_json_file_analysis(file: &FileAnalysis) -> Value {
     json!(
         {
-            file.file_key.to_owned():{
+            file.id.to_owned():{
             "metrics": file.metrics
             }
         }

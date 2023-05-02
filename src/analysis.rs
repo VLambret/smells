@@ -11,14 +11,14 @@ pub mod models {
     // TODO: distinguish root to folders
     #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
     pub struct RootAnalysis {
-        pub folder_key: String,
+        pub id: String,
         pub metrics: HashMap<String, MetricsValueType>,
-        pub folder_content: Vec<Analysis>,
+        pub content: Vec<Analysis>,
     }
 
     #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
     pub struct FileAnalysis {
-        pub file_key: String,
+        pub id: String,
         pub metrics: HashMap<String, MetricsValueType>,
     }
 
@@ -89,9 +89,9 @@ mod internal_process {
         );
 
         let root_analysis = RootAnalysis {
-            folder_key: extract_analysed_item_key(&item),
+            id: extract_analysed_item_key(&item),
             metrics: metrics_content,
-            folder_content,
+            content: folder_content,
         };
         root_analysis
     }
@@ -127,16 +127,16 @@ mod internal_process {
                 result_file_metrics.insert(metric.get_key(), result_metric_analyze);
             }
             let file_analysis_test = Analysis::FileAnalysis(FileAnalysis {
-                file_key: file.file_name().unwrap().to_string_lossy().into_owned(), // TODO unwrap
+                id: file.file_name().unwrap().to_string_lossy().into_owned(), // TODO unwrap
                 metrics: result_file_metrics.clone(),
             });
             result_files_analysis.push(file_analysis_test);
         }
 
         RootAnalysis {
-            folder_key: root.file_name().unwrap().to_string_lossy().into_owned(), // TODO unwrapS
+            id: root.file_name().unwrap().to_string_lossy().into_owned(), // TODO unwrapS
             metrics: result_file_metrics,
-            folder_content: result_files_analysis,
+            content: result_files_analysis,
         }
     }
 
@@ -170,7 +170,7 @@ mod internal_process {
         );
 
         FileAnalysis {
-            file_key: extract_analysed_item_key(&path),
+            id: extract_analysed_item_key(&path),
             metrics: metrics_content,
         }
     }
@@ -260,9 +260,9 @@ mod tests {
             _internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
         // Then
         let expected_result_analysis = RootAnalysis {
-            folder_key: String::from("folder_to_analyze"),
+            id: String::from("folder_to_analyze"),
             metrics: HashMap::new(),
-            folder_content: vec![],
+            content: vec![],
         };
         assert_eq!(actual_result_analysis, expected_result_analysis);
     }
@@ -282,18 +282,18 @@ mod tests {
 
         // Then
         let first_file_analysis = Analysis::FileAnalysis(FileAnalysis {
-            file_key: String::from("f1"),
+            id: String::from("f1"),
             metrics: HashMap::new(),
         });
         let second_file_analysis = Analysis::FileAnalysis(FileAnalysis {
-            file_key: String::from("f2"),
+            id: String::from("f2"),
             metrics: HashMap::new(),
         });
         let expected_file_analysis = vec![first_file_analysis, second_file_analysis];
         let expected_result_analysis = RootAnalysis {
-            folder_key: "folder_to_analyze".to_string(),
+            id: "folder_to_analyze".to_string(),
             metrics: HashMap::new(),
-            folder_content: expected_file_analysis,
+            content: expected_file_analysis,
         };
         assert_eq!(actual_result_analysis, expected_result_analysis);
     }
@@ -315,13 +315,13 @@ mod tests {
         expected_metrics.insert(String::from("fake4"), MetricsValueType::Score(4));
 
         let expected_file_analysis = Analysis::FileAnalysis(FileAnalysis {
-            file_key: "f1".to_string(),
+            id: "f1".to_string(),
             metrics: expected_metrics.clone(),
         });
         let expected_root_analysis = RootAnalysis {
-            folder_key: "folder_to_analyze".to_string(),
+            id: "folder_to_analyze".to_string(),
             metrics: expected_metrics,
-            folder_content: vec![expected_file_analysis],
+            content: vec![expected_file_analysis],
         };
         assert_eq!(expected_root_analysis, actual_root_analysis);
     }
@@ -346,13 +346,13 @@ mod tests {
         expected_metrics.insert(String::from("fake10"), MetricsValueType::Score(10));
 
         let expected_file_analysis = Analysis::FileAnalysis(FileAnalysis {
-            file_key: "f1".to_string(),
+            id: "f1".to_string(),
             metrics: expected_metrics.clone(),
         });
         let expected_root_analysis = RootAnalysis {
-            folder_key: "folder_to_analyze".to_string(),
+            id: "folder_to_analyze".to_string(),
             metrics: expected_metrics,
-            folder_content: vec![expected_file_analysis],
+            content: vec![expected_file_analysis],
         };
         assert_eq!(expected_root_analysis, actual_root_analysis);
     }
@@ -376,13 +376,13 @@ mod tests {
         expected_metrics.insert(String::from("broken"), error_value);
 
         let expected_file_analysis = Analysis::FileAnalysis(FileAnalysis {
-            file_key: "f1".to_string(),
+            id: "f1".to_string(),
             metrics: expected_metrics.clone(),
         });
         let expected_root_analysis = RootAnalysis {
-            folder_key: "folder_to_analyze".to_string(),
+            id: "folder_to_analyze".to_string(),
             metrics: expected_metrics.clone(),
-            folder_content: vec![expected_file_analysis],
+            content: vec![expected_file_analysis],
         };
         assert_eq!(expected_root_analysis, actual_root_analysis);
     }
@@ -407,13 +407,13 @@ mod tests {
         let mut expected_metrics = HashMap::new();
         expected_metrics.insert(String::from("lines_count"), MetricsValueType::Score(5));
         let expected_file_analysis = Analysis::FileAnalysis(FileAnalysis {
-            file_key: "file5.txt".to_string(),
+            id: "file5.txt".to_string(),
             metrics: expected_metrics.clone(),
         });
         let expected_root_analysis = RootAnalysis {
-            folder_key: "folder_with_multiple_files".to_string(),
+            id: "folder_with_multiple_files".to_string(),
             metrics: expected_metrics,
-            folder_content: vec![expected_file_analysis],
+            content: vec![expected_file_analysis],
         };
         assert_eq!(expected_root_analysis, actual_root_analysis);
     }
