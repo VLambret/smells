@@ -1,32 +1,45 @@
 use std::fs::read_dir;
-use std::io;
 use std::path::PathBuf;
 
 pub trait IFileExplorer {
-    fn discover(&self, root: &PathBuf) -> Vec<PathBuf>;
+    fn discover(&self) -> Vec<PathBuf>;
 }
 
-pub struct FileExplorer {}
+pub struct FileExplorer {
+    root: PathBuf,
+}
 
 // TODO: (Vec<PathBuf>, Vec<std::io::Error>)
 impl IFileExplorer for FileExplorer {
-    fn discover(&self, root: &PathBuf) -> Vec<PathBuf> {
+    fn discover(&self) -> Vec<PathBuf> {
+        self.discover_inner(&self.root)
+    }
+}
+
+impl FileExplorer {
+    pub fn new(root: &PathBuf) -> Self {
+        FileExplorer { root: root.clone() }
+    }
+
+    fn discover_inner(&self, root: &PathBuf) -> Vec<PathBuf> {
         let mut files = vec![];
         for file in read_dir(root).unwrap() {
             let file = file.unwrap().path();
             if file.is_file() {
                 files.push(file);
             } else {
-                files.extend(self.discover(&file));
+                files.extend(self.discover_inner(&file));
             }
         }
         files
     }
 }
 
-impl FileExplorer {
-    pub fn new() -> Self {
-        FileExplorer {}
+impl Iterator for FileExplorer {
+    type Item = PathBuf;
+
+    fn next(&mut self) -> Option<PathBuf> {
+        Some(PathBuf::from(""))
     }
 }
 
@@ -35,7 +48,7 @@ pub struct FakeFileExplorer {
 }
 
 impl IFileExplorer for FakeFileExplorer {
-    fn discover(&self, _root: &PathBuf) -> Vec<PathBuf> {
+    fn discover(&self) -> Vec<PathBuf> {
         self.files_to_analyze.clone()
     }
 }
@@ -66,7 +79,7 @@ mod file_explorer_tests {
         fs::create_dir_all(&root).unwrap();
 
         // When
-        let actual_files = FileExplorer::new().discover(&root);
+        let actual_files = FileExplorer::new(&root).discover();
 
         // Then
         let expected_files: Vec<PathBuf> = vec![];
@@ -88,7 +101,7 @@ mod file_explorer_tests {
         File::create(&file1).unwrap();
 
         // When
-        let actual_files = FileExplorer::new().discover(&root);
+        let actual_files = FileExplorer::new(&root).discover();
 
         // Then
         let expected_files: Vec<PathBuf> = vec![file1];
@@ -112,7 +125,7 @@ mod file_explorer_tests {
         File::create(&file2).unwrap();
 
         // When
-        let actual_files = FileExplorer::new().discover(&root);
+        let actual_files = FileExplorer::new(&root).discover();
 
         // Then
         let expected_files: Vec<PathBuf> = vec![file1, file2];
@@ -138,7 +151,7 @@ mod file_explorer_tests {
         File::create(&file1).unwrap();
 
         // When
-        let actual_files = FileExplorer::new().discover(&root);
+        let actual_files = FileExplorer::new(&root).discover();
 
         // Then
         let expected_files: Vec<PathBuf> = vec![file1];
@@ -171,14 +184,9 @@ mod file_explorer_tests {
         File::create(&file2).unwrap();
 
         // When
-        let actual_files = FileExplorer::new().discover(&root);
+        let actual_files = FileExplorer::new(&root).discover();
 
         // Then
-        let file1 = PathBuf::from(&root).join("dir1").join("file1.txt");
-        let file2 = PathBuf::from(&root)
-            .join("dir2")
-            .join("dir21")
-            .join("file2.txt");
         let expected_files: Vec<PathBuf> = vec![file1, file2];
         assert_eq!(actual_files, expected_files);
     }
@@ -192,7 +200,7 @@ mod file_explorer_tests {
         let fake_explorer1 = FakeFileExplorer::new(files_to_analyze);
         // Then
         let expected_files_to_analyze: Vec<PathBuf> = vec![];
-        assert_eq!(fake_explorer1.discover(&root), expected_files_to_analyze)
+        assert_eq!(fake_explorer1.discover(), expected_files_to_analyze)
     }
 
     #[test]
@@ -204,7 +212,7 @@ mod file_explorer_tests {
         let expected_files_to_analyze: Vec<PathBuf> = vec![PathBuf::from("test_file")];
         let fake_explorer1 = FakeFileExplorer::new(files_to_analyze);
         // Then
-        assert_eq!(fake_explorer1.discover(&root), expected_files_to_analyze)
+        assert_eq!(fake_explorer1.discover(), expected_files_to_analyze)
     }
 
     #[test]
@@ -217,6 +225,6 @@ mod file_explorer_tests {
             vec![PathBuf::from("test_file1"), PathBuf::from("test_file2")];
         let fake_explorer1 = FakeFileExplorer::new(files_to_analyze);
         // Then
-        assert_eq!(fake_explorer1.discover(&root), expected_files_to_analyze);
+        assert_eq!(fake_explorer1.discover(), expected_files_to_analyze);
     }
 }

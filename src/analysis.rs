@@ -1,207 +1,183 @@
-pub mod models {
-    use serde::{Deserialize, Serialize, Serializer};
-    use std::collections::HashMap;
+use crate::metrics::line_count::count_lines;
+use crate::metrics::metric::IMetric;
+use crate::metrics::{line_count, social_complexity};
+use serde::{Deserialize, Serialize, Serializer};
+use std::collections::HashMap;
+use std::fs::{read_dir, DirEntry, File};
+use std::io::Read;
+use std::path::PathBuf;
 
-    #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-    pub enum Analysis {
-        FileAnalysis(FileAnalysis),
-        FolderAnalysis(RootAnalysis),
-    }
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum Analysis {
+    FileAnalysis(FileAnalysis),
+    FolderAnalysis(RootAnalysis),
+}
 
-    // TODO: distinguish root to folders
-    #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-    pub struct RootAnalysis {
-        pub id: String,
-        pub metrics: HashMap<String, MetricsValueType>,
-        pub content: Vec<Analysis>,
-    }
+// TODO: distinguish root to folders
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct RootAnalysis {
+    pub id: String,
+    pub metrics: HashMap<String, MetricsValueType>,
+    pub content: Vec<Analysis>,
+}
 
-    #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-    pub struct FileAnalysis {
-        pub id: String,
-        pub metrics: HashMap<String, MetricsValueType>,
-    }
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct FileAnalysis {
+    pub id: String,
+    pub metrics: HashMap<String, MetricsValueType>,
+}
 
-    pub type AnalysisError = String;
+pub type AnalysisError = String;
 
-    // TODO: rename variants
-    #[derive(Debug, Deserialize, Clone, PartialEq)]
-    pub enum MetricsValueType {
-        Score(u32),
-        Error(AnalysisError),
-    }
+// TODO: rename variants
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub enum MetricsValueType {
+    Score(u32),
+    Error(AnalysisError),
+}
 
-    impl Serialize for MetricsValueType {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
-        {
-            match self {
-                MetricsValueType::Score(score) => serializer.serialize_u32(*score),
-                MetricsValueType::Error(error) => serializer.serialize_str(error),
-            }
+impl Serialize for MetricsValueType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            MetricsValueType::Score(score) => serializer.serialize_u32(*score),
+            MetricsValueType::Error(error) => serializer.serialize_str(error),
         }
     }
 }
 
-pub mod public_interface {
-    use crate::analysis::internal_process::analyse_root;
-    use crate::analysis::models::RootAnalysis;
-    use std::path::PathBuf;
-    use structopt::StructOpt;
+pub fn do_analysis(root: PathBuf) -> RootAnalysis {
+    analyse_root(root)
+}
 
-    #[derive(Debug, StructOpt)]
-    pub struct CmdArgs {
-        #[structopt(default_value = ".")]
-        pub path: PathBuf,
+fn analyse_folder(item: PathBuf) -> RootAnalysis {
+    let folder_content: Vec<Analysis> = sort_files_of_a_path(&item)
+        .iter()
+        .filter(|f| can_file_be_analysed(&f.path()))
+        .map(|f| analyse(&f))
+        .collect();
+
+    let mut metrics_content = HashMap::new();
+    metrics_content.insert(
+        "lines_count".to_string(),
+        MetricsValueType::Score(line_count::summary_lines_count_metric(&folder_content)),
+    );
+    metrics_content.insert(
+        "social_complexity".to_string(),
+        MetricsValueType::Score(social_complexity::social_complexity("")),
+    );
+
+    let root_analysis = RootAnalysis {
+        id: extract_analysed_item_key(&item),
+        metrics: metrics_content,
+        content: folder_content,
+    };
+    root_analysis
+}
+
+fn analyse(entry: &DirEntry) -> Analysis {
+    let analysis: Analysis;
+    if entry.path().is_file() {
+        analysis = Analysis::FileAnalysis(analyse_file(entry));
+    } else {
+        analysis = Analysis::FolderAnalysis(analyse_folder(entry.path()));
+    }
+    analysis
+}
+
+fn analyse_root(root: PathBuf) -> RootAnalysis {
+    analyse_folder(root)
+}
+
+fn analyse_internal(
+    root: &PathBuf,
+    files: Vec<PathBuf>,
+    metrics: Vec<Box<dyn IMetric>>,
+) -> RootAnalysis {
+    let mut result_file_metrics = HashMap::new();
+    let mut result_files_analysis = Vec::new();
+
+    for file in files {
+        for metric in &metrics {
+            let result_metric_analyze = match metric.analyze(&file) {
+                Ok(file_metric) => MetricsValueType::Score(file_metric),
+                Err(error) => MetricsValueType::Error(error.to_string()),
+            };
+            result_file_metrics.insert(metric.get_key(), result_metric_analyze);
+        }
+        let file_analysis_test = Analysis::FileAnalysis(FileAnalysis {
+            id: file.file_name().unwrap().to_string_lossy().into_owned(), // TODO unwrap
+            metrics: result_file_metrics.clone(),
+        });
+        result_files_analysis.push(file_analysis_test);
     }
 
-    pub fn do_analysis(root: PathBuf) -> RootAnalysis {
-        analyse_root(root)
+    RootAnalysis {
+        id: root.file_name().unwrap().to_string_lossy().into_owned(), // TODO unwrapS
+        metrics: result_file_metrics,
+        content: result_files_analysis,
     }
 }
 
-mod internal_process {
-    use crate::analysis::models::{Analysis, FileAnalysis, MetricsValueType, RootAnalysis};
-    use crate::metrics::line_count::count_lines;
-    use crate::metrics::metric::IMetric;
-    use crate::metrics::{line_count, social_complexity};
-    use std::collections::HashMap;
-    use std::fs::{read_dir, DirEntry, File};
-    use std::io::Read;
-    use std::path::PathBuf;
+// sort files based on the entry names
+fn sort_files_of_a_path(item: &PathBuf) -> Vec<DirEntry> {
+    // TODO: handle unwrap()
+    let dir_result = read_dir(&item);
+    let dir = dir_result.unwrap();
+    let mut entries: Vec<_> = dir.map(|e| e.unwrap()).collect();
+    entries.sort_by_key(|e| e.file_name());
+    entries
+}
 
-    fn analyse_folder(item: PathBuf) -> RootAnalysis {
-        let folder_content: Vec<Analysis> = sort_files_of_a_path(&item)
-            .iter()
-            .filter(|f| can_file_be_analysed(&f.path()))
-            .map(|f| analyse(&f))
-            .collect();
+// create the file content for the analysis
+fn analyse_file(entry: &DirEntry) -> FileAnalysis {
+    // TODO: handle unwrap()
+    let path = entry.path();
+    let mut file = File::open(&path).unwrap();
+    // TODO: remove expect and make metric optional to handle errors when an executable is analyzed
+    let mut content = String::new();
+    file.read_to_string(&mut content).unwrap();
 
-        let mut metrics_content = HashMap::new();
-        metrics_content.insert(
-            "lines_count".to_string(),
-            MetricsValueType::Score(line_count::summary_lines_count_metric(&folder_content)),
-        );
-        metrics_content.insert(
-            "social_complexity".to_string(),
-            MetricsValueType::Score(social_complexity::social_complexity("")),
-        );
+    let mut metrics_content = HashMap::new();
+    metrics_content.insert(
+        "lines_count".to_string(),
+        MetricsValueType::Score(count_lines(content)),
+    );
+    metrics_content.insert(
+        "social_complexity".to_string(),
+        MetricsValueType::Score(social_complexity::social_complexity("")),
+    );
 
-        let root_analysis = RootAnalysis {
-            id: extract_analysed_item_key(&item),
-            metrics: metrics_content,
-            content: folder_content,
-        };
-        root_analysis
+    FileAnalysis {
+        id: extract_analysed_item_key(&path),
+        metrics: metrics_content,
     }
+}
 
-    fn analyse(entry: &DirEntry) -> Analysis {
-        let analysis: Analysis;
-        if entry.path().is_file() {
-            analysis = Analysis::FileAnalysis(analyse_file(entry));
-        } else {
-            analysis = Analysis::FolderAnalysis(analyse_folder(entry.path()));
-        }
-        analysis
-    }
+fn can_file_be_analysed(item: &PathBuf) -> bool {
+    let file_name = match item.file_name() {
+        Some(file) => file,
+        _ => return false,
+    };
+    !file_name.to_string_lossy().starts_with(".")
+}
 
-    pub fn analyse_root(root: PathBuf) -> RootAnalysis {
-        analyse_folder(root)
-    }
-
-    pub fn _internal_analyse_root(
-        root: &PathBuf,
-        files: Vec<PathBuf>,
-        metrics: Vec<Box<dyn IMetric>>,
-    ) -> RootAnalysis {
-        let mut result_file_metrics = HashMap::new();
-        let mut result_files_analysis = Vec::new();
-
-        for file in files {
-            for metric in &metrics {
-                let result_metric_analyze = match metric.analyze(&file) {
-                    Ok(file_metric) => MetricsValueType::Score(file_metric),
-                    Err(error) => MetricsValueType::Error(error.to_string()),
-                };
-                result_file_metrics.insert(metric.get_key(), result_metric_analyze);
-            }
-            let file_analysis_test = Analysis::FileAnalysis(FileAnalysis {
-                id: file.file_name().unwrap().to_string_lossy().into_owned(), // TODO unwrap
-                metrics: result_file_metrics.clone(),
-            });
-            result_files_analysis.push(file_analysis_test);
-        }
-
-        RootAnalysis {
-            id: root.file_name().unwrap().to_string_lossy().into_owned(), // TODO unwrapS
-            metrics: result_file_metrics,
-            content: result_files_analysis,
-        }
-    }
-
-    // sort files based on the entry names
-    fn sort_files_of_a_path(item: &PathBuf) -> Vec<DirEntry> {
-        // TODO: handle unwrap()
-        let dir_result = read_dir(&item);
-        let dir = dir_result.unwrap();
-        let mut entries: Vec<_> = dir.map(|e| e.unwrap()).collect();
-        entries.sort_by_key(|e| e.file_name());
-        entries
-    }
-
-    // create the file content for the analysis
-    fn analyse_file(entry: &DirEntry) -> FileAnalysis {
-        // TODO: handle unwrap()
-        let path = entry.path();
-        let mut file = File::open(&path).unwrap();
-        // TODO: remove expect and make metric optional to handle errors when an executable is analyzed
-        let mut content = String::new();
-        file.read_to_string(&mut content).unwrap();
-
-        let mut metrics_content = HashMap::new();
-        metrics_content.insert(
-            "lines_count".to_string(),
-            MetricsValueType::Score(count_lines(content)),
-        );
-        metrics_content.insert(
-            "social_complexity".to_string(),
-            MetricsValueType::Score(social_complexity::social_complexity("")),
-        );
-
-        FileAnalysis {
-            id: extract_analysed_item_key(&path),
-            metrics: metrics_content,
-        }
-    }
-
-    fn can_file_be_analysed(item: &PathBuf) -> bool {
-        let file_name = match item.file_name() {
-            Some(file) => file,
-            _ => return false,
-        };
-        !file_name.to_string_lossy().starts_with(".")
-    }
-
-    fn extract_analysed_item_key(item: &PathBuf) -> String {
-        let item_as_os_str = item.as_os_str();
-        let item_key = match item.file_name() {
-            Some(item_name) => item_name.to_owned(),
-            _ => item_as_os_str.to_owned(),
-        };
-        item_key.to_string_lossy().into_owned()
-    }
+fn extract_analysed_item_key(item: &PathBuf) -> String {
+    let item_as_os_str = item.as_os_str();
+    let item_key = match item.file_name() {
+        Some(item_name) => item_name.to_owned(),
+        _ => item_as_os_str.to_owned(),
+    };
+    item_key.to_string_lossy().into_owned()
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::analysis::internal_process::_internal_analyse_root;
-    use crate::analysis::models::{Analysis, FileAnalysis, MetricsValueType, RootAnalysis};
+    use super::*;
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
     use crate::metrics::line_count::LinesCountMetric;
-    use crate::metrics::metric::IMetric;
-    use std::collections::HashMap;
-    use std::path::PathBuf;
 
     pub struct FakeMetric {
         pub metric_key: String,
@@ -257,7 +233,7 @@ mod tests {
         let metrics = vec![];
         // When
         let actual_result_analysis =
-            _internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
+            analyse_internal(&root, fake_file_explorer.discover(), metrics);
         // Then
         let expected_result_analysis = RootAnalysis {
             id: String::from("folder_to_analyze"),
@@ -278,7 +254,7 @@ mod tests {
 
         // When
         let actual_result_analysis =
-            _internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
+            analyse_internal(&root, fake_file_explorer.discover(), metrics);
 
         // Then
         let first_file_analysis = Analysis::FileAnalysis(FileAnalysis {
@@ -307,8 +283,7 @@ mod tests {
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric::new(4))];
 
         // When
-        let actual_root_analysis =
-            _internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
+        let actual_root_analysis = analyse_internal(&root, fake_file_explorer.discover(), metrics);
 
         // Then
         let mut expected_metrics = HashMap::new();
@@ -337,8 +312,7 @@ mod tests {
             vec![Box::new(FakeMetric::new(4)), Box::new(FakeMetric::new(10))];
 
         // When
-        let actual_root_analysis =
-            _internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
+        let actual_root_analysis = analyse_internal(&root, fake_file_explorer.discover(), metrics);
 
         // Then
         let mut expected_metrics = HashMap::new();
@@ -367,8 +341,7 @@ mod tests {
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(BrokenMetric::new())];
 
         // When
-        let actual_root_analysis =
-            _internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
+        let actual_root_analysis = analyse_internal(&root, fake_file_explorer.discover(), metrics);
 
         // Then
         let mut expected_metrics = HashMap::new();
@@ -401,8 +374,7 @@ mod tests {
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(LinesCountMetric::new())];
 
         // When
-        let actual_root_analysis =
-            _internal_analyse_root(&root, fake_file_explorer.discover(&root), metrics);
+        let actual_root_analysis = analyse_internal(&root, fake_file_explorer.discover(), metrics);
 
         let mut expected_metrics = HashMap::new();
         expected_metrics.insert(String::from("lines_count"), MetricsValueType::Score(5));

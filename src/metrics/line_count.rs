@@ -1,4 +1,4 @@
-use crate::analysis::models::{Analysis, MetricsValueType};
+use crate::analysis::{Analysis, MetricsValueType};
 use crate::metrics::metric::IMetric;
 use std::fs::File;
 use std::io::Read;

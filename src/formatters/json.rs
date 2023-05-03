@@ -1,4 +1,4 @@
-use crate::analysis::models::{Analysis, FileAnalysis, RootAnalysis};
+use crate::analysis::{Analysis, FileAnalysis, RootAnalysis};
 use serde_json::{json, Value};
 
 // print analysis result json

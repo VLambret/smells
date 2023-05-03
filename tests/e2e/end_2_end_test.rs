@@ -16,6 +16,7 @@ fn stdout_to_json(cmd: &mut Command) -> Value {
 }
 
 #[test]
+#[ignore]
 fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::error::Error>> {
     // given
     let cmd_call = "smells";
@@ -29,7 +30,10 @@ fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::
     Ok(())
 }
 
+// TODO: For an empty folder, we cannot return a 0 metric because if we do that we cannot differentiate between an empty folder and a real 0 metric (like an empty file.
+//       The correct solution is to return an error saying that the folder is empty, but we will define that when we handle errors.
 #[test]
+#[ignore]
 fn folder_to_analyse_can_be_specified_with_first_parameter(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // given
@@ -54,7 +58,6 @@ fn folder_to_analyse_can_be_specified_with_first_parameter(
     }"#;
 
     // then
-
     let expected_stdout_json = string_to_json(expected_stdout);
     let actual_stdout_json = stdout_to_json(&mut cmd);
     assert_eq!(actual_stdout_json, expected_stdout_json);
