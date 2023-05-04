@@ -1,3 +1,4 @@
+use crate::data_sources::file_explorer::{FileExplorer, IFileExplorer};
 use crate::metrics::line_count::count_lines;
 use crate::metrics::metric::IMetric;
 use crate::metrics::{line_count, social_complexity};
@@ -93,13 +94,13 @@ fn analyse_root(root: PathBuf) -> RootAnalysis {
 
 fn analyse_internal(
     root: &PathBuf,
-    files: Vec<PathBuf>,
+    file_explorer: Box<dyn IFileExplorer<Item = PathBuf>>,
     metrics: Vec<Box<dyn IMetric>>,
 ) -> RootAnalysis {
     let mut result_file_metrics = HashMap::new();
     let mut result_files_analysis = Vec::new();
 
-    for file in files {
+    for file in file_explorer.discover() {
         for metric in &metrics {
             let result_metric_analyze = match metric.analyze(&file) {
                 Ok(file_metric) => MetricsValueType::Score(file_metric),
@@ -229,11 +230,12 @@ mod tests {
         // Given
         let root = PathBuf::from("folder_to_analyze");
         let files_to_analyze = vec![];
-        let fake_file_explorer = FakeFileExplorer::new(files_to_analyze);
         let metrics = vec![];
+        let fake_file_explorer: Box<dyn IFileExplorer<Item = PathBuf>> =
+            Box::new(FakeFileExplorer::new(files_to_analyze));
+
         // When
-        let actual_result_analysis =
-            analyse_internal(&root, fake_file_explorer.discover(), metrics);
+        let actual_result_analysis = analyse_internal(&root, fake_file_explorer, metrics);
         // Then
         let expected_result_analysis = RootAnalysis {
             id: String::from("folder_to_analyze"),
@@ -248,13 +250,13 @@ mod tests {
     ) {
         // Given
         let root = PathBuf::from("folder_to_analyze");
-        let files = vec![PathBuf::from("f1"), PathBuf::from("f2")];
-        let fake_file_explorer = FakeFileExplorer::new(files);
+        let files_to_analyze = vec![PathBuf::from("f1"), PathBuf::from("f2")];
+        let fake_file_explorer: Box<dyn IFileExplorer<Item = PathBuf>> =
+            Box::new(FakeFileExplorer::new(files_to_analyze));
         let metrics = vec![];
 
         // When
-        let actual_result_analysis =
-            analyse_internal(&root, fake_file_explorer.discover(), metrics);
+        let actual_result_analysis = analyse_internal(&root, fake_file_explorer, metrics);
 
         // Then
         let first_file_analysis = Analysis::FileAnalysis(FileAnalysis {
@@ -278,12 +280,13 @@ mod tests {
     fn internal_analyse_root_with_1_file_and_fake_metric4_should_return_1_analysis_with_4() {
         // Given
         let root = PathBuf::from("folder_to_analyze");
-        let files = vec![PathBuf::from("f1")];
-        let fake_file_explorer = FakeFileExplorer::new(files);
+        let files_to_analyze = vec![PathBuf::from("f1")];
+        let fake_file_explorer: Box<dyn IFileExplorer<Item = PathBuf>> =
+            Box::new(FakeFileExplorer::new(files_to_analyze));
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric::new(4))];
 
         // When
-        let actual_root_analysis = analyse_internal(&root, fake_file_explorer.discover(), metrics);
+        let actual_root_analysis = analyse_internal(&root, fake_file_explorer, metrics);
 
         // Then
         let mut expected_metrics = HashMap::new();
@@ -306,13 +309,14 @@ mod tests {
     ) {
         // Given
         let root = PathBuf::from("folder_to_analyze");
-        let files = vec![PathBuf::from("f1")];
-        let fake_file_explorer = FakeFileExplorer::new(files);
+        let files_to_analyze = vec![PathBuf::from("f1")];
+        let fake_file_explorer: Box<dyn IFileExplorer<Item = PathBuf>> =
+            Box::new(FakeFileExplorer::new(files_to_analyze));
         let metrics: Vec<Box<dyn IMetric>> =
             vec![Box::new(FakeMetric::new(4)), Box::new(FakeMetric::new(10))];
 
         // When
-        let actual_root_analysis = analyse_internal(&root, fake_file_explorer.discover(), metrics);
+        let actual_root_analysis = analyse_internal(&root, fake_file_explorer, metrics);
 
         // Then
         let mut expected_metrics = HashMap::new();
@@ -336,12 +340,13 @@ mod tests {
     {
         // Given
         let root = PathBuf::from("folder_to_analyze");
-        let files = vec![PathBuf::from("f1")];
-        let fake_file_explorer = FakeFileExplorer::new(files);
+        let files_to_analyze = vec![PathBuf::from("f1")];
+        let fake_file_explorer: Box<dyn IFileExplorer<Item = PathBuf>> =
+            Box::new(FakeFileExplorer::new(files_to_analyze));
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(BrokenMetric::new())];
 
         // When
-        let actual_root_analysis = analyse_internal(&root, fake_file_explorer.discover(), metrics);
+        let actual_root_analysis = analyse_internal(&root, fake_file_explorer, metrics);
 
         // Then
         let mut expected_metrics = HashMap::new();
@@ -366,15 +371,16 @@ mod tests {
         let root = PathBuf::from("tests")
             .join("data")
             .join("folder_with_multiple_files");
-        let files = vec![PathBuf::from("tests")
+        let files_to_analyze = vec![PathBuf::from("tests")
             .join("data")
             .join("folder_with_multiple_files")
             .join("file5.txt")];
-        let fake_file_explorer = FakeFileExplorer::new(files);
+        let fake_file_explorer: Box<dyn IFileExplorer<Item = PathBuf>> =
+            Box::new(FakeFileExplorer::new(files_to_analyze));
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(LinesCountMetric::new())];
 
         // When
-        let actual_root_analysis = analyse_internal(&root, fake_file_explorer.discover(), metrics);
+        let actual_root_analysis = analyse_internal(&root, fake_file_explorer, metrics);
 
         let mut expected_metrics = HashMap::new();
         expected_metrics.insert(String::from("lines_count"), MetricsValueType::Score(5));

@@ -1,7 +1,7 @@
 use std::fs::read_dir;
 use std::path::PathBuf;
 
-pub trait IFileExplorer {
+pub trait IFileExplorer: Iterator<Item = PathBuf> {
     fn discover(&self) -> Vec<PathBuf>;
 }
 
@@ -56,6 +56,14 @@ impl IFileExplorer for FakeFileExplorer {
 impl FakeFileExplorer {
     pub fn new(files_to_analyze: Vec<PathBuf>) -> Self {
         FakeFileExplorer { files_to_analyze }
+    }
+}
+
+impl Iterator for FakeFileExplorer {
+    type Item = PathBuf;
+
+    fn next(&mut self) -> Option<PathBuf> {
+        self.files_to_analyze.pop()
     }
 }
 
