@@ -7,7 +7,6 @@ use std::collections::HashMap;
 use std::fs::{read_dir, DirEntry, File};
 use std::io::Read;
 use std::path::PathBuf;
-use std::rc::Rc;
 use std::string::String;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -255,8 +254,7 @@ mod tests {
     }
 
     #[test]
-    fn test_internal_analyse_root_without_files_and_empty_metrics_should_return_an_empty_analysis()
-    {
+    fn analyse_internal_with_empty_root_and_empty_metrics() {
         // Given
         let root_name = "folder_to_analyze";
         let root = PathBuf::from(root_name);
@@ -277,8 +275,7 @@ mod tests {
     }
 
     #[test]
-    fn internal_analyse_root_with_2_files_and_empty_metrics_should_return_an_empty_metric_for_these_files(
-    ) {
+    fn analyse_internal_with_2_files_and_empty_metrics() {
         // Given
         let root_name = "folder_to_analyze";
         let root = PathBuf::from(root_name);
@@ -312,8 +309,7 @@ mod tests {
     }
 
     #[test]
-    fn internal_analyse_root_with_1_file_and_fake_metric4_and_fake_metric10_should_return_1_analysis_with_4_and_10(
-    ) {
+    fn analyse_internal_with_1_file_and_fakemetric4_and_fakemetric10() {
         // Given
         let root_name = "folder_to_analyse";
         let root = PathBuf::from(root_name);
@@ -344,8 +340,7 @@ mod tests {
     }
 
     #[test]
-    fn internal_analyse_root_with_1_file_and_broken_metric_should_return_1_analysis_with_an_error()
-    {
+    fn analyse_internal_with_1_file_and_brokenmetric() {
         // Given
         let root_name = "folder_to_analyze";
         let root = PathBuf::from(root_name);
@@ -375,7 +370,7 @@ mod tests {
     }
 
     #[test]
-    fn internal_analyse_root_with_one_5_lines_file_should_return_one_lines_count_analysis_with_5() {
+    fn analyse_internal_with_one_5_lines_file() {
         // Given
         let root = PathBuf::from("tests")
             .join("data")
@@ -407,7 +402,7 @@ mod tests {
 
     // agreggate tests
     #[test]
-    fn analyse_internal_with_empty_root_and_fakemetric_should_return_empty_root_analysis() {
+    fn internal_analyse_with_empty_root_and_fakemetric0() {
         // Given
         let root_name = "empty_root";
         let root = PathBuf::from(root_name);
@@ -430,8 +425,7 @@ mod tests {
     }
 
     #[test]
-    fn analyse_internal_with_1_file_and_fakemetric1_should_return_a_folder_analysis_containing_1_file_analysis_with_a_score_of_1_for_fake1(
-    ) {
+    fn internal_analyse_with_1_file_and_fakemetric1() {
         // Given
         let root_name = "root_with_1_file";
         let root = PathBuf::from(root_name);
@@ -461,8 +455,7 @@ mod tests {
     }
 
     #[test]
-    fn analyse_internal_of_a_file_in_a_folder_in_root_with_fakemetric1_should_return_a_file_analysis_with_a_score_of_1_for_fake1_inside_2_folder_analysis_with_the_same_score(
-    ) {
+    fn analyse_internal_of_a_file_in_a_folder_with_fakemetric1() {
         // Given
         let root_name = "root_with_1_file_in_1_folder";
         let root = PathBuf::from(root_name);
@@ -495,8 +488,7 @@ mod tests {
         assert_eq!(actual_root_analysis, expected_root_analysis)
     }
     #[test]
-    fn analyse_internal_of_2_file_in_1_folder_in_root_with_fakemetric1_should_return_2_file_analysis_with_a_score_of_1_for_fake1_inside_2_folder_analysis_with_the_sum_of_scores(
-    ) {
+    fn analyse_internal_of_2_file_in_1_folder_in_root_with_fakemetric1_should_add_files_scores() {
         // Given
         /*        let fake_file_explorer = FakeFileExplorer('folder3/file1',
         'folder3/file2',
