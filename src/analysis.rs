@@ -25,8 +25,24 @@ pub struct FolderAnalysis {
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct FileAnalysis {
-    pub id: String,
+    folder_analysis: FolderAnalysis,
     pub metrics: HashMap<String, MetricsValueType>,
+}
+
+impl FileAnalysis {
+    fn new(id: String, metrics: HashMap<String, MetricsValueType>) -> Self {
+        FileAnalysis {
+            folder_analysis: FolderAnalysis{
+                id: id.clone(),
+                metrics: metrics.clone(),
+                content: None
+            },
+            metrics: metrics
+        }
+    }
+    pub fn get_id(&self) -> &String {
+        &self.folder_analysis.id
+    }
 }
 
 pub type AnalysisError = String;
@@ -86,7 +102,7 @@ fn create_hashmap_from_analysis_vector(analysis_vector: Vec<Analysis>) -> Option
 
 fn get_analysis_key(analysis: &Analysis) -> String {
     match analysis {
-        Analysis::FileAnalysis(a) => a.id.clone(),
+        Analysis::FileAnalysis(a) => a.get_id().clone(),
         Analysis::FolderAnalysis(a) => a.id.clone()
     }
 }
@@ -119,10 +135,9 @@ fn analyse_internal(
     for file in file_explorer.discover() {
         result_file_metrics = get_metrics_score(&metrics, &file);
 
-        let file_analysis = Analysis::FileAnalysis(FileAnalysis {
-            id: file.file_name().unwrap().to_string_lossy().into_owned(),
-            metrics: result_file_metrics.clone(),
-        });
+        let file_analysis = Analysis::FileAnalysis(FileAnalysis::new(file.file_name().unwrap().to_string_lossy().into_owned(),
+            result_file_metrics.clone())
+        );
         root_folder_content.push(file_analysis.clone());
         result_root_metrics = result_file_metrics.clone();
     }
@@ -192,10 +207,10 @@ fn analyse_file(entry: &DirEntry) -> FileAnalysis {
         MetricsValueType::Score(social_complexity::social_complexity("")),
     );
 
-    FileAnalysis {
-        id: extract_analysed_item_key(&path),
-        metrics: metrics_content,
-    }
+    FileAnalysis::new(
+        extract_analysed_item_key(&path),
+        metrics_content,
+    )
 }
 
 fn can_file_be_analysed(item: &PathBuf) -> bool {

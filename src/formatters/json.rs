@@ -31,7 +31,7 @@ fn build_json_folder_analysis(folder: &FolderAnalysis) -> Value {
 fn build_json_file_analysis(file: &FileAnalysis) -> Value {
     json!(
         {
-            file.id.to_owned():{
+            file.get_id().to_owned():{
             "metrics": file.metrics
             }
         }
