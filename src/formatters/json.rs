@@ -9,12 +9,14 @@ pub fn convert_analysis_to_formatted_json(analysis: FolderAnalysis) -> String {
 
 fn build_json_folder_analysis(folder: &FolderAnalysis) -> Value {
     let mut folder_content_json = Vec::new();
-    for (filename, analysis) in &folder.content {
-        let json_item = match analysis {
-            Analysis::FolderAnalysis(sub_folder) => build_json_folder_analysis(sub_folder),
-            Analysis::FileAnalysis(sub_file) => build_json_file_analysis(sub_file),
-        };
-        folder_content_json.push(json_item);
+    if let Some(content) = &folder.content {
+        for (filename, analysis) in content {
+            let json_item = match analysis {
+                Analysis::FolderAnalysis(sub_folder) => build_json_folder_analysis(sub_folder),
+                Analysis::FileAnalysis(sub_file) => build_json_file_analysis(sub_file),
+            };
+            folder_content_json.push(json_item);
+        }
     }
     json!(
         {

@@ -20,7 +20,7 @@ pub enum Analysis {
 pub struct FolderAnalysis {
     pub id: String,
     pub metrics: HashMap<String, MetricsValueType>,
-    pub content: HashMap<String, Analysis>,
+    pub content: Option<HashMap<String, Analysis>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -79,9 +79,9 @@ fn analyse_folder(item: PathBuf) -> FolderAnalysis {
     root_analysis
 }
 
-fn create_hashmap_from_analysis_vector(analysis_vector: Vec<Analysis>) -> HashMap<String, Analysis> {
+fn create_hashmap_from_analysis_vector(analysis_vector: Vec<Analysis>) -> Option<HashMap<String, Analysis>> {
     let result = analysis_vector.iter().map(|a|(get_analysis_key(a), a.to_owned())).collect::<HashMap<_, _>>();
-    result
+    Some(result)
 }
 
 fn get_analysis_key(analysis: &Analysis) -> String {
@@ -282,7 +282,7 @@ mod tests {
         let expected_result_analysis = FolderAnalysis {
             id: String::from(root_name),
             metrics: HashMap::new(),
-            content: HashMap::new(),
+            content: Some(HashMap::new()),
         };
         assert_eq!(actual_result_analysis, expected_result_analysis);
     }
