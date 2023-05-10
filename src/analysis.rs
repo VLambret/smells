@@ -9,14 +9,9 @@ use std::io::Read;
 use std::path::PathBuf;
 use std::string::String;
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub enum Analysis {
-    FolderAnalysis(FolderAnalysis),
-}
-
 // TODO: distinguish root to folders
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub struct FolderAnalysis {
+pub struct Analysis {
     pub id: String,
     pub metrics: HashMap<String, MetricsValueType>,
     pub content: Option<HashMap<String, Analysis>>,
@@ -43,11 +38,11 @@ impl Serialize for MetricsValueType {
     }
 }
 
-pub fn do_analysis(root: PathBuf) -> FolderAnalysis {
+pub fn do_analysis(root: PathBuf) -> Analysis {
     analyse_root(root)
 }
 
-fn analyse_folder(item: PathBuf) -> FolderAnalysis {
+fn analyse_folder(item: PathBuf) -> Analysis {
     let folder_content: Vec<Analysis> = sort_files_of_a_path(&item)
         .iter()
         .filter(|f| can_file_be_analysed(&f.path()))
@@ -64,7 +59,7 @@ fn analyse_folder(item: PathBuf) -> FolderAnalysis {
         MetricsValueType::Score(social_complexity::social_complexity("")),
     );
 
-    let root_analysis = FolderAnalysis {
+    let root_analysis = Analysis {
         id: extract_analysed_item_key(&item),
         metrics: metrics_content,
         content: create_hashmap_from_analysis_vector(folder_content),
@@ -73,27 +68,21 @@ fn analyse_folder(item: PathBuf) -> FolderAnalysis {
 }
 
 fn create_hashmap_from_analysis_vector(analysis_vector: Vec<Analysis>) -> Option<HashMap<String, Analysis>> {
-    let result = analysis_vector.iter().map(|a|(get_analysis_key(a), a.to_owned())).collect::<HashMap<_, _>>();
+    let result = analysis_vector.iter().map(|a|(a.id.clone(), a.to_owned())).collect::<HashMap<_, _>>();
     Some(result)
-}
-
-fn get_analysis_key(analysis: &Analysis) -> String {
-    match analysis {
-        Analysis::FolderAnalysis(a) => a.id.clone()
-    }
 }
 
 fn analyse(entry: &DirEntry) -> Analysis {
     let analysis: Analysis;
     if entry.path().is_file() {
-        analysis = Analysis::FolderAnalysis(analyse_file(entry));
+        analysis = analyse_file(entry);
     } else {
-        analysis = Analysis::FolderAnalysis(analyse_folder(entry.path()));
+        analysis = analyse_folder(entry.path());
     }
     analysis
 }
 
-fn analyse_root(root: PathBuf) -> FolderAnalysis {
+fn analyse_root(root: PathBuf) -> Analysis {
     analyse_folder(root)
 }
 
@@ -101,7 +90,7 @@ fn analyse_internal(
     root: &PathBuf,
     file_explorer: Box<dyn IFileExplorer<Item = PathBuf>>,
     metrics: Vec<Box<dyn IMetric>>,
-) -> FolderAnalysis {
+) -> Analysis {
     let mut root_folder_content = vec![];
     let mut result_root_metrics = HashMap::new();
     let mut result_file_metrics = HashMap::new();
@@ -111,11 +100,11 @@ fn analyse_internal(
     for file in file_explorer.discover() {
         result_file_metrics = get_metrics_score(&metrics, &file);
 
-        let file_analysis = Analysis::FolderAnalysis(FolderAnalysis {
+        let file_analysis = Analysis {
             id: file.file_name().unwrap().to_string_lossy().into_owned(),
             metrics: result_file_metrics.clone(),
             content: None
-        });
+        };
         root_folder_content.push(file_analysis.clone());
         result_root_metrics = result_file_metrics.clone();
     }
@@ -126,15 +115,15 @@ fn analyse_internal(
             MetricsValueType::Score((file_explorer.discover().len()) as u32),
         );
 
-        let result_folder_analysis = FolderAnalysis {
+        let result_folder_analysis = Analysis {
             id: String::from("folder1"),
             metrics: result_root_metrics.clone(),
             content: create_hashmap_from_analysis_vector(root_folder_content),
         };
-        root_folder_content = vec![Analysis::FolderAnalysis(result_folder_analysis)];
+        root_folder_content = vec![result_folder_analysis];
     }
     // Root analysis
-    FolderAnalysis {
+    Analysis {
         id: root.file_name().unwrap().to_string_lossy().into_owned(), // TODO unwrapS
         metrics: result_root_metrics,
         content: create_hashmap_from_analysis_vector(root_folder_content),
@@ -167,7 +156,7 @@ fn sort_files_of_a_path(item: &PathBuf) -> Vec<DirEntry> {
 }
 
 // create the file content for the analysis
-fn analyse_file(entry: &DirEntry) -> FolderAnalysis {
+fn analyse_file(entry: &DirEntry) -> Analysis {
     // TODO: handle unwrap()
     let path = entry.path();
     let mut file = File::open(&path).unwrap();
@@ -185,7 +174,7 @@ fn analyse_file(entry: &DirEntry) -> FolderAnalysis {
         MetricsValueType::Score(social_complexity::social_complexity("")),
     );
 
-    FolderAnalysis {
+    Analysis {
         id: extract_analysed_item_key( & path),
         metrics: metrics_content,
         content: None
@@ -273,7 +262,7 @@ mod tests {
         let actual_result_analysis = analyse_internal(&root, fake_file_explorer, metrics);
 
         // Then
-        let expected_result_analysis = FolderAnalysis {
+        let expected_result_analysis = Analysis {
             id: String::from(root_name),
             metrics: HashMap::new(),
             content: Some(HashMap::new()),
