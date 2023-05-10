@@ -32,7 +32,7 @@ fn build_json_file_analysis(file: &FileAnalysis) -> Value {
     json!(
         {
             file.get_id().to_owned():{
-            "metrics": file.metrics
+            "metrics": file.get_metrics()
             }
         }
     )

@@ -26,7 +26,6 @@ pub struct FolderAnalysis {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct FileAnalysis {
     folder_analysis: FolderAnalysis,
-    pub metrics: HashMap<String, MetricsValueType>,
 }
 
 impl FileAnalysis {
@@ -37,11 +36,13 @@ impl FileAnalysis {
                 metrics: metrics.clone(),
                 content: None
             },
-            metrics: metrics
         }
     }
     pub fn get_id(&self) -> &String {
         &self.folder_analysis.id
+    }
+    pub fn get_metrics(&self) -> &HashMap<String, MetricsValueType> {
+        &self.folder_analysis.metrics
     }
 }
 

@@ -38,7 +38,7 @@ pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> u32 {
 
 fn get_lines_count_value(content: &Analysis) -> Option<u32> {
     if let Analysis::FileAnalysis(file) = content {
-        file.metrics
+        file.get_metrics()
             .get("lines_count")
             .and_then(|metric_value| match metric_value {
                 MetricsValueType::Score(score) => Some(*score),
