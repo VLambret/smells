@@ -22,29 +22,6 @@ pub struct FolderAnalysis {
     pub content: Option<HashMap<String, Analysis>>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub struct FileAnalysis {
-    folder_analysis: FolderAnalysis,
-}
-
-impl FileAnalysis {
-    fn new(id: String, metrics: HashMap<String, MetricsValueType>) -> Self {
-        FileAnalysis {
-            folder_analysis: FolderAnalysis{
-                id: id.clone(),
-                metrics: metrics.clone(),
-                content: None
-            },
-        }
-    }
-    pub fn get_id(&self) -> &String {
-        &self.folder_analysis.id
-    }
-    pub fn get_metrics(&self) -> &HashMap<String, MetricsValueType> {
-        &self.folder_analysis.metrics
-    }
-}
-
 pub type AnalysisError = String;
 
 // TODO: rename variants

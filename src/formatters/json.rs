@@ -1,10 +1,15 @@
-use crate::analysis::{Analysis, FileAnalysis, FolderAnalysis};
+use crate::analysis::{Analysis, FolderAnalysis};
 use serde_json::{json, Value};
 
 // print analysis result json
 pub fn convert_analysis_to_formatted_json(analysis: FolderAnalysis) -> String {
-    let json_result_analysis = build_json_folder_analysis(&analysis);
-    format_json_output(&serde_json::to_string(&json_result_analysis).unwrap())
+    if analysis.content.is_some(){
+        let json_result_analysis = build_json_folder_analysis(&analysis);
+        format_json_output(&serde_json::to_string(&json_result_analysis).unwrap())
+    } else {
+        let json_result_analysis = build_json_file_analysis(&analysis);
+        format_json_output(&serde_json::to_string(&json_result_analysis).unwrap())
+    }
 }
 
 fn build_json_folder_analysis(folder: &FolderAnalysis) -> Value {
@@ -27,11 +32,11 @@ fn build_json_folder_analysis(folder: &FolderAnalysis) -> Value {
     )
 }
 
-fn build_json_file_analysis(file: &FileAnalysis) -> Value {
+fn build_json_file_analysis(file: &FolderAnalysis) -> Value {
     json!(
         {
-            file.get_id().to_owned():{
-            "metrics": file.get_metrics()
+            &file.id :{
+            "metrics": file.metrics
             }
         }
     )
