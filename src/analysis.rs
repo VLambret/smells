@@ -12,6 +12,8 @@ use std::string::String;
 // TODO: distinguish root to folders
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Analysis {
+    // TODO: Good luck :-)
+    //pub parent: Option<&Analysis>,
     pub id: String,
     pub metrics: HashMap<String, MetricsValueType>,
     pub content: Option<HashMap<String, Analysis>>,
