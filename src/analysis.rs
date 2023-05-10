@@ -11,7 +11,6 @@ use std::string::String;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum Analysis {
-    FileAnalysis(FileAnalysis),
     FolderAnalysis(FolderAnalysis),
 }
 
@@ -103,7 +102,6 @@ fn create_hashmap_from_analysis_vector(analysis_vector: Vec<Analysis>) -> Option
 
 fn get_analysis_key(analysis: &Analysis) -> String {
     match analysis {
-        Analysis::FileAnalysis(a) => a.get_id().clone(),
         Analysis::FolderAnalysis(a) => a.id.clone()
     }
 }
@@ -111,7 +109,7 @@ fn get_analysis_key(analysis: &Analysis) -> String {
 fn analyse(entry: &DirEntry) -> Analysis {
     let analysis: Analysis;
     if entry.path().is_file() {
-        analysis = Analysis::FileAnalysis(analyse_file(entry));
+        analysis = Analysis::FolderAnalysis(analyse_file(entry));
     } else {
         analysis = Analysis::FolderAnalysis(analyse_folder(entry.path()));
     }
@@ -136,9 +134,11 @@ fn analyse_internal(
     for file in file_explorer.discover() {
         result_file_metrics = get_metrics_score(&metrics, &file);
 
-        let file_analysis = Analysis::FileAnalysis(FileAnalysis::new(file.file_name().unwrap().to_string_lossy().into_owned(),
-            result_file_metrics.clone())
-        );
+        let file_analysis = Analysis::FolderAnalysis(FolderAnalysis {
+            id: file.file_name().unwrap().to_string_lossy().into_owned(),
+            metrics: result_file_metrics.clone(),
+            content: None
+        });
         root_folder_content.push(file_analysis.clone());
         result_root_metrics = result_file_metrics.clone();
     }
@@ -190,7 +190,7 @@ fn sort_files_of_a_path(item: &PathBuf) -> Vec<DirEntry> {
 }
 
 // create the file content for the analysis
-fn analyse_file(entry: &DirEntry) -> FileAnalysis {
+fn analyse_file(entry: &DirEntry) -> FolderAnalysis {
     // TODO: handle unwrap()
     let path = entry.path();
     let mut file = File::open(&path).unwrap();
@@ -208,10 +208,11 @@ fn analyse_file(entry: &DirEntry) -> FileAnalysis {
         MetricsValueType::Score(social_complexity::social_complexity("")),
     );
 
-    FileAnalysis::new(
-        extract_analysed_item_key(&path),
-        metrics_content,
-    )
+    FolderAnalysis {
+        id: extract_analysed_item_key( & path),
+        metrics: metrics_content,
+        content: None
+    }
 }
 
 fn can_file_be_analysed(item: &PathBuf) -> bool {
