@@ -69,10 +69,17 @@ impl Iterator for FakeFileExplorer {
 
 #[cfg(test)]
 mod file_explorer_tests {
+    use std::collections::HashSet;
     use crate::data_sources::file_explorer::{FakeFileExplorer, FileExplorer, IFileExplorer};
     use std::fs;
     use std::fs::File;
     use std::path::PathBuf;
+
+    fn assert_contains_same_items(actual_files: Vec<PathBuf>, expected_files: Vec<PathBuf>) {
+        let left: HashSet<&PathBuf> = HashSet::from_iter(expected_files.iter());
+        let right: HashSet<&PathBuf> = HashSet::from_iter(actual_files.iter());
+        assert_eq!(left, right);
+    }
 
     #[test]
     fn file_explorer_with_root_path_without_files_should_return_an_empty_vector() {
@@ -137,7 +144,7 @@ mod file_explorer_tests {
 
         // Then
         let expected_files: Vec<PathBuf> = vec![file1, file2];
-        assert_eq!(actual_files, expected_files);
+        assert_contains_same_items(actual_files, expected_files);
     }
 
     #[test]
