@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["tests\\data\\empty_folder"],
+            "args": ["tests/data/single_file_folder"],
             "cwd": "${workspaceFolder}"
         },
         {
