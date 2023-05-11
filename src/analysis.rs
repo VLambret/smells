@@ -336,19 +336,19 @@ mod tests {
         expected_metrics.insert(String::from("fake4"), MetricsValueType::Score(4));
         expected_metrics.insert(String::from("fake10"), MetricsValueType::Score(10));
 
-        let file_analysis = Analysis {
+        let expected_file_analysis = Analysis {
             id: String::from("file1"),
             metrics: expected_metrics.clone(),
             content: None,
         };
 
-        let mut expected_file_analysis = BTreeMap::new();
-        expected_file_analysis.insert(file_analysis.id.clone(), file_analysis);
+        let mut expected_analysis_content = BTreeMap::new();
+        expected_analysis_content.insert(expected_file_analysis.id.clone(), expected_file_analysis);
 
         let expected_root_analysis = Analysis {
             id: String::from(root_name),
             metrics: expected_metrics,
-            content: Some(expected_file_analysis),
+            content: Some(expected_analysis_content),
         };
         assert_eq!(expected_root_analysis, actual_root_analysis);
     }
@@ -371,19 +371,19 @@ mod tests {
         let error_value = MetricsValueType::Error("Analysis error".to_string());
         expected_metrics.insert(String::from("broken"), error_value);
 
-        let file_analysis = Analysis {
+        let expected_file_analysis = Analysis {
             id: String::from("file1"),
             metrics: expected_metrics.clone(),
             content: None,
         };
 
-        let mut expected_file_analysis = BTreeMap::new();
-        expected_file_analysis.insert(file_analysis.id.clone(), file_analysis);
+        let mut expected_analysis_content = BTreeMap::new();
+        expected_analysis_content.insert(expected_file_analysis.id.clone(), expected_file_analysis);
 
         let expected_root_analysis = Analysis {
             id: String::from(root_name),
             metrics: expected_metrics.clone(),
-            content: Some(expected_file_analysis),
+            content: Some(expected_analysis_content),
         };
         assert_eq!(expected_root_analysis, actual_root_analysis);
     }
@@ -408,23 +408,23 @@ mod tests {
         let mut expected_metrics = BTreeMap::new();
         expected_metrics.insert(String::from("lines_count"), MetricsValueType::Score(5));
 
-        let file_analysis = Analysis {
+        let expected_file_analysis = Analysis {
             id: "file5.txt".to_string(),
             metrics: expected_metrics.clone(),
             content: None,
         };
 
-        let mut expected_file_analysis = BTreeMap::new();
-        expected_file_analysis.insert(file_analysis.id.clone(), file_analysis);
+        let mut expected_analysis_content = BTreeMap::new();
+        expected_analysis_content.insert(expected_file_analysis.id.clone(), expected_file_analysis);
 
         let expected_root_analysis = Analysis {
             id: "folder_with_multiple_files".to_string(),
             metrics: expected_metrics,
-            content: Some(expected_file_analysis),
+            content: Some(expected_analysis_content),
         };
         assert_eq!(expected_root_analysis, actual_root_analysis);
     }
-    /*
+
     // agreggate tests
     #[test]
     fn internal_analyse_with_empty_root_and_fakemetric0() {
@@ -441,10 +441,10 @@ mod tests {
             analyse_internal(&PathBuf::from("empty_root"), fake_file_explorer, metrics);
 
         // Then
-        let expected_root_analysis = FolderAnalysis {
+        let expected_root_analysis = Analysis {
             id: String::from("empty_root"),
-            metrics: HashMap::new(),
-            content: vec![],
+            metrics: BTreeMap::new(),
+            content: Some(BTreeMap::new()),
         };
         assert_eq!(actual_root_analysis, expected_root_analysis)
     }
@@ -463,18 +463,22 @@ mod tests {
         let actual_root_analysis = analyse_internal(&root, fake_file_explorer, metrics);
 
         // Then
-        let mut expected_metrics = HashMap::new();
+        let mut expected_metrics = BTreeMap::new();
         expected_metrics.insert(String::from("fake1"), MetricsValueType::Score(1));
 
-        let expected_file_analysis = Analysis::FileAnalysis(FileAnalysis {
+        let expected_file_analysis = Analysis {
             id: String::from("file1"),
             metrics: expected_metrics.clone(),
-        });
+            content: None,
+        };
 
-        let expected_root_analysis = FolderAnalysis {
+        let mut expected_analysis_content = BTreeMap::new();
+        expected_analysis_content.insert(expected_file_analysis.id.clone(), expected_file_analysis);
+
+        let expected_root_analysis = Analysis {
             id: String::from(root_name),
             metrics: expected_metrics,
-            content: vec![expected_file_analysis],
+            content: Some(expected_analysis_content),
         };
         assert_eq!(actual_root_analysis, expected_root_analysis)
     }
@@ -493,25 +497,35 @@ mod tests {
         let actual_root_analysis = analyse_internal(&root, fake_file_explorer, metrics);
 
         // Then
-        let mut expected_metrics = HashMap::new();
+        let mut expected_metrics = BTreeMap::new();
         expected_metrics.insert(String::from("fake1"), MetricsValueType::Score(1));
 
-        let expected_file_analysis = Analysis::FileAnalysis(FileAnalysis {
+        let expected_file_analysis = Analysis {
             id: String::from("file1"),
             metrics: expected_metrics.clone(),
-        });
-        let expected_folder1_analysis = Analysis::FolderAnalysis(FolderAnalysis {
+            content: None,
+        };
+
+        let mut expected_analysis_content = BTreeMap::new();
+        expected_analysis_content.insert(expected_file_analysis.id.clone(), expected_file_analysis);
+        let expected_folder1_analysis = Analysis {
             id: String::from("folder1"),
             metrics: expected_metrics.clone(),
-            content: vec![expected_file_analysis],
-        });
-        let expected_root_analysis = FolderAnalysis {
+            content: Some(expected_analysis_content),
+        };
+        let mut expected_root_analysis_content = BTreeMap::new();
+        expected_root_analysis_content.insert(
+            expected_folder1_analysis.id.clone(),
+            expected_folder1_analysis,
+        );
+        let expected_root_analysis = Analysis {
             id: String::from(root_name),
             metrics: expected_metrics,
-            content: vec![expected_folder1_analysis],
+            content: Some(expected_root_analysis_content),
         };
         assert_eq!(actual_root_analysis, expected_root_analysis)
     }
+
     #[test]
     fn analyse_internal_of_2_file_in_1_folder_in_root_with_fakemetric1_should_add_files_scores() {
         // Given
@@ -532,32 +546,44 @@ mod tests {
         let actual_root_analysis = analyse_internal(&root, fake_file_explorer, metrics);
 
         // Then
-        let mut expected_metrics = HashMap::new();
+        let mut expected_metrics = BTreeMap::new();
         expected_metrics.insert(String::from("fake1"), MetricsValueType::Score(1));
 
-        let expected_file1_analysis = Analysis::FileAnalysis(FileAnalysis {
+        let expected_file1_analysis = Analysis {
             id: String::from("file1"),
             metrics: expected_metrics.clone(),
-        });
-        let expected_file2_analysis = Analysis::FileAnalysis(FileAnalysis {
+            content: None,
+        };
+        let expected_file2_analysis = Analysis {
             id: String::from("file2"),
             metrics: expected_metrics.clone(),
-        });
+            content: None,
+        };
 
-        let mut expected_folder_metrics = HashMap::new();
+        let mut expected_folder_metrics = BTreeMap::new();
         expected_folder_metrics.insert(String::from("fake1"), MetricsValueType::Score(2));
 
-        let expected_folder1_analysis = Analysis::FolderAnalysis(FolderAnalysis {
+        let mut expected_folder1_analysis_content = BTreeMap::new();
+        expected_folder1_analysis_content
+            .insert(expected_file1_analysis.id.clone(), expected_file1_analysis);
+        expected_folder1_analysis_content
+            .insert(expected_file2_analysis.id.clone(), expected_file2_analysis);
+
+        let expected_folder1_analysis = Analysis {
             id: String::from("folder1"),
             metrics: expected_folder_metrics.clone(),
-            content: vec![expected_file1_analysis, expected_file2_analysis],
-        });
-        let expected_root_analysis = FolderAnalysis {
+            content: Some(expected_folder1_analysis_content),
+        };
+        let mut expected_root_analysis_content = BTreeMap::new();
+        expected_root_analysis_content.insert(
+            expected_folder1_analysis.id.clone(),
+            expected_folder1_analysis,
+        );
+        let expected_root_analysis = Analysis {
             id: String::from(root_name),
             metrics: expected_folder_metrics,
-            content: vec![expected_folder1_analysis],
+            content: Some(expected_root_analysis_content),
         };
         assert_eq!(actual_root_analysis, expected_root_analysis)
     }
-     */
 }
