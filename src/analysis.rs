@@ -3,7 +3,7 @@ use crate::metrics::line_count::count_lines;
 use crate::metrics::metric::IMetric;
 use crate::metrics::{line_count, social_complexity};
 use serde::{Deserialize, Serialize, Serializer};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs::{read_dir, DirEntry, File};
 use std::io::Read;
 use std::path::PathBuf;
@@ -15,8 +15,8 @@ pub struct Analysis {
     // TODO: Good luck :-)
     //pub parent: Option<&Analysis>,
     pub id: String,
-    pub metrics: HashMap<String, MetricsValueType>,
-    pub content: Option<HashMap<String, Analysis>>,
+    pub metrics: BTreeMap<String, MetricsValueType>,
+    pub content: Option<BTreeMap<String, Analysis>>,
 }
 
 pub type AnalysisError = String;
@@ -51,7 +51,7 @@ fn analyse_folder(item: PathBuf) -> Analysis {
         .map(|f| analyse(&f))
         .collect();
 
-    let mut metrics_content = HashMap::new();
+    let mut metrics_content = BTreeMap::new();
     metrics_content.insert(
         "lines_count".to_string(),
         MetricsValueType::Score(line_count::summary_lines_count_metric(&folder_content)),
@@ -64,13 +64,18 @@ fn analyse_folder(item: PathBuf) -> Analysis {
     let root_analysis = Analysis {
         id: extract_analysed_item_key(&item),
         metrics: metrics_content,
-        content: create_hashmap_from_analysis_vector(folder_content),
+        content: create_btreemap_from_analysis_vector(folder_content),
     };
     root_analysis
 }
 
-fn create_hashmap_from_analysis_vector(analysis_vector: Vec<Analysis>) -> Option<HashMap<String, Analysis>> {
-    let result = analysis_vector.iter().map(|a|(a.id.clone(), a.to_owned())).collect::<HashMap<_, _>>();
+fn create_btreemap_from_analysis_vector(
+    analysis_vector: Vec<Analysis>,
+) -> Option<BTreeMap<String, Analysis>> {
+    let result = analysis_vector
+        .iter()
+        .map(|a| (a.id.clone(), a.to_owned()))
+        .collect::<BTreeMap<_, _>>();
     Some(result)
 }
 
@@ -94,8 +99,8 @@ fn analyse_internal(
     metrics: Vec<Box<dyn IMetric>>,
 ) -> Analysis {
     let mut root_folder_content = vec![];
-    let mut result_root_metrics = HashMap::new();
-    let mut result_file_metrics = HashMap::new();
+    let mut result_root_metrics = BTreeMap::new();
+    let mut result_file_metrics = BTreeMap::new();
 
     // TODO: virer les clone()
     // TODO : for impossible si fonctionnel, iterator ?
@@ -105,7 +110,7 @@ fn analyse_internal(
         let file_analysis = Analysis {
             id: file.file_name().unwrap().to_string_lossy().into_owned(),
             metrics: result_file_metrics.clone(),
-            content: None
+            content: None,
         };
         root_folder_content.push(file_analysis.clone());
         result_root_metrics = result_file_metrics.clone();
@@ -120,7 +125,7 @@ fn analyse_internal(
         let result_folder_analysis = Analysis {
             id: String::from("folder1"),
             metrics: result_root_metrics.clone(),
-            content: create_hashmap_from_analysis_vector(root_folder_content),
+            content: create_btreemap_from_analysis_vector(root_folder_content),
         };
         root_folder_content = vec![result_folder_analysis];
     }
@@ -128,15 +133,15 @@ fn analyse_internal(
     Analysis {
         id: root.file_name().unwrap().to_string_lossy().into_owned(), // TODO unwrapS
         metrics: result_root_metrics,
-        content: create_hashmap_from_analysis_vector(root_folder_content),
+        content: create_btreemap_from_analysis_vector(root_folder_content),
     }
 }
 
 fn get_metrics_score(
     metrics: &Vec<Box<dyn IMetric>>,
     file: &PathBuf,
-) -> HashMap<String, MetricsValueType> {
-    let mut result_file_metrics = HashMap::new();
+) -> BTreeMap<String, MetricsValueType> {
+    let mut result_file_metrics = BTreeMap::new();
     for metric in metrics {
         let result_metric_analyze = match metric.analyze(&&file) {
             Ok(file_metric) => MetricsValueType::Score(file_metric),
@@ -166,7 +171,7 @@ fn analyse_file(entry: &DirEntry) -> Analysis {
     let mut content = String::new();
     file.read_to_string(&mut content).unwrap();
 
-    let mut metrics_content = HashMap::new();
+    let mut metrics_content = BTreeMap::new();
     metrics_content.insert(
         "lines_count".to_string(),
         MetricsValueType::Score(count_lines(content)),
@@ -177,9 +182,9 @@ fn analyse_file(entry: &DirEntry) -> Analysis {
     );
 
     Analysis {
-        id: extract_analysed_item_key( & path),
+        id: extract_analysed_item_key(&path),
         metrics: metrics_content,
-        content: None
+        content: None,
     }
 }
 
@@ -266,8 +271,8 @@ mod tests {
         // Then
         let expected_result_analysis = Analysis {
             id: String::from(root_name),
-            metrics: HashMap::new(),
-            content: Some(HashMap::new()),
+            metrics: BTreeMap::new(),
+            content: Some(BTreeMap::new()),
         };
         assert_eq!(actual_result_analysis, expected_result_analysis);
     }

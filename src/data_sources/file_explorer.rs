@@ -69,8 +69,8 @@ impl Iterator for FakeFileExplorer {
 
 #[cfg(test)]
 mod file_explorer_tests {
-    use std::collections::HashSet;
     use crate::data_sources::file_explorer::{FakeFileExplorer, FileExplorer, IFileExplorer};
+    use std::collections::HashSet;
     use std::fs;
     use std::fs::File;
     use std::path::PathBuf;
