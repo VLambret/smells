@@ -255,25 +255,36 @@ mod tests {
         }
     }
 
+    fn build_analysis_structure(
+        root_name: String,
+        metrics: BTreeMap<String, MetricsValueType>,
+        content: BTreeMap<String, Analysis>,
+    ) -> Analysis {
+        let expected_result_analysis = Analysis {
+            id: root_name,
+            metrics,
+            content: Some(content),
+        };
+        expected_result_analysis
+    }
+
     #[test]
     fn analyse_internal_with_empty_root_and_empty_metrics() {
         // Given
-        let root_name = "folder_to_analyze";
-        let root = PathBuf::from(root_name);
-        let files_to_analyze = vec![];
-        let metrics = vec![];
+        let root = PathBuf::from("folder_to_analyze");
         let fake_file_explorer: Box<dyn IFileExplorer<Item = PathBuf>> =
-            Box::new(FakeFileExplorer::new(files_to_analyze));
+            Box::new(FakeFileExplorer::new(vec![]));
 
         // When
-        let actual_result_analysis = analyse_internal(&root, fake_file_explorer, metrics);
+        let actual_result_analysis = analyse_internal(&root, fake_file_explorer, vec![]);
 
         // Then
-        let expected_result_analysis = Analysis {
-            id: String::from(root_name),
-            metrics: BTreeMap::new(),
-            content: Some(BTreeMap::new()),
-        };
+        let expected_result_analysis = build_analysis_structure(
+            root.to_string_lossy().to_string(),
+            BTreeMap::new(),
+            BTreeMap::new(),
+        );
+
         assert_eq!(actual_result_analysis, expected_result_analysis);
     }
 
