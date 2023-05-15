@@ -20,21 +20,25 @@
 * Discussion (Context)
     * Explains the forces at play (technical, political, social, project).
     * How to organize analysis structure and relationships between them <br>
-      respecting the strict Rust rules concerning ownership   
+      respecting the strict Rust rules concerning ownership and lifetime   
 * Options
     * Directional data structures
         * Rc<RefCell<Node>>> 
-            * Pros : Allow management of ownership between parents/children in analysis tree
+            * Pros : Allow precise management of ownership between parents/children in analysis tree, <br>
+                keeping intact the real data organization
+            * Cons : the difficulty and technicality of this approach suggests that it is not the ideal solution 
         * Arena Memory Allocation
-            * Pros : No ownership / lifetime issues
+            * Pros : No ownership/lifetime issues
     * Indirectional data structures
         * BTreeMap<NodeId, Node { analysis, parent, children }>
-            * Pros : No ownership / lifetime issues, direct access to parent/children
+            * Pros : No ownership/lifetime issues, direct access to parent/children
+            * Cons : Loss of real data organization
         * Vec<Nodes { analysis, parent, children }> with vector index
             * Pros : Very simple, No ownership/lifetime issues, direct access to parent/children
-            * Cons : Highly error-prone 
+            * Cons : Highly error-prone, Loss of real data organization 
         * XPath-like system
-            * Cons : Every access to analysis must start from root, no access to parent
+            * Cons : Every access to analysis must start from root, no access to parent,<div>
+                Loss of real data organization
 
 * Solution
     * Which option has been chosen
