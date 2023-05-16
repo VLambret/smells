@@ -5,9 +5,39 @@ use crate::metrics::{line_count, social_complexity};
 use serde::{Deserialize, Serialize, Serializer};
 use std::collections::{BTreeMap, HashMap};
 use std::fs::{read_dir, DirEntry, File};
+use std::hash::{Hash, Hasher};
 use std::io::Read;
 use std::path::PathBuf;
 use std::string::String;
+
+#[derive(Debug, Eq, Hash, PartialEq)]
+pub struct AnalysisId(u32);
+#[derive(Debug, PartialEq)]
+
+pub struct AnalysisTree {
+    pub analysis: HashMap<AnalysisId, AnalysisNew>,
+}
+
+impl Hash for AnalysisTree {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        for (key, value) in &self.analysis {
+            key.hash(state);
+            value.id.hash(state);
+            value.metrics.hash(state);
+            value.parent.hash(state);
+            value.content.hash(state);
+        }
+    }
+}
+
+// TODO: distinguish root to folders
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct AnalysisNew {
+    pub id: String,
+    pub metrics: BTreeMap<String, MetricsValueType>,
+    pub parent: Option<String>,
+    pub content: Option<Vec<String>>,
+}
 
 // TODO: distinguish root to folders
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -22,7 +52,7 @@ pub struct Analysis {
 pub type AnalysisError = String;
 
 // TODO: rename variants
-#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Hash, Deserialize, Clone, PartialEq)]
 pub enum MetricsValueType {
     Score(u32),
     Error(AnalysisError),
