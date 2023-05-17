@@ -28,35 +28,36 @@
 * Options
     * Directional analysis structures (Analysis system reproduce files system)
   
-        * Analysis -> Rc<RefCell<Analysis>>> for both parent and children
-            * Pros: Allow precise management of ownership between parents/children in analysis tree, <br>
-                keeping intact the real data organization, with internal mutability
-            * Cons: Very technical, complex, unintelligible
+        * Reference counter within Analysis fields, with Rc<RefCell<Analysis>>> for both parent and children 
+          * Pros: Allow precise management of ownership between parents/children in analysis tree, <br>
+                      keeping intact the real data organization, with internal mutability 
+          * Cons: Very technical, complex, unintelligible
           
-        * Analysis -> parent: Option<& 'a RefCell<Analysis<'a>>>,<br>
-          children: Option<BTreeMap<FileName, RefCell<Analysis<'a>>>>
+        * Precise management of lifetimes within Analysis fields,<br>
+      with parent: Option<& 'a RefCell<Analysis<'a>>>,<br>
+         and children: Option<BTreeMap<FileName, RefCell<Analysis<'a>>>>
             * Pros: sames as above
-            * Cons: same as above, uncertainties about lifetime of children analysis
+            * Cons: same as above, uncertainties about lifetime of children analysis 
+          
+        * Parent owns children, direct parent-to-children access, and XPath-like system to access parent
+            * Pros: Easy to navigate in the tree and find any element
+            * Cons: Every access to analysis must start from the root, with no direct access to parent
   
     * Indirectionnal analysis structures (flat organization, loss of real file system)
   
-        * Analysis tree -> BTreeMap < NodeId, Node { analysis, parent, children } >
+        * Analysis tree into a BTreeMap < NodeId, Node { analysis, parent, children } >
             * Pros: No ownership/lifetime issues, direct access to parent/children
             * Cons: extra features compare to HashMap seem unnecessary (ordered keys)
           
-        * Analysis tree -> HashMap < NodeId, Node { analysis, parent, children } >
+        * Analysis tree into a HashMap < NodeId, Node { analysis, parent, children } >
             * Pros compared to BTreeMap: Operation are usually faster, use less memory 
             * Cons compared to BtreeMap: n/a
           
-        * Analysis tree -> Vec < Nodes { analysis, parent, children } > with vector index
+        * Analysis tree into a Vec < Nodes { analysis, parent, children } > with vector index
             * Pros: Very simple, no ownership/lifetime issues, direct access to parent/children
             * Cons: Highly error-prone
-          
-        * XPath-like system
-            * Pros: Easy to navigate in the tree and find any element
-            * Cons: Every access to analysis must start from the root, with no direct access to parent
-          
-        * Analysis -> Arena Memory Allocation, all analysis owned by a single Arena
+      
+        * All Analysis owned by a single Arena (Arena Memory Allocation)
           * Pros: No ownership/lifetime issues
           * Cons: - memory efficiency if there are frequent analysis updates, we can do the same with maps  
 
