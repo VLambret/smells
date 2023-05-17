@@ -59,7 +59,7 @@
       
         * All Analysis owned by a single Arena (Arena Memory Allocation)
           * Pros: No ownership/lifetime issues
-          * Cons: - memory efficiency if there are frequent analysis updates, we can do the same with maps  
+          * Cons: less memory efficiency if there are frequent analysis updates, we can do the same with maps  
 
 
 * Solution
