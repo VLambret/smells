@@ -19,8 +19,17 @@ assert_cmd = "2.0.8"
 predicates = "3.0.1"
 rstest = "0.17.0"
 tempdir = "0.3.7"
+cucumber = "0.19.1"
+futures = "0.3"
 
 
 [[test]]
 name = "end_2_end_test"
 path = "tests/e2e/end_2_end_test.rs"
+# TODO: harness is the standard mecanism to discover test in the rust libtest that is used by default.
+#       If we use harness, we have "legacy" end-to-end tests, but as we use the standard tests runner we cannot use
+#       the cucumber runner.
+#       At some point we need to introduce a main which handle manually both the legacy tests and also call the cucumber runner manually.
+#       The difficult part is related to the legacy runner dans the discovery of tests. A tutorial do to that is available here:
+#       https://www.infinyon.com/blog/2021/04/rust-custom-test-harness/
+harness = true
