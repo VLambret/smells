@@ -6,10 +6,10 @@ use maplit::hashmap;
 use serde::{Deserialize, Serialize, Serializer};
 use std::collections::{BTreeMap, HashMap};
 use std::fs::{read_dir, DirEntry, File};
-use std::hash::{Hash, Hasher};
 use std::io::Read;
 use std::path::PathBuf;
 use std::string::String;
+
 /*
 #[derive(Debug, Eq, Hash, PartialEq)]
 pub struct AnalysisId(u32);
@@ -18,7 +18,6 @@ pub struct AnalysisId(u32);
 pub struct AnalysisTree {
     pub analysis: HashMap<AnalysisId, AnalysisNew>,
 }
-
 impl Hash for AnalysisTree {
     fn hash<H: Hasher>(&self, state: &mut H) {
         for (key, value) in &self.analysis {
@@ -639,8 +638,8 @@ mod tests {
         };
         assert_eq!(actual_root_analysis, expected_root_analysis)
     }
-    /*
-    #[test]
+
+    /* #[test]
     fn function_convert_hashmap_to_analysis_with_empty_root() {
         // Given
         let root_analysis = AnalysisNew {
@@ -649,11 +648,10 @@ mod tests {
             parent: None,
             folder_content: Some(vec![]),
         };
-        let analysis_tree = AnalysisTree {
-            let analysis : hashmap!{ AnalysisId(1) => root_analysis },
-        };
+        let analysis_id = String::from("1");
+        let analysis = hashmap!{ analysis_id => root_analysis };
         //When
-        let actual_analysis = convert_hashmap_to_analysis(analysis_tree.analysis);
+        let actual_analysis = convert_hashmap_to_analysis(analysis);
 
         // Then
         let expected_root_analysis = Analysis {

@@ -29,7 +29,7 @@
     * Directional analysis structures (Analysis system reproduce files system)
   
         * Reference counter within Analysis fields, with Rc<RefCell<Analysis>>> for both parent and children 
-          * Pros: Allow precise management of ownership between parents/children in analysis tree, <br>
+          * Pros: Very efficient, allow precise management of ownership between parents/children in analysis tree, <br>
                       keeping intact the real data organization, with internal mutability 
           * Cons: Very technical, complex, unintelligible
           
