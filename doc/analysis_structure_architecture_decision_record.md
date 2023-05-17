@@ -67,7 +67,7 @@
     * Which option has been chosen
         * The best option would be reproducing the tree-like file system organization for analysis, <br>
         and managing perfectly and without pain Rust specific concepts about memory management.<br>
-        As we are currently unable to do so, the indirectionnal approach seems unavoidable. 
+        As we are currently unable to do so, an indirectionnal approach seems unavoidable. 
         The use of HashMap seems to be a simple, robust and efficient strategy for our purpose. 
 
 
