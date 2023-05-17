@@ -12,6 +12,7 @@ serde_json = {version = "1.0.94", features = ["preserve_order"]}
 git2 = "0.17.0"
 predicates = "3.0.2"
 walkdir = "2.3.3"
+maplit = "1.0.2"
 
 [dev-dependencies]
 assert_cmd = "2.0.8"

@@ -2,6 +2,7 @@ use crate::data_sources::file_explorer::{FileExplorer, IFileExplorer};
 use crate::metrics::line_count::count_lines;
 use crate::metrics::metric::IMetric;
 use crate::metrics::{line_count, social_complexity};
+use maplit::hashmap;
 use serde::{Deserialize, Serialize, Serializer};
 use std::collections::{BTreeMap, HashMap};
 use std::fs::{read_dir, DirEntry, File};
@@ -9,11 +10,11 @@ use std::hash::{Hash, Hasher};
 use std::io::Read;
 use std::path::PathBuf;
 use std::string::String;
-
+/*
 #[derive(Debug, Eq, Hash, PartialEq)]
 pub struct AnalysisId(u32);
-#[derive(Debug, PartialEq)]
 
+#[derive(Debug, PartialEq)]
 pub struct AnalysisTree {
     pub analysis: HashMap<AnalysisId, AnalysisNew>,
 }
@@ -25,10 +26,11 @@ impl Hash for AnalysisTree {
             value.id.hash(state);
             value.metrics.hash(state);
             value.parent.hash(state);
-            value.content.hash(state);
+            value.folder_content.hash(state);
         }
     }
 }
+*/
 
 // TODO: distinguish root to folders
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -36,8 +38,10 @@ pub struct AnalysisNew {
     pub id: String,
     pub metrics: BTreeMap<String, MetricsValueType>,
     pub parent: Option<String>,
-    pub content: Option<Vec<String>>,
+    pub folder_content: Option<Vec<String>>,
 }
+
+pub type AnalysisId = String;
 
 // TODO: distinguish root to folders
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -180,6 +184,14 @@ fn get_metrics_score(
         result_file_metrics.insert(metric.get_key(), result_metric_analyze);
     }
     result_file_metrics
+}
+
+fn convert_hashmap_to_analysis(analysis_hashmap: HashMap<AnalysisId, AnalysisNew>) -> Analysis {
+    Analysis {
+        id: "".to_string(),
+        metrics: Default::default(),
+        content: None,
+    }
 }
 
 // sort files based on the entry names
@@ -627,4 +639,28 @@ mod tests {
         };
         assert_eq!(actual_root_analysis, expected_root_analysis)
     }
+    /*
+    #[test]
+    fn function_convert_hashmap_to_analysis_with_empty_root() {
+        // Given
+        let root_analysis = AnalysisNew {
+            id: "root".to_string(),
+            metrics: BTreeMap::new(),
+            parent: None,
+            folder_content: Some(vec![]),
+        };
+        let analysis_tree = AnalysisTree {
+            let analysis : hashmap!{ AnalysisId(1) => root_analysis },
+        };
+        //When
+        let actual_analysis = convert_hashmap_to_analysis(analysis_tree.analysis);
+
+        // Then
+        let expected_root_analysis = Analysis {
+            id: String::from("root"),
+            metrics:  BTreeMap::new(),
+            content: Some(BTreeMap::new()),
+        };
+        assert_eq!(actual_analysis, expected_root_analysis)
+    }*/
 }
