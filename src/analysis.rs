@@ -2,7 +2,7 @@ use crate::data_sources::file_explorer::{FileExplorer, IFileExplorer};
 use crate::metrics::line_count::count_lines;
 use crate::metrics::metric::IMetric;
 use crate::metrics::{line_count, social_complexity};
-use maplit::hashmap;
+use maplit::{btreemap, hashmap};
 use serde::{Deserialize, Serialize, Serializer};
 use std::collections::{BTreeMap, HashMap};
 use std::fs::{read_dir, DirEntry, File};
@@ -137,10 +137,17 @@ fn analyse_internal(
         parent: None,
         folder_content: Some(vec![]),
     };
-    let analysis_tree: HashMap<AnalysisId, AnalysisNew> =
+    let mut analysis_tree: HashMap<AnalysisId, AnalysisNew> =
         hashmap! { String::from("root") => root_analysis };
     for file in file_explorer.discover() {
-        // TODO
+        let result_file_metrics = get_metrics_score(&metrics, &file);
+        let file_analysis = AnalysisNew {
+            id: file.file_name().unwrap().to_string_lossy().into_owned(),
+            metrics: result_file_metrics,
+            parent: Some(String::from("root")),
+            folder_content: None,
+        };
+        analysis_tree.insert(String::from(file.to_string_lossy()), file_analysis.clone());
     }
 
     let analysis = convert_hashmap_to_analysis(analysis_tree);
@@ -201,11 +208,25 @@ fn get_metrics_score(
 }
 
 fn convert_hashmap_to_analysis(analysis_hashmap: HashMap<AnalysisId, AnalysisNew>) -> Analysis {
-    Analysis {
+    let mut root_analysis = Analysis {
         id: String::from("root"),
         metrics: BTreeMap::new(),
         content: Some(BTreeMap::new()),
+    };
+    for (id, analysis) in analysis_hashmap {
+        if id != String::from("root") {
+            let file_analysis = Analysis {
+                id: id.clone(),
+                metrics: analysis.metrics,
+                content: None,
+            };
+            root_analysis
+                .content
+                .get_or_insert_with(BTreeMap::new)
+                .insert(id, file_analysis);
+        }
     }
+    root_analysis
 }
 
 // sort files based on the entry names
@@ -343,11 +364,10 @@ mod tests {
 
         assert_eq!(actual_result_analysis, expected_result_analysis);
     }
-    /*
     #[test]
     fn analyse_internal_with_2_files_and_empty_metrics() {
         // Given
-        let root_name = "folder_to_analyze";
+        let root_name = "root";
         let root = PathBuf::from(root_name);
         let files_to_analyze = vec![
             PathBuf::from(&root).join("file1"),
@@ -362,12 +382,12 @@ mod tests {
 
         // Then
         let first_file_analysis = Analysis {
-            id: String::from("file1"),
+            id: String::from(PathBuf::from("root").join("file1").to_string_lossy()),
             metrics: BTreeMap::new(),
             content: None,
         };
         let second_file_analysis = Analysis {
-            id: String::from("file2"),
+            id: String::from(PathBuf::from("root").join("file2").to_string_lossy()),
             metrics: BTreeMap::new(),
             content: None,
         };
@@ -383,7 +403,7 @@ mod tests {
         };
         assert_eq!(actual_result_analysis, expected_result_analysis);
     }
-
+    /*
     #[test]
     fn analyse_internal_with_1_file_and_fakemetric4_and_fakemetric10() {
         // Given
