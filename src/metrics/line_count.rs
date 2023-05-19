@@ -28,10 +28,10 @@ pub fn count_lines(content: String) -> u32 {
     content.lines().count() as u32
 }
 
-pub fn summary_lines_count_metric(folder_contents: &Vec<Analysis>) -> u32 {
+pub fn summary_lines_count_metric(folder_contents: &[Analysis]) -> u32 {
     folder_contents
         .iter()
-        .filter_map(|content| get_lines_count_value(content))
+        .filter_map(get_lines_count_value)
         .reduce(|a, b| a + b)
         .unwrap_or(0)
 }

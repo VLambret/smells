@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 //print_number_of_authors_of_entire_repo()
 pub fn social_complexity(_root_path: &str) -> u32 {
-    return 0;
+    0
 }
 
 // TODO: handle unwrap() + link to social_complexity + on va open le repo dans social_complexity
@@ -18,14 +18,14 @@ fn _get_number_of_authors_of_repo_dir(repo: &Repository, path: PathBuf) -> u32 {
             // apres 1ere iter on n a plus un repo mais un file donc on peut pas open le repo dans la fct
             authors_number = _get_file_social_complexity(repo, &relative.to_path_buf());
         } else {
-            _get_number_of_authors_of_repo_dir(&repo, file_path);
+            _get_number_of_authors_of_repo_dir(repo, file_path);
         }
     }
     authors_number
 }
 
 fn _get_file_social_complexity(repo: &Repository, file: &PathBuf) -> u32 {
-    let relative_file_path = _get_relative_path(repo.path(), &file);
+    let relative_file_path = _get_relative_path(repo.path(), file);
 
     let blame = match repo.blame_file(&relative_file_path, None) {
         Ok(blame) => blame,
