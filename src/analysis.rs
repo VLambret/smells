@@ -127,25 +127,25 @@ fn analyse_root(root: PathBuf) -> Analysis {
 }
 
 fn analyse_internal(
-    _root: &PathBuf,
+    root: &PathBuf,
     file_explorer: Box<dyn IFileExplorer<Item = PathBuf>>,
     metrics: Vec<Box<dyn IMetric>>,
 ) -> Analysis {
     let root_analysis = AnalysisNew {
-        id: String::from("root"),
+        id: String::from(root.to_string_lossy()),
         metrics: BTreeMap::new(),
         parent: None,
         folder_content: Some(vec![]),
     };
     let mut analysis_tree: HashMap<AnalysisId, AnalysisNew> =
-        hashmap! { String::from("root") => root_analysis.clone() };
+        hashmap! {root_analysis.id.clone() => root_analysis.clone() };
 
     for file in file_explorer.discover() {
         let result_file_metrics = get_metrics_score(&metrics, &file);
         let file_analysis = AnalysisNew {
             id: file.to_string_lossy().into_owned(),
             metrics: result_file_metrics.clone(),
-            parent: Some(String::from("root")),
+            parent: Some(String::from(root.to_string_lossy())),
             folder_content: None,
         };
         let file_id = String::from(file.to_string_lossy());
@@ -154,7 +154,7 @@ fn analyse_internal(
         analysis_tree.get_mut(&root_analysis.id).unwrap().metrics = file_analysis.metrics.clone();
     }
 
-    convert_hashmap_to_analysis(analysis_tree)
+    convert_hashmap_to_analysis(analysis_tree, root)
 
     /*    let mut root_folder_content = vec![];
     let mut result_root_metrics = BTreeMap::new();
@@ -210,28 +210,38 @@ fn get_metrics_score(
     result_file_metrics
 }
 
-fn convert_hashmap_to_analysis(analysis_hashmap: HashMap<AnalysisId, AnalysisNew>) -> Analysis {
+fn convert_hashmap_to_analysis(
+    analysis_hashmap: HashMap<AnalysisId, AnalysisNew>,
+    root: &PathBuf,
+) -> Analysis {
+    let root_filename = root
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_owned();
+
     let mut root_analysis = Analysis {
-        id: String::from("root"),
+        id: root_filename.clone(),
         metrics: BTreeMap::new(),
         content: Some(BTreeMap::new()),
     };
+
     for (id, analysis) in analysis_hashmap {
-        if id != *"root" {
+        let filename = Path::new(&id)
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_owned();
+
+        if filename != root_filename {
             let file_analysis = Analysis {
-                id: Path::new(&id)
-                    .file_name()
-                    .unwrap_or(OsStr::new(""))
-                    .to_str()
-                    .unwrap_or("")
-                    .to_owned(),
+                id: filename.clone(),
                 metrics: analysis.metrics,
                 content: None,
             };
-            root_analysis
-                .content
-                .get_or_insert_with(BTreeMap::new)
-                .insert(file_analysis.id.clone(), file_analysis.clone());
+            if let Some(content) = root_analysis.content.as_mut() {
+                content.insert(filename, file_analysis.clone());
+            }
             root_analysis.metrics = file_analysis.metrics;
         }
     }
@@ -448,11 +458,11 @@ mod tests {
         };
         assert_eq!(expected_root_analysis, actual_root_analysis);
     }
-    /*
+
     #[test]
     fn analyse_internal_with_1_file_and_brokenmetric() {
         // Given
-        let root_name = "folder_to_analyze";
+        let root_name = "root";
         let root = PathBuf::from(root_name);
         let files_to_analyze = vec![PathBuf::from(&root).join("file1")];
         let fake_file_explorer: Box<dyn IFileExplorer<Item = PathBuf>> =
@@ -520,7 +530,7 @@ mod tests {
         };
         assert_eq!(expected_root_analysis, actual_root_analysis);
     }
-
+    /*
     // agreggate tests
     #[test]
     fn internal_analyse_with_empty_root_and_fakemetric0() {
