@@ -5,7 +5,6 @@ use crate::metrics::{line_count, social_complexity};
 use maplit::hashmap;
 use serde::{Deserialize, Serialize, Serializer};
 use std::collections::{BTreeMap, HashMap};
-use std::ffi::OsStr;
 use std::fs::{read_dir, DirEntry, File};
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -141,6 +140,38 @@ fn analyse_internal(
         hashmap! {root_analysis.id.clone() => root_analysis.clone() };
 
     for file in file_explorer.discover() {
+        let parents = get_parents_ordered_from_root(&file);
+        let mut last_parent_of_file_id: AnalysisId = root_analysis.id.clone();
+        for parent in parents {
+            let parent_analysis_id = AnalysisId::from(parent.to_string_lossy());
+            if let Some(parent_analysis) = analysis_tree.get_mut(&parent_analysis_id) {
+                // Update
+            } else {
+                // Create parent analysis
+                let mut parent_analysis = AnalysisNew {
+                    id: parent.to_string_lossy().into_owned(),
+                    metrics: BTreeMap::new(),
+                    parent: None,
+                    folder_content: Some(vec![]),
+                };
+                // Get parent of parent if exits
+                if let Some(grand_parent) = PathBuf::from(parent_analysis.id.clone()).parent() {
+                    let grand_parent_id = String::from(grand_parent.to_string_lossy());
+                    if let Some(grand_parent_analysis) = analysis_tree.get_mut(&grand_parent_id) {
+                        // Add parent as child of parent of parent
+                        grand_parent_analysis
+                            .folder_content
+                            .get_or_insert(vec![])
+                            .push(parent_analysis_id.clone());
+                        // Add grand_parent as parent of parent
+                        parent_analysis.parent = Some(grand_parent_id);
+                    }
+                }
+                analysis_tree.insert(parent_analysis_id.clone(), parent_analysis);
+            }
+            last_parent_of_file_id = parent_analysis_id;
+        }
+
         let result_file_metrics = get_metrics_score(&metrics, &file);
         let file_analysis = AnalysisNew {
             id: file.to_string_lossy().into_owned(),
@@ -151,48 +182,20 @@ fn analyse_internal(
         let file_id = String::from(file.to_string_lossy());
         analysis_tree.insert(file_id.clone(), file_analysis.clone());
 
+        let last_parent_content = analysis_tree
+            .get_mut(&last_parent_of_file_id)
+            .unwrap()
+            .folder_content
+            .get_or_insert(vec![]);
+        last_parent_content.push(file_id.clone());
+
         analysis_tree.get_mut(&root_analysis.id).unwrap().metrics = file_analysis.metrics.clone();
     }
 
-    convert_hashmap_to_analysis(analysis_tree, root)
+    let root_analysis_in_tree = analysis_tree.get(&*root_analysis.id).unwrap();
+    //println!("root children : {:?}", root_analysis_in_tree.folder_content);
 
-    /*    let mut root_folder_content = vec![];
-    let mut result_root_metrics = BTreeMap::new();
-    let mut result_file_metrics = BTreeMap::new();
-
-    // TODO: virer les clone()
-    // TODO : for impossible si fonctionnel, iterator ?
-    for file in file_explorer.discover() {
-        result_file_metrics = get_metrics_score(&metrics, &file);
-
-        let file_analysis = Analysis {
-            id: file.file_name().unwrap().to_string_lossy().into_owned(),
-            metrics: result_file_metrics.clone(),
-            content: None,
-        };
-        root_folder_content.push(file_analysis.clone());
-        result_root_metrics = result_file_metrics.clone();
-    }
-
-    if file_explorer.discover().len() > 0 && file_explorer.discover()[0].parent().unwrap() != root {
-        result_root_metrics.insert(
-            "fake1".to_string(),
-            MetricsValueType::Score((file_explorer.discover().len()) as u32),
-        );
-
-        let result_folder_analysis = Analysis {
-            id: String::from("folder1"),
-            metrics: result_root_metrics.clone(),
-            content: create_btreemap_from_analysis_vector(root_folder_content),
-        };
-        root_folder_content = vec![result_folder_analysis];
-    }
-    // Root analysis
-    Analysis {
-        id: root.file_name().unwrap().to_string_lossy().into_owned(), // TODO unwrapS
-        metrics: result_root_metrics,
-        content: create_btreemap_from_analysis_vector(root_folder_content),
-    }*/
+    convert_hashmap_to_analysis(analysis_tree.clone(), &root_analysis_in_tree.id)
 }
 
 fn get_metrics_score(
@@ -212,21 +215,17 @@ fn get_metrics_score(
 
 fn convert_hashmap_to_analysis(
     analysis_hashmap: HashMap<AnalysisId, AnalysisNew>,
-    root: &PathBuf,
+    root_id: &String,
 ) -> Analysis {
-    let root_filename = root
-        .file_name()
-        .and_then(|s| s.to_str())
-        .unwrap_or("")
-        .to_owned();
+    /*let root_filename = root
+    .file_name()
+    .and_then(|s| s.to_str())
+    .unwrap_or("")
+    .to_owned();*/
+    let root_analysis = analysis_hashmap.get(&*root_id).unwrap();
+    let analysis = build_analysis_rec(root_analysis, &analysis_hashmap);
 
-    let mut root_analysis = Analysis {
-        id: root_filename.clone(),
-        metrics: BTreeMap::new(),
-        content: Some(BTreeMap::new()),
-    };
-
-    for (id, analysis) in analysis_hashmap {
+    /*    for (id, analysis) in analysis_hashmap {
         let filename = Path::new(&id)
             .file_name()
             .and_then(|s| s.to_str())
@@ -244,8 +243,62 @@ fn convert_hashmap_to_analysis(
             }
             root_analysis.metrics = file_analysis.metrics;
         }
+    }*/
+    analysis
+}
+
+fn build_analysis_rec(
+    node: &AnalysisNew,
+    analysis_tree: &HashMap<AnalysisId, AnalysisNew>,
+) -> Analysis {
+    let mut new_analysis = Analysis {
+        id: String::from(
+            PathBuf::from(node.id.clone())
+                .file_name()
+                .unwrap()
+                .to_string_lossy(),
+        ),
+        metrics: node.metrics.clone(),
+        content: None,
+    };
+    if let Some(folder_content) = &node.folder_content {
+        if folder_content.is_empty() {
+            new_analysis.content = Some(BTreeMap::new());
+        } else {
+            for child_id in folder_content {
+                if let Some(child_node) = analysis_tree.get(child_id) {
+                    let child_analysis = build_analysis_rec(child_node, analysis_tree);
+                    if let Some(new_analysis_content) = new_analysis.content.as_mut() {
+                        new_analysis_content
+                            .insert(child_analysis.id.clone(), child_analysis.clone());
+                    } else {
+                        new_analysis.content = Some(BTreeMap::new());
+                        new_analysis
+                            .content
+                            .as_mut()
+                            .unwrap()
+                            .insert(child_analysis.id.clone(), child_analysis.clone());
+                    }
+                    // TODO: add metrics
+                    new_analysis.metrics = child_analysis.metrics.clone();
+                }
+            }
+        }
     }
-    root_analysis
+    return new_analysis;
+}
+
+fn get_parents_ordered_from_root(file: &PathBuf) -> Vec<PathBuf> {
+    let mut parents = Vec::new();
+    let mut current = file.parent();
+
+    while let Some(parent) = current {
+        parents.push(parent.to_path_buf());
+        current = parent.parent();
+    }
+
+    parents.reverse();
+    parents
 }
 
 // sort files based on the entry names
@@ -524,13 +577,13 @@ mod tests {
         expected_analysis_content.insert(expected_file_analysis.id.clone(), expected_file_analysis);
 
         let expected_root_analysis = Analysis {
-            id: "folder_with_multiple_files".to_string(),
+            id: String::from("folder_with_multiple_files"),
             metrics: expected_metrics,
             content: Some(expected_analysis_content),
         };
         assert_eq!(expected_root_analysis, actual_root_analysis);
     }
-    /*
+
     // agreggate tests
     #[test]
     fn internal_analyse_with_empty_root_and_fakemetric0() {
@@ -552,7 +605,7 @@ mod tests {
             metrics: BTreeMap::new(),
             content: Some(BTreeMap::new()),
         };
-        assert_eq!(actual_root_analysis, expected_root_analysis)
+        assert_eq!(expected_root_analysis, actual_root_analysis)
     }
 
     #[test]
@@ -586,7 +639,7 @@ mod tests {
             metrics: expected_metrics,
             content: Some(expected_analysis_content),
         };
-        assert_eq!(actual_root_analysis, expected_root_analysis)
+        assert_eq!(expected_root_analysis, actual_root_analysis)
     }
 
     #[test]
@@ -629,9 +682,9 @@ mod tests {
             metrics: expected_metrics,
             content: Some(expected_root_analysis_content),
         };
-        assert_eq!(actual_root_analysis, expected_root_analysis)
+        assert_eq!(expected_root_analysis, actual_root_analysis)
     }
-
+    /*
     #[test]
     fn analyse_internal_of_2_file_in_1_folder_in_root_with_fakemetric1_should_add_files_scores() {
         // Given
