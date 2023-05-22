@@ -144,9 +144,7 @@ fn analyse_internal(
         let mut last_parent_of_file_id: AnalysisId = root_analysis.id.clone();
         for parent in parents {
             let parent_analysis_id = AnalysisId::from(parent.to_string_lossy());
-            if let Some(parent_analysis) = analysis_tree.get_mut(&parent_analysis_id) {
-                // Update
-            } else {
+            if analysis_tree.get_mut(&parent_analysis_id).is_none() {
                 // Create parent analysis
                 let mut parent_analysis = AnalysisNew {
                     id: parent.to_string_lossy().into_owned(),
@@ -155,18 +153,11 @@ fn analyse_internal(
                     folder_content: Some(vec![]),
                 };
                 // Get parent of parent if exits
-                if let Some(grand_parent) = PathBuf::from(parent_analysis.id.clone()).parent() {
-                    let grand_parent_id = String::from(grand_parent.to_string_lossy());
-                    if let Some(grand_parent_analysis) = analysis_tree.get_mut(&grand_parent_id) {
-                        // Add parent as child of parent of parent
-                        grand_parent_analysis
-                            .folder_content
-                            .get_or_insert(vec![])
-                            .push(parent_analysis_id.clone());
-                        // Add grand_parent as parent of parent
-                        parent_analysis.parent = Some(grand_parent_id);
-                    }
-                }
+                connect_grand_father_with_parent(
+                    &mut analysis_tree,
+                    &parent_analysis_id,
+                    &mut parent_analysis,
+                );
                 analysis_tree.insert(parent_analysis_id.clone(), parent_analysis);
             }
             last_parent_of_file_id = parent_analysis_id;
@@ -196,6 +187,26 @@ fn analyse_internal(
     //println!("root children : {:?}", root_analysis_in_tree.folder_content);
 
     convert_hashmap_to_analysis(analysis_tree.clone(), &root_analysis_in_tree.id)
+}
+
+// TODO: how to change mut
+fn connect_grand_father_with_parent(
+    analysis_tree: &mut HashMap<AnalysisId, AnalysisNew>,
+    parent_analysis_id: &String,
+    parent_analysis: &mut AnalysisNew,
+) {
+    if let Some(grand_parent) = PathBuf::from(parent_analysis.id.clone()).parent() {
+        let grand_parent_id = String::from(grand_parent.to_string_lossy());
+        if let Some(grand_parent_analysis) = analysis_tree.get_mut(&grand_parent_id) {
+            // Add parent as child of parent of parent
+            grand_parent_analysis
+                .folder_content
+                .get_or_insert(vec![])
+                .push(parent_analysis_id.clone());
+            // Add grand_parent as parent of parent
+            parent_analysis.parent = Some(grand_parent_id);
+        }
+    }
 }
 
 fn get_metrics_score(
