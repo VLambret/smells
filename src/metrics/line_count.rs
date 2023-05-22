@@ -2,12 +2,12 @@ use crate::analysis::{Analysis, MetricsValueType};
 use crate::metrics::metric::IMetric;
 use std::fs::File;
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::Path;
 
 pub struct LinesCountMetric {}
 
 impl IMetric for LinesCountMetric {
-    fn analyze(&self, file_path: &PathBuf) -> Result<u32, String> {
+    fn analyze(&self, file_path: &Path) -> Result<u32, String> {
         let mut file = File::open(file_path).unwrap(); // TODO : remove unwrap
         let mut content = String::new();
         file.read_to_string(&mut content).unwrap(); // TODO : remove unwrap

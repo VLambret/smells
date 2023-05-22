@@ -17,7 +17,7 @@ pub fn convert_analysis_to_json(analysis: &Analysis) -> Value {
 fn build_json_folder_analysis(folder: &Analysis) -> Value {
     let mut folder_content_json = Vec::new();
     if let Some(content) = &folder.content {
-        for (_filename, analysis) in content {
+        for analysis in content.values() {
             let json_item = convert_analysis_to_json(analysis);
             folder_content_json.push(json_item);
         }

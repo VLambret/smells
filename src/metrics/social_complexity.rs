@@ -24,7 +24,7 @@ fn _get_number_of_authors_of_repo_dir(repo: &Repository, path: PathBuf) -> u32 {
     authors_number
 }
 
-fn _get_file_social_complexity(repo: &Repository, file: &PathBuf) -> u32 {
+fn _get_file_social_complexity(repo: &Repository, file: &Path) -> u32 {
     let relative_file_path = _get_relative_path(repo.path(), file);
 
     let blame = match repo.blame_file(&relative_file_path, None) {
@@ -40,8 +40,8 @@ fn _get_file_social_complexity(repo: &Repository, file: &PathBuf) -> u32 {
     authors.len() as u32
 }
 
-fn _get_relative_path(path_to_repo: &Path, path: &PathBuf) -> PathBuf {
-    let mut relative_path = path.clone();
+fn _get_relative_path(path_to_repo: &Path, path: &Path) -> PathBuf {
+    let mut relative_path = path.to_path_buf();
     if path.is_absolute() {
         relative_path = path.strip_prefix(path_to_repo).unwrap().to_path_buf();
     }

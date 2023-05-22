@@ -1,5 +1,5 @@
 use std::fs::read_dir;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub trait IFileExplorer: Iterator<Item = PathBuf> {
     fn discover(&self) -> Vec<PathBuf>;
@@ -17,8 +17,10 @@ impl IFileExplorer for FileExplorer {
 }
 
 impl FileExplorer {
-    pub fn new(root: &PathBuf) -> Self {
-        FileExplorer { root: root.clone() }
+    pub fn new(root: &Path) -> Self {
+        FileExplorer {
+            root: root.to_path_buf(),
+        }
     }
 
     fn discover_inner(&self, root: &PathBuf) -> Vec<PathBuf> {

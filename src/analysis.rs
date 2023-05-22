@@ -112,12 +112,11 @@ fn create_btreemap_from_analysis_vector(
 }
 
 fn analyse(entry: &DirEntry) -> Analysis {
-    let analysis: Analysis;
-    if entry.path().is_file() {
-        analysis = analyse_file(entry);
+    let analysis: Analysis = if entry.path().is_file() {
+        analyse_file(entry)
     } else {
-        analysis = analyse_folder(entry.path());
-    }
+        analyse_folder(entry.path())
+    };
     analysis
 }
 
@@ -126,7 +125,7 @@ fn analyse_root(root: PathBuf) -> Analysis {
 }
 
 fn analyse_internal(
-    root: &PathBuf,
+    root: &Path,
     file_explorer: Box<dyn IFileExplorer<Item = PathBuf>>,
     metrics: Vec<Box<dyn IMetric>>,
 ) -> Analysis {
@@ -159,7 +158,7 @@ fn analyse_internal(
         );
     }
     let root_analysis_in_tree = analysis_tree.get(&*root_analysis.id).unwrap();
-    convert_hashmap_to_analysis(analysis_tree.clone(), &root_analysis_in_tree.id)
+    convert_analysis_hashmap_to_final_analysis(analysis_tree.clone(), &root_analysis_in_tree.id)
 }
 
 fn create_and_push_file_analysis_into_analysis_tree(
@@ -167,7 +166,7 @@ fn create_and_push_file_analysis_into_analysis_tree(
     metrics: &Vec<Box<dyn IMetric>>,
     root_analysis: &AnalysisNew,
     analysis_tree: &mut HashMap<AnalysisId, AnalysisNew>,
-    file: &PathBuf,
+    file: &Path,
     last_parent_of_file_id: &mut AnalysisId,
 ) {
     let result_file_metrics = get_metrics_score(metrics, file);
@@ -205,7 +204,7 @@ fn add_parent_analysis_to_analysis_tree(
             parent: None,
             folder_content: Some(vec![]),
         };
-        // Get parent of parent if exits
+        // Get parent of parent if exists
         connect_grand_father_with_parent(analysis_tree, &parent_analysis_id, &mut parent_analysis);
         analysis_tree.insert(parent_analysis_id.clone(), parent_analysis);
     }
@@ -215,7 +214,7 @@ fn add_parent_analysis_to_analysis_tree(
 // TODO: how to change mut
 fn connect_grand_father_with_parent(
     analysis_tree: &mut HashMap<AnalysisId, AnalysisNew>,
-    parent_analysis_id: &String,
+    parent_analysis_id: &str,
     parent_analysis: &mut AnalysisNew,
 ) {
     if let Some(grand_parent) = PathBuf::from(parent_analysis.id.clone()).parent() {
@@ -225,7 +224,7 @@ fn connect_grand_father_with_parent(
             grand_parent_analysis
                 .folder_content
                 .get_or_insert(vec![])
-                .push(parent_analysis_id.clone());
+                .push(parent_analysis_id.to_owned());
             // Add grand_parent as parent of parent
             parent_analysis.parent = Some(grand_parent_id);
         }
@@ -234,7 +233,7 @@ fn connect_grand_father_with_parent(
 
 fn get_metrics_score(
     metrics: &Vec<Box<dyn IMetric>>,
-    file: &PathBuf,
+    file: &Path,
 ) -> BTreeMap<String, MetricsValueType> {
     let mut result_file_metrics = BTreeMap::new();
     for metric in metrics {
@@ -247,15 +246,15 @@ fn get_metrics_score(
     result_file_metrics
 }
 
-fn convert_hashmap_to_analysis(
+fn convert_analysis_hashmap_to_final_analysis(
     analysis_hashmap: HashMap<AnalysisId, AnalysisNew>,
     root_id: &String,
 ) -> Analysis {
-    let root_analysis = analysis_hashmap.get(&*root_id).unwrap();
-    build_analysis_rec(root_analysis, &analysis_hashmap)
+    let root_analysis = analysis_hashmap.get(root_id).unwrap();
+    build_final_analysis_structure(root_analysis, &analysis_hashmap)
 }
 
-fn build_analysis_rec(
+fn build_final_analysis_structure(
     node: &AnalysisNew,
     analysis_tree: &HashMap<AnalysisId, AnalysisNew>,
 ) -> Analysis {
@@ -275,28 +274,38 @@ fn build_analysis_rec(
         } else {
             for child_id in folder_content {
                 if let Some(child_node) = analysis_tree.get(child_id) {
-                    let child_analysis = build_analysis_rec(child_node, analysis_tree);
-                    if let Some(new_analysis_content) = new_analysis.content.as_mut() {
-                        new_analysis_content
-                            .insert(child_analysis.id.clone(), child_analysis.clone());
-                    } else {
-                        new_analysis.content = Some(BTreeMap::new());
-                        new_analysis
-                            .content
-                            .as_mut()
-                            .unwrap()
-                            .insert(child_analysis.id.clone(), child_analysis.clone());
-                    }
+                    let child_analysis = build_final_analysis_structure(child_node, analysis_tree);
+                    add_child_analysis_to_current_analysis_content(
+                        &mut new_analysis,
+                        &child_analysis,
+                    );
                     // TODO: add metrics
                     new_analysis.metrics = child_analysis.metrics.clone();
                 }
             }
         }
     }
-    return new_analysis;
+    new_analysis
 }
 
-fn get_parents_ordered_from_root(file: &PathBuf) -> Vec<PathBuf> {
+// TODO: mut
+fn add_child_analysis_to_current_analysis_content(
+    new_analysis: &mut Analysis,
+    child_analysis: &Analysis,
+) {
+    if let Some(new_analysis_content) = new_analysis.content.as_mut() {
+        new_analysis_content.insert(child_analysis.id.clone(), child_analysis.clone());
+    } else {
+        new_analysis.content = Some(BTreeMap::new());
+        new_analysis
+            .content
+            .as_mut()
+            .unwrap()
+            .insert(child_analysis.id.clone(), child_analysis.clone());
+    }
+}
+
+fn get_parents_ordered_from_root(file: &Path) -> Vec<PathBuf> {
     let mut parents = Vec::new();
     let mut current = file.parent();
 
@@ -374,7 +383,7 @@ mod tests {
     }
 
     impl IMetric for FakeMetric {
-        fn analyze(&self, _file_path: &PathBuf) -> Result<u32, String> {
+        fn analyze(&self, _file_path: &Path) -> Result<u32, String> {
             Ok(self.metric_value)
         }
         fn get_key(&self) -> String {
@@ -396,7 +405,7 @@ mod tests {
     }
 
     impl IMetric for BrokenMetric {
-        fn analyze(&self, _file_path: &PathBuf) -> Result<u32, String> {
+        fn analyze(&self, _file_path: &Path) -> Result<u32, String> {
             Err(String::from("Analysis error"))
         }
         fn get_key(&self) -> String {
@@ -752,29 +761,5 @@ mod tests {
             content: Some(expected_root_analysis_content),
         };
         assert_eq!(actual_root_analysis, expected_root_analysis)
-    }
-
-    #[test]
-    fn function_convert_hashmap_to_analysis_with_empty_root() {
-        // Given
-        let root_analysis = AnalysisNew {
-            id: "root".to_string(),
-            metrics: BTreeMap::new(),
-            parent: None,
-            folder_content: Some(vec![]),
-        };
-        let analysis_id = String::from("1");
-        let analysis = hashmap!{ analysis_id => root_analysis };
-
-        //When
-        let actual_analysis = convert_hashmap_to_analysis(analysis);
-
-        // Then
-        let expected_root_analysis = Analysis {
-            id: String::from("root"),
-            metrics:  BTreeMap::new(),
-            content: Some(BTreeMap::new()),
-        };
-        assert_eq!(actual_analysis, expected_root_analysis)
     }*/
 }
