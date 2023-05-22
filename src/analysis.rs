@@ -214,6 +214,7 @@ fn create_and_push_file_analysis_into_analysis_tree(
         parent: Some(last_parent_of_file_id.to_owned()),
         folder_content: None,
     };
+    // TODO: hasher
     let file_id = String::from(file.to_string_lossy());
     analysis_tree.insert(file_id.clone(), file_analysis.clone());
 
@@ -232,6 +233,7 @@ fn add_parent_analysis_to_analysis_tree(
     last_parent_of_file_id: &mut AnalysisId,
     parent: PathBuf,
 ) {
+    // TODO: hasher
     let parent_analysis_id = AnalysisId::from(parent.to_string_lossy());
     if analysis_tree.get_mut(&parent_analysis_id).is_none() {
         // Create parent analysis
