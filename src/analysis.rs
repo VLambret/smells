@@ -149,35 +149,50 @@ fn analyse_internal(
                 parent,
             );
         }
-
-        let result_file_metrics = get_metrics_score(&metrics, &file);
-        let file_analysis = AnalysisNew {
-            id: file.to_string_lossy().into_owned(),
-            metrics: result_file_metrics.clone(),
-            parent: Some(String::from(root.to_string_lossy())),
-            folder_content: None,
-        };
-        let file_id = String::from(file.to_string_lossy());
-        analysis_tree.insert(file_id.clone(), file_analysis.clone());
-
-        let last_parent_content = analysis_tree
-            .get_mut(&last_parent_of_file_id)
-            .unwrap()
-            .folder_content
-            .get_or_insert(vec![]);
-        last_parent_content.push(file_id.clone());
-
-        analysis_tree.get_mut(&root_analysis.id).unwrap().metrics = file_analysis.metrics.clone();
+        create_and_push_file_analysis_into_analysis_tree(
+            root,
+            &metrics,
+            &root_analysis,
+            &mut analysis_tree,
+            &file,
+            &mut last_parent_of_file_id,
+        );
     }
-
     let root_analysis_in_tree = analysis_tree.get(&*root_analysis.id).unwrap();
-    //println!("root children : {:?}", root_analysis_in_tree.folder_content);
-
     convert_hashmap_to_analysis(analysis_tree.clone(), &root_analysis_in_tree.id)
 }
 
+fn create_and_push_file_analysis_into_analysis_tree(
+    root: &Path,
+    metrics: &Vec<Box<dyn IMetric>>,
+    root_analysis: &AnalysisNew,
+    analysis_tree: &mut HashMap<AnalysisId, AnalysisNew>,
+    file: &PathBuf,
+    last_parent_of_file_id: &mut AnalysisId,
+) {
+    let result_file_metrics = get_metrics_score(metrics, file);
+    let file_analysis = AnalysisNew {
+        id: file.to_string_lossy().into_owned(),
+        metrics: result_file_metrics,
+        parent: Some(String::from(root.to_string_lossy())),
+        folder_content: None,
+    };
+    let file_id = String::from(file.to_string_lossy());
+    analysis_tree.insert(file_id.clone(), file_analysis.clone());
+
+    let last_parent_content = analysis_tree
+        .get_mut(last_parent_of_file_id)
+        .unwrap()
+        .folder_content
+        .get_or_insert(vec![]);
+    last_parent_content.push(file_id);
+
+    analysis_tree.get_mut(&root_analysis.id).unwrap().metrics = file_analysis.metrics;
+}
+
+// TODO: how to change mut
 fn add_parent_analysis_to_analysis_tree(
-    mut analysis_tree: &mut HashMap<AnalysisId, AnalysisNew>,
+    analysis_tree: &mut HashMap<AnalysisId, AnalysisNew>,
     last_parent_of_file_id: &mut AnalysisId,
     parent: PathBuf,
 ) {
@@ -191,11 +206,7 @@ fn add_parent_analysis_to_analysis_tree(
             folder_content: Some(vec![]),
         };
         // Get parent of parent if exits
-        connect_grand_father_with_parent(
-            &mut analysis_tree,
-            &parent_analysis_id,
-            &mut parent_analysis,
-        );
+        connect_grand_father_with_parent(analysis_tree, &parent_analysis_id, &mut parent_analysis);
         analysis_tree.insert(parent_analysis_id.clone(), parent_analysis);
     }
     *last_parent_of_file_id = parent_analysis_id;
@@ -240,34 +251,8 @@ fn convert_hashmap_to_analysis(
     analysis_hashmap: HashMap<AnalysisId, AnalysisNew>,
     root_id: &String,
 ) -> Analysis {
-    /*let root_filename = root
-    .file_name()
-    .and_then(|s| s.to_str())
-    .unwrap_or("")
-    .to_owned();*/
     let root_analysis = analysis_hashmap.get(&*root_id).unwrap();
-    let analysis = build_analysis_rec(root_analysis, &analysis_hashmap);
-
-    /*    for (id, analysis) in analysis_hashmap {
-        let filename = Path::new(&id)
-            .file_name()
-            .and_then(|s| s.to_str())
-            .unwrap_or("")
-            .to_owned();
-
-        if filename != root_filename {
-            let file_analysis = Analysis {
-                id: filename.clone(),
-                metrics: analysis.metrics,
-                content: None,
-            };
-            if let Some(content) = root_analysis.content.as_mut() {
-                content.insert(filename, file_analysis.clone());
-            }
-            root_analysis.metrics = file_analysis.metrics;
-        }
-    }*/
-    analysis
+    build_analysis_rec(root_analysis, &analysis_hashmap)
 }
 
 fn build_analysis_rec(
