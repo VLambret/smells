@@ -12,43 +12,18 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::string::String;
 
-/*
-#[derive(Debug, Eq, Hash, PartialEq)]
-pub struct AnalysisId(u32);
-
-#[derive(Debug, PartialEq)]
-pub struct AnalysisTree {
-    pub analysis: HashMap<AnalysisId, AnalysisNew>,
-}
-impl Hash for AnalysisTree {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        for (key, value) in &self.analysis {
-            key.hash(state);
-            value.id.hash(state);
-            value.metrics.hash(state);
-            value.parent.hash(state);
-            value.folder_content.hash(state);
-        }
-    }
-}
-*/
-
-// TODO: distinguish root to folders
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub struct AnalysisNew {
+pub struct AnalysisHashmap {
     pub id: String,
     pub metrics: BTreeMap<String, MetricsValueType>,
     pub parent: Option<String>,
     pub folder_content: Option<Vec<String>>,
 }
 
-pub type AnalysisId = String;
+pub type AnalysisHashmapId = String;
 
-// TODO: distinguish root to folders
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Analysis {
-    // TODO: Good luck :-)
-    //pub parent: Option<&Analysis>,
     pub id: String,
     pub metrics: BTreeMap<String, MetricsValueType>,
     pub content: Option<BTreeMap<String, Analysis>>,
@@ -131,20 +106,20 @@ fn analyse_internal(
     file_explorer: Box<dyn IFileExplorer<Item = PathBuf>>,
     metrics: Vec<Box<dyn IMetric>>,
 ) -> Analysis {
-    let root_analysis = AnalysisNew {
+    let root_analysis = AnalysisHashmap {
         id: String::from(root.to_string_lossy()),
         metrics: BTreeMap::new(),
         parent: None,
         folder_content: Some(vec![]),
     };
-    // TODO: hash
+
     let root_id = hash_pathbuf_to_string(&root.to_path_buf());
-    let mut analysis_tree: HashMap<AnalysisId, AnalysisNew> =
-        hashmap! {root_id.clone() => root_analysis.clone() };
+    let mut analysis_tree: HashMap<AnalysisHashmapId, AnalysisHashmap> =
+        hashmap! {root_id.clone() => root_analysis };
 
     for file in file_explorer.discover() {
         let parents = get_parents_ordered_from_root(&file);
-        let mut last_parent_of_file_id: AnalysisId = root_id.clone();
+        let mut last_parent_of_file_id: AnalysisHashmapId = root_id.clone();
         for parent in parents {
             add_parent_analysis_to_analysis_tree(
                 &mut analysis_tree,
@@ -160,21 +135,19 @@ fn analyse_internal(
         );
         propagate_file_scores_to_parents(&mut analysis_tree, file_analysis);
     }
-    //let root_analysis_in_tree = analysis_tree.get(&*root_id).unwrap();
-
     convert_analysis_hashmap_to_final_analysis(analysis_tree.clone(), &root_id)
 }
 
 fn propagate_file_scores_to_parents(
-    analysis_tree: &mut HashMap<AnalysisId, AnalysisNew>,
-    file_analysis: AnalysisNew,
+    analysis_tree: &mut HashMap<AnalysisHashmapId, AnalysisHashmap>,
+    file_analysis: AnalysisHashmap,
 ) {
     let parent_id = file_analysis.parent;
     add_file_metrics_to_parent(analysis_tree, parent_id, file_analysis.metrics);
 }
 
 fn add_file_metrics_to_parent(
-    analysis_tree: &mut HashMap<AnalysisId, AnalysisNew>,
+    analysis_tree: &mut HashMap<AnalysisHashmapId, AnalysisHashmap>,
     parent_id: Option<String>,
     mut file_metrics: BTreeMap<String, MetricsValueType>,
 ) {
@@ -207,12 +180,12 @@ fn add_file_metrics_to_parent(
 
 fn create_and_push_file_analysis_into_analysis_tree(
     metrics: &Vec<Box<dyn IMetric>>,
-    analysis_tree: &mut HashMap<AnalysisId, AnalysisNew>,
+    analysis_tree: &mut HashMap<AnalysisHashmapId, AnalysisHashmap>,
     file: &Path,
-    last_parent_of_file_id: &mut AnalysisId,
-) -> AnalysisNew {
+    last_parent_of_file_id: &mut AnalysisHashmapId,
+) -> AnalysisHashmap {
     let result_file_metrics = get_metrics_score(metrics, file);
-    let file_analysis = AnalysisNew {
+    let file_analysis = AnalysisHashmap {
         id: file.to_string_lossy().into_owned(),
         metrics: result_file_metrics,
         parent: Some(last_parent_of_file_id.to_owned()),
@@ -232,20 +205,18 @@ fn create_and_push_file_analysis_into_analysis_tree(
 
 // TODO: how to change mut
 fn add_parent_analysis_to_analysis_tree(
-    analysis_tree: &mut HashMap<AnalysisId, AnalysisNew>,
-    last_parent_of_file_id: &mut AnalysisId,
+    analysis_tree: &mut HashMap<AnalysisHashmapId, AnalysisHashmap>,
+    last_parent_of_file_id: &mut AnalysisHashmapId,
     parent: PathBuf,
 ) {
     let parent_analysis_id = hash_pathbuf_to_string(&parent);
     if analysis_tree.get_mut(&parent_analysis_id).is_none() {
-        // Create parent analysis
-        let mut parent_analysis = AnalysisNew {
+        let mut parent_analysis = AnalysisHashmap {
             id: parent.to_string_lossy().into_owned(),
             metrics: BTreeMap::new(),
             parent: None,
             folder_content: Some(vec![]),
         };
-        // Get parent of parent if exists
         connect_grand_father_with_parent(analysis_tree, &parent_analysis_id, &mut parent_analysis);
         analysis_tree.insert(parent_analysis_id.clone(), parent_analysis);
     }
@@ -260,20 +231,17 @@ fn hash_pathbuf_to_string(path: &PathBuf) -> String {
 
 // TODO: how to change mut
 fn connect_grand_father_with_parent(
-    analysis_tree: &mut HashMap<AnalysisId, AnalysisNew>,
+    analysis_tree: &mut HashMap<AnalysisHashmapId, AnalysisHashmap>,
     parent_analysis_id: &str,
-    parent_analysis: &mut AnalysisNew,
+    parent_analysis: &mut AnalysisHashmap,
 ) {
     if let Some(grand_parent) = PathBuf::from(parent_analysis.id.clone()).parent() {
         let grand_parent_id = hash_pathbuf_to_string(&grand_parent.to_path_buf());
-        //String::from(grand_parent.to_string_lossy());
         if let Some(grand_parent_analysis) = analysis_tree.get_mut(&grand_parent_id) {
-            // Add parent as child of parent of parent
             grand_parent_analysis
                 .folder_content
                 .get_or_insert(vec![])
                 .push(parent_analysis_id.to_owned());
-            // Add grand_parent as parent of parent
             parent_analysis.parent = Some(grand_parent_id);
         }
     }
@@ -295,7 +263,7 @@ fn get_metrics_score(
 }
 
 fn convert_analysis_hashmap_to_final_analysis(
-    analysis_hashmap: HashMap<AnalysisId, AnalysisNew>,
+    analysis_hashmap: HashMap<AnalysisHashmapId, AnalysisHashmap>,
     root_id: &String,
 ) -> Analysis {
     let root_analysis = analysis_hashmap.get(root_id).unwrap();
@@ -303,8 +271,8 @@ fn convert_analysis_hashmap_to_final_analysis(
 }
 
 fn build_final_analysis_structure(
-    node: &AnalysisNew,
-    analysis_tree: &HashMap<AnalysisId, AnalysisNew>,
+    node: &AnalysisHashmap,
+    analysis_tree: &HashMap<AnalysisHashmapId, AnalysisHashmap>,
 ) -> Analysis {
     let mut current_analysis = Analysis {
         id: String::from(
