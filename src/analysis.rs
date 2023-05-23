@@ -13,6 +13,35 @@ use std::string::String;
 
 /* **************************************************************** */
 
+pub struct AnalysisTree {
+    root_id: String,
+    all_analysis: HashMap<AnalysisInTreeId, AnalysisInTree>,
+}
+pub type AnalysisInTreeId = String;
+
+impl AnalysisTree {
+    fn new(root_id: String) -> AnalysisTree {
+        AnalysisTree {
+            root_id,
+            all_analysis: hashmap! {},
+        }
+    }
+
+    fn get_root(&self) -> &String {
+        &self.root_id
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct AnalysisInTree {
+    pub id: String,
+    pub metrics: BTreeMap<String, MetricsValueType>,
+    pub parent: Option<String>,
+    pub folder_content: Option<Vec<String>>,
+}
+
+/* **************************************************************** */
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct AnalysisHashmap {
     pub id: String,
