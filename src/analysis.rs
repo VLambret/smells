@@ -2,10 +2,12 @@ use crate::data_sources::file_explorer::IFileExplorer;
 use crate::metrics::line_count::count_lines;
 use crate::metrics::metric::IMetric;
 use crate::metrics::{line_count, social_complexity};
+use fxhash::FxHasher;
 use maplit::hashmap;
 use serde::{Deserialize, Serialize, Serializer};
 use std::collections::{BTreeMap, HashMap};
 use std::fs::{read_dir, DirEntry, File};
+use std::hash::{Hash, Hasher};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::string::String;
@@ -135,12 +137,14 @@ fn analyse_internal(
         parent: None,
         folder_content: Some(vec![]),
     };
+    // TODO: hash
+    let root_id = hash_pathbuf_to_string(&root.to_path_buf());
     let mut analysis_tree: HashMap<AnalysisId, AnalysisNew> =
-        hashmap! {root_analysis.id.clone() => root_analysis.clone() };
+        hashmap! {root_id.clone() => root_analysis.clone() };
 
     for file in file_explorer.discover() {
         let parents = get_parents_ordered_from_root(&file);
-        let mut last_parent_of_file_id: AnalysisId = root_analysis.id.clone();
+        let mut last_parent_of_file_id: AnalysisId = root_id.clone();
         for parent in parents {
             add_parent_analysis_to_analysis_tree(
                 &mut analysis_tree,
@@ -156,9 +160,9 @@ fn analyse_internal(
         );
         propagate_file_scores_to_parents(&mut analysis_tree, file_analysis);
     }
-    let root_analysis_in_tree = analysis_tree.get(&*root_analysis.id).unwrap();
+    //let root_analysis_in_tree = analysis_tree.get(&*root_id).unwrap();
 
-    convert_analysis_hashmap_to_final_analysis(analysis_tree.clone(), &root_analysis_in_tree.id)
+    convert_analysis_hashmap_to_final_analysis(analysis_tree.clone(), &root_id)
 }
 
 fn propagate_file_scores_to_parents(
@@ -214,8 +218,7 @@ fn create_and_push_file_analysis_into_analysis_tree(
         parent: Some(last_parent_of_file_id.to_owned()),
         folder_content: None,
     };
-    // TODO: hasher
-    let file_id = String::from(file.to_string_lossy());
+    let file_id = hash_pathbuf_to_string(&file.to_path_buf());
     analysis_tree.insert(file_id.clone(), file_analysis.clone());
 
     let last_parent_content = analysis_tree
@@ -233,8 +236,7 @@ fn add_parent_analysis_to_analysis_tree(
     last_parent_of_file_id: &mut AnalysisId,
     parent: PathBuf,
 ) {
-    // TODO: hasher
-    let parent_analysis_id = AnalysisId::from(parent.to_string_lossy());
+    let parent_analysis_id = hash_pathbuf_to_string(&parent);
     if analysis_tree.get_mut(&parent_analysis_id).is_none() {
         // Create parent analysis
         let mut parent_analysis = AnalysisNew {
@@ -250,6 +252,12 @@ fn add_parent_analysis_to_analysis_tree(
     *last_parent_of_file_id = parent_analysis_id;
 }
 
+fn hash_pathbuf_to_string(path: &PathBuf) -> String {
+    let mut hasher = FxHasher::default();
+    path.hash(&mut hasher);
+    hasher.finish().to_string()
+}
+
 // TODO: how to change mut
 fn connect_grand_father_with_parent(
     analysis_tree: &mut HashMap<AnalysisId, AnalysisNew>,
@@ -257,7 +265,8 @@ fn connect_grand_father_with_parent(
     parent_analysis: &mut AnalysisNew,
 ) {
     if let Some(grand_parent) = PathBuf::from(parent_analysis.id.clone()).parent() {
-        let grand_parent_id = String::from(grand_parent.to_string_lossy());
+        let grand_parent_id = hash_pathbuf_to_string(&grand_parent.to_path_buf());
+        //String::from(grand_parent.to_string_lossy());
         if let Some(grand_parent_analysis) = analysis_tree.get_mut(&grand_parent_id) {
             // Add parent as child of parent of parent
             grand_parent_analysis
