@@ -142,23 +142,20 @@ fn analyse(entry: &DirEntry) -> Analysis {
 }
 
 fn analyse_file(entry: &DirEntry) -> Analysis {
-    let line_count_metric_analyzer = LinesCountMetric::new();
-    let social_complexity_metric_analyzer = SocialComplexityMetric::new();
-
+    let metrics: Vec<Box<dyn IMetric>> = vec![
+        Box::new(LinesCountMetric::new()),
+        Box::new(SocialComplexityMetric::new()),
+    ];
     let path = entry.path();
-    // TODO: remove unwrap()
-    let line_count_score = line_count_metric_analyzer.analyze(&path).unwrap();
-    let social_complexity_score = social_complexity_metric_analyzer.analyze(&path).unwrap();
-
     let mut metrics_content = BTreeMap::new();
-    metrics_content.insert(
-        line_count_metric_analyzer.get_key(),
-        MetricsValueType::Score(line_count_score),
-    );
-    metrics_content.insert(
-        social_complexity_metric_analyzer.get_key(),
-        MetricsValueType::Score(social_complexity_score),
-    );
+
+    for metric in metrics {
+        metrics_content.insert(
+            metric.get_key(),
+            // TODO: remove unwrap()
+            MetricsValueType::Score(metric.analyze(&path).unwrap()),
+        );
+    }
 
     Analysis {
         id: extract_analysed_item_key(&path),
