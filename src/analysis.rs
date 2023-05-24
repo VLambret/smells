@@ -1,5 +1,5 @@
 use crate::data_sources::file_explorer::IFileExplorer;
-use crate::metrics::line_count::count_lines;
+use crate::metrics::line_count::LinesCountMetric;
 use crate::metrics::metric::IMetric;
 use crate::metrics::{line_count, social_complexity};
 use maplit::hashmap;
@@ -110,7 +110,7 @@ fn analyse_folder(item: PathBuf) -> Analysis {
     Analysis {
         id: extract_analysed_item_key(&item),
         metrics: metrics_content,
-        content: create_btreemap_from_analysis_vector(folder_content),
+        content: normalize_analyses(folder_content),
     }
 }
 
@@ -141,17 +141,16 @@ fn analyse(entry: &DirEntry) -> Analysis {
 }
 
 fn analyse_file(entry: &DirEntry) -> Analysis {
-    // TODO: handle unwrap()
+    let metric_analyzer = LinesCountMetric::new();
+
     let path = entry.path();
-    let mut file = File::open(&path).unwrap();
-    // TODO: remove expect and make metric optional to handle errors when an executable is analyzed
-    let mut content = String::new();
-    file.read_to_string(&mut content).unwrap();
+    // TODO: remove unwrap()
+    let new_score = metric_analyzer.analyze(&path).unwrap();
 
     let mut metrics_content = BTreeMap::new();
     metrics_content.insert(
         "lines_count".to_string(),
-        MetricsValueType::Score(count_lines(content)),
+        MetricsValueType::Score(new_score),
     );
     metrics_content.insert(
         "social_complexity".to_string(),
@@ -174,9 +173,7 @@ fn extract_analysed_item_key(item: &Path) -> String {
     item_key.to_string_lossy().into_owned()
 }
 
-fn create_btreemap_from_analysis_vector(
-    analysis_vector: Vec<Analysis>,
-) -> Option<BTreeMap<String, Analysis>> {
+fn normalize_analyses(analysis_vector: Vec<Analysis>) -> Option<BTreeMap<String, Analysis>> {
     let result = analysis_vector
         .iter()
         .map(|a| (a.id.clone(), a.to_owned()))

@@ -11,7 +11,7 @@ impl IMetric for LinesCountMetric {
         let mut file = File::open(file_path).unwrap(); // TODO : remove unwrap
         let mut content = String::new();
         file.read_to_string(&mut content).unwrap(); // TODO : remove unwrap
-        Ok(count_lines(content))
+        Ok(content.lines().count() as u32)
     }
     fn get_key(&self) -> String {
         String::from("lines_count")
@@ -22,10 +22,6 @@ impl LinesCountMetric {
     pub fn new() -> LinesCountMetric {
         LinesCountMetric {}
     }
-}
-
-pub fn count_lines(content: String) -> u32 {
-    content.lines().count() as u32
 }
 
 pub fn summary_lines_count_metric(folder_contents: &[Analysis]) -> u32 {
