@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod end_2_end_test{
+mod end_2_end_test {
     use assert_cmd::cmd::Command;
     use predicates::prelude::*;
     use serde_json::Value;
@@ -34,7 +34,7 @@ mod end_2_end_test{
     }
 
     // TODO: For an empty folder, we cannot return a 0 metric because if we do that we cannot differentiate between an empty folder and a real 0 metric (like an empty file.
-//       The correct solution is to return an error saying that the folder is empty, but we will define that when we handle errors.
+    //       The correct solution is to return an error saying that the folder is empty, but we will define that when we handle errors.
     #[test]
     #[ignore]
     fn folder_to_analyse_can_be_specified_with_first_parameter(
@@ -108,13 +108,14 @@ mod end_2_end_test{
         Ok(())
     }
 
-// inventory::submit!(EndToEndTest {
-//     name: "basic",
-//     test_fn: smells_can_count_lines_of_a_single_file
-// });
+    // inventory::submit!(EndToEndTest {
+    //     name: "basic",
+    //     test_fn: smells_can_count_lines_of_a_single_file
+    // });
 
     #[test]
-    fn smells_can_count_lines_of_a_single_file_other_case() -> Result<(), Box<dyn std::error::Error>> {
+    fn smells_can_count_lines_of_a_single_file_other_case() -> Result<(), Box<dyn std::error::Error>>
+    {
         // given
         let cmd_call = "smells";
         let args = "tests/data/single_file_folder_other";
@@ -194,7 +195,8 @@ mod end_2_end_test{
     }
 
     #[test]
-    fn smells_can_analyses_folder_with_one_empty_folder() -> Result<(), Box<dyn std::error::Error>> {
+    fn smells_can_analyses_folder_with_one_empty_folder() -> Result<(), Box<dyn std::error::Error>>
+    {
         // given
         let cmd_call = "smells";
         let args = "tests/data/folder_with_one_empty_folder";
@@ -231,7 +233,8 @@ mod end_2_end_test{
     }
 
     #[test]
-    fn smells_can_analyses_folder_with_a_folder_and_a_file() -> Result<(), Box<dyn std::error::Error>> {
+    fn smells_can_analyses_folder_with_a_folder_and_a_file(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // given
         let cmd_call = "smells";
         let args = "tests/data/folder_with_folder_and_file";
@@ -284,7 +287,8 @@ mod end_2_end_test{
 
     #[test]
     #[ignore]
-    fn smells_must_not_access_to_a_file_with_no_permission() -> Result<(), Box<dyn std::error::Error>> {
+    fn smells_must_not_access_to_a_file_with_no_permission(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // given
         let cmd_call = "smells tests/data/folder_with_no_permission";
 

@@ -1,6 +1,7 @@
 use crate::data_sources::file_explorer::IFileExplorer;
 use crate::metrics::line_count::LinesCountMetric;
 use crate::metrics::metric::IMetric;
+use crate::metrics::social_complexity::SocialComplexityMetric;
 use crate::metrics::{line_count, social_complexity};
 use maplit::hashmap;
 use serde::{Deserialize, Serialize, Serializer};
@@ -141,20 +142,22 @@ fn analyse(entry: &DirEntry) -> Analysis {
 }
 
 fn analyse_file(entry: &DirEntry) -> Analysis {
-    let metric_analyzer = LinesCountMetric::new();
+    let line_count_metric_analyzer = LinesCountMetric::new();
+    let social_complexity_metric_analyzer = SocialComplexityMetric::new();
 
     let path = entry.path();
     // TODO: remove unwrap()
-    let new_score = metric_analyzer.analyze(&path).unwrap();
+    let line_count_score = line_count_metric_analyzer.analyze(&path).unwrap();
+    let social_complexity_score = social_complexity_metric_analyzer.analyze(&path).unwrap();
 
     let mut metrics_content = BTreeMap::new();
     metrics_content.insert(
-        "lines_count".to_string(),
-        MetricsValueType::Score(new_score),
+        line_count_metric_analyzer.get_key(),
+        MetricsValueType::Score(line_count_score),
     );
     metrics_content.insert(
-        "social_complexity".to_string(),
-        MetricsValueType::Score(social_complexity::social_complexity("")),
+        social_complexity_metric_analyzer.get_key(),
+        MetricsValueType::Score(social_complexity_score),
     );
 
     Analysis {

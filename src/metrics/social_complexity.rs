@@ -1,6 +1,25 @@
+use crate::metrics::metric::IMetric;
 use git2::Repository;
 use std::fs::read_dir;
 use std::path::{Path, PathBuf};
+
+pub struct SocialComplexityMetric {}
+
+impl SocialComplexityMetric {
+    pub fn new() -> Self {
+        SocialComplexityMetric {}
+    }
+}
+
+impl IMetric for SocialComplexityMetric {
+    fn analyze(&self, _file_path: &Path) -> Result<u32, String> {
+        Ok((0))
+    }
+
+    fn get_key(&self) -> String {
+        String::from("social_complexity")
+    }
+}
 
 //print_number_of_authors_of_entire_repo()
 pub fn social_complexity(_root_path: &str) -> u32 {
