@@ -2,28 +2,26 @@ use crate::data_sources::file_explorer::{FileExplorer, IFileExplorer};
 use crate::metrics::line_count::LinesCountMetric;
 use crate::metrics::metric::IMetric;
 use crate::metrics::social_complexity::SocialComplexityMetric;
-use crate::metrics::{line_count, social_complexity};
-use maplit::{btreemap, hashmap};
+use maplit::hashmap;
 use serde::{Deserialize, Serialize, Serializer};
 use std::collections::{BTreeMap, HashMap};
-use std::fs::{read_dir, DirEntry};
 use std::hash::Hash;
 use std::path::{Path, PathBuf};
 use std::string::String;
 
 /* **************************************************************** */
 
-pub struct AnalysisTree {
+pub struct AnalysesTree {
     root_id: String,
-    all_analysis: HashMap<AnalysisInTreeId, AnalysisInTree>,
+    analyses: HashMap<AnalysisInTreeId, AnalysisInTree>,
 }
 pub type AnalysisInTreeId = String;
 
-impl AnalysisTree {
-    fn new(root_id: String) -> AnalysisTree {
-        AnalysisTree {
+impl AnalysesTree {
+    fn new(root_id: String) -> AnalysesTree {
+        AnalysesTree {
             root_id,
-            all_analysis: hashmap! {},
+            analyses: hashmap! {},
         }
     }
 
@@ -84,7 +82,6 @@ impl Serialize for MetricsValueType {
 
 pub fn do_analysis(root: PathBuf) -> Analysis {
     //analyse_folder(root)
-    //convert_analysis_hashmap_to_final_analysis(analyse_folder(root).all_analysis)
     analyse_internal(
         &*root,
         Box::new(FileExplorer::new(&*root)),
@@ -95,6 +92,7 @@ pub fn do_analysis(root: PathBuf) -> Analysis {
     )
 }
 
+/*
 // -> AnalysisTree
 fn analyse_folder(item: PathBuf) -> Analysis {
     let folder_content: Vec<Analysis> = sort_files_of_a_path(&item)
@@ -189,7 +187,7 @@ fn normalize_analyses(analysis_vector: Vec<Analysis>) -> Option<BTreeMap<String,
         .map(|a| (a.id.clone(), a.to_owned()))
         .collect::<BTreeMap<_, _>>();
     Some(result)
-}
+}*/
 
 /* **************************************************************** */
 
@@ -205,7 +203,6 @@ fn analyse_internal(
         folder_content: Some(vec![]),
     };
 
-    //let root_id = hash_pathbuf_to_string(&root.to_path_buf());
     let root_id = String::from(root.to_path_buf().to_string_lossy());
     let mut analysis_tree: HashMap<AnalysisHashmapId, AnalysisHashmap> =
         hashmap! {root_id.clone() => root_analysis };
@@ -239,12 +236,6 @@ fn get_metrics_keys(metrics: &Vec<Box<dyn IMetric>>) -> BTreeMap<String, Option<
     metrics_keys
 }
 
-/*fn hash_pathbuf_to_string(path: &PathBuf) -> String {
-    let mut hasher = FxHasher::default();
-    path.hash(&mut hasher);
-    hasher.finish().to_string()
-}*/
-
 fn get_parents_ordered_from_root(file: &Path) -> Vec<PathBuf> {
     let mut parents = Vec::new();
     let mut current = file.parent();
@@ -264,7 +255,6 @@ fn add_parent_analysis_to_analysis_tree(
     last_parent_of_file_id: &mut AnalysisHashmapId,
     parent: PathBuf,
 ) {
-    //let parent_analysis_id = hash_pathbuf_to_string(&parent);
     let parent_analysis_id = String::from(parent.to_path_buf().to_string_lossy());
     if analysis_tree.get_mut(&parent_analysis_id).is_none() {
         let mut parent_analysis = AnalysisHashmap {
@@ -286,7 +276,6 @@ fn connect_grand_father_with_parent(
     parent_analysis: &mut AnalysisHashmap,
 ) {
     if let Some(grand_parent) = PathBuf::from(parent_analysis.id.clone()).parent() {
-        //let grand_parent_id = hash_pathbuf_to_string(&grand_parent.to_path_buf());
         let grand_parent_id = String::from(grand_parent.to_path_buf().to_string_lossy());
         if let Some(grand_parent_analysis) = analysis_tree.get_mut(&grand_parent_id) {
             grand_parent_analysis
@@ -311,7 +300,6 @@ fn create_and_push_file_analysis_into_analysis_tree(
         parent: Some(last_parent_of_file_id.to_owned()),
         folder_content: None,
     };
-    //let file_id = hash_pathbuf_to_string(&file.to_path_buf());
     let file_id = String::from(file.to_path_buf().to_string_lossy());
     analysis_tree.insert(file_id.clone(), file_analysis.clone());
 
@@ -375,12 +363,6 @@ fn aggregate_metrics(
 
     loop {
         match (parent_metrics_iterable.next(), file_scores_iterable.next()) {
-            /*(
-                Some((_, parent_metric_score)),
-                Some((_, file_metric_score)),
-            ) => {
-
-            }*/
             (
                 Some((_, Some(MetricsValueType::Score(ref mut parent_score)))),
                 Some((_, Some(MetricsValueType::Score(ref mut file_score)))),
@@ -457,6 +439,7 @@ mod tests {
     use super::*;
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
     use crate::metrics::line_count::LinesCountMetric;
+    use maplit::btreemap;
 
     pub struct FakeMetric {
         pub metric_key: String,
