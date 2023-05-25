@@ -1,14 +1,13 @@
-use crate::data_sources::file_explorer::IFileExplorer;
+use crate::data_sources::file_explorer::{FileExplorer, IFileExplorer};
 use crate::metrics::line_count::LinesCountMetric;
 use crate::metrics::metric::IMetric;
 use crate::metrics::social_complexity::SocialComplexityMetric;
 use crate::metrics::{line_count, social_complexity};
-use maplit::hashmap;
+use maplit::{btreemap, hashmap};
 use serde::{Deserialize, Serialize, Serializer};
 use std::collections::{BTreeMap, HashMap};
-use std::fs::{read_dir, DirEntry, File};
+use std::fs::{read_dir, DirEntry};
 use std::hash::Hash;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::string::String;
 
@@ -36,7 +35,7 @@ impl AnalysisTree {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct AnalysisInTree {
     pub id: String,
-    pub metrics: BTreeMap<String, MetricsValueType>,
+    pub metrics: BTreeMap<String, Option<MetricsValueType>>,
     pub parent: Option<String>,
     pub folder_content: Option<Vec<String>>,
 }
@@ -46,7 +45,7 @@ pub struct AnalysisInTree {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct AnalysisHashmap {
     pub id: String,
-    pub metrics: BTreeMap<String, MetricsValueType>,
+    pub metrics: BTreeMap<String, Option<MetricsValueType>>,
     pub parent: Option<String>,
     pub folder_content: Option<Vec<String>>,
 }
@@ -56,7 +55,7 @@ pub type AnalysisHashmapId = String;
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Analysis {
     pub id: String,
-    pub metrics: BTreeMap<String, MetricsValueType>,
+    pub metrics: BTreeMap<String, Option<MetricsValueType>>,
     pub content: Option<BTreeMap<String, Analysis>>,
 }
 
@@ -84,13 +83,19 @@ impl Serialize for MetricsValueType {
 /* **************************************************************** */
 
 pub fn do_analysis(root: PathBuf) -> Analysis {
-    analyse_root(root)
+    //analyse_folder(root)
+    //convert_analysis_hashmap_to_final_analysis(analyse_folder(root).all_analysis)
+    analyse_internal(
+        &*root,
+        Box::new(FileExplorer::new(&*root)),
+        vec![
+            Box::new(LinesCountMetric::new()),
+            Box::new(SocialComplexityMetric::new()),
+        ],
+    )
 }
 
-fn analyse_root(root: PathBuf) -> Analysis {
-    analyse_folder(root)
-}
-
+// -> AnalysisTree
 fn analyse_folder(item: PathBuf) -> Analysis {
     let folder_content: Vec<Analysis> = sort_files_of_a_path(&item)
         .iter()
@@ -101,11 +106,15 @@ fn analyse_folder(item: PathBuf) -> Analysis {
     let mut metrics_content = BTreeMap::new();
     metrics_content.insert(
         "lines_count".to_string(),
-        MetricsValueType::Score(line_count::summary_lines_count_metric(&folder_content)),
+        Some(MetricsValueType::Score(
+            line_count::summary_lines_count_metric(&folder_content),
+        )),
     );
     metrics_content.insert(
         "social_complexity".to_string(),
-        MetricsValueType::Score(social_complexity::social_complexity("")),
+        Some(MetricsValueType::Score(
+            social_complexity::social_complexity(""),
+        )),
     );
 
     Analysis {
@@ -142,6 +151,7 @@ fn analyse(entry: &DirEntry) -> Analysis {
 }
 
 fn analyse_file(entry: &DirEntry) -> Analysis {
+    // a injecter en parametre de la fct
     let metrics: Vec<Box<dyn IMetric>> = vec![
         Box::new(LinesCountMetric::new()),
         Box::new(SocialComplexityMetric::new()),
@@ -153,7 +163,7 @@ fn analyse_file(entry: &DirEntry) -> Analysis {
         metrics_content.insert(
             metric.get_key(),
             // TODO: remove unwrap()
-            MetricsValueType::Score(metric.analyze(&path).unwrap()),
+            Some(MetricsValueType::Score(metric.analyze(&path).unwrap())),
         );
     }
 
@@ -190,7 +200,7 @@ fn analyse_internal(
 ) -> Analysis {
     let root_analysis = AnalysisHashmap {
         id: String::from(root.to_string_lossy()),
-        metrics: BTreeMap::new(),
+        metrics: get_metrics_keys(&metrics),
         parent: None,
         folder_content: Some(vec![]),
     };
@@ -219,6 +229,14 @@ fn analyse_internal(
         propagate_file_scores_to_parents(&mut analysis_tree, file_analysis);
     }
     convert_analysis_hashmap_to_final_analysis(analysis_tree.clone(), &root_id)
+}
+
+fn get_metrics_keys(metrics: &Vec<Box<dyn IMetric>>) -> BTreeMap<String, Option<MetricsValueType>> {
+    let mut metrics_keys: BTreeMap<String, Option<MetricsValueType>> = BTreeMap::new();
+    for metric in metrics {
+        metrics_keys.insert(metric.get_key(), None);
+    }
+    metrics_keys
 }
 
 /*fn hash_pathbuf_to_string(path: &PathBuf) -> String {
@@ -309,14 +327,14 @@ fn create_and_push_file_analysis_into_analysis_tree(
 fn get_metrics_score(
     metrics: &Vec<Box<dyn IMetric>>,
     file: &Path,
-) -> BTreeMap<String, MetricsValueType> {
+) -> BTreeMap<String, Option<MetricsValueType>> {
     let mut result_file_metrics = BTreeMap::new();
     for metric in metrics {
         let result_metric_analyze = match metric.analyze(file) {
             Ok(file_metric) => MetricsValueType::Score(file_metric),
             Err(error) => MetricsValueType::Error(error.to_string()),
         };
-        result_file_metrics.insert(metric.get_key(), result_metric_analyze);
+        result_file_metrics.insert(metric.get_key(), Some(result_metric_analyze));
     }
     result_file_metrics
 }
@@ -332,11 +350,12 @@ fn propagate_file_scores_to_parents(
 fn add_file_metrics_to_parent(
     analysis_tree: &mut HashMap<AnalysisHashmapId, AnalysisHashmap>,
     parent_id: Option<String>,
-    mut file_metrics: BTreeMap<String, MetricsValueType>,
+    mut file_metrics: BTreeMap<String, Option<MetricsValueType>>,
 ) {
     if let Some(some_parent_id) = parent_id {
         if let Some(parent) = analysis_tree.get_mut(&*some_parent_id) {
-            if parent.metrics.is_empty() {
+            if parent.metrics.is_empty() || parent.metrics.iter().all(|(_, value)| value.is_none())
+            {
                 parent.metrics = file_metrics.clone();
             } else {
                 aggregate_metrics(&mut file_metrics, parent)
@@ -348,7 +367,7 @@ fn add_file_metrics_to_parent(
 }
 
 fn aggregate_metrics(
-    file_metrics: &mut BTreeMap<String, MetricsValueType>,
+    file_metrics: &mut BTreeMap<String, Option<MetricsValueType>>,
     parent: &mut AnalysisHashmap,
 ) {
     let mut parent_metrics_iterable = parent.metrics.iter_mut();
@@ -363,8 +382,8 @@ fn aggregate_metrics(
 
             }*/
             (
-                Some((_, MetricsValueType::Score(ref mut parent_score))),
-                Some((_, MetricsValueType::Score(ref mut file_score))),
+                Some((_, Some(MetricsValueType::Score(ref mut parent_score)))),
+                Some((_, Some(MetricsValueType::Score(ref mut file_score)))),
             ) => {
                 *parent_score += *file_score;
             }
@@ -485,7 +504,7 @@ mod tests {
 
     fn build_analysis_structure(
         root_name: String,
-        metrics: BTreeMap<String, MetricsValueType>,
+        metrics: BTreeMap<String, Option<MetricsValueType>>,
         content: BTreeMap<String, Analysis>,
     ) -> Analysis {
         let expected_result_analysis = Analysis {
@@ -571,8 +590,8 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert(String::from("fake4"), MetricsValueType::Score(4));
-        expected_metrics.insert(String::from("fake10"), MetricsValueType::Score(10));
+        expected_metrics.insert(String::from("fake4"), Some(MetricsValueType::Score(4)));
+        expected_metrics.insert(String::from("fake10"), Some(MetricsValueType::Score(10)));
 
         let expected_file_analysis = Analysis {
             id: String::from("file1"),
@@ -606,7 +625,7 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        let error_value = MetricsValueType::Error("Analysis error".to_string());
+        let error_value = Some(MetricsValueType::Error("Analysis error".to_string()));
         expected_metrics.insert(String::from("broken"), error_value);
 
         let expected_file_analysis = Analysis {
@@ -644,7 +663,10 @@ mod tests {
         let actual_root_analysis = analyse_internal(&root, fake_file_explorer, metrics);
 
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert(String::from("lines_count"), MetricsValueType::Score(5));
+        expected_metrics.insert(
+            String::from("lines_count"),
+            Some(MetricsValueType::Score(5)),
+        );
 
         let expected_file_analysis = Analysis {
             id: "file5.txt".to_string(),
@@ -681,7 +703,7 @@ mod tests {
         // Then
         let expected_root_analysis = Analysis {
             id: String::from("empty_root"),
-            metrics: BTreeMap::new(),
+            metrics: btreemap! {String::from("fake0") => None},
             content: Some(BTreeMap::new()),
         };
         assert_eq!(expected_root_analysis, actual_root_analysis)
@@ -702,7 +724,7 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert(String::from("fake1"), MetricsValueType::Score(1));
+        expected_metrics.insert(String::from("fake1"), Some(MetricsValueType::Score(1)));
 
         let expected_file_analysis = Analysis {
             id: String::from("file1"),
@@ -736,7 +758,7 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert(String::from("fake1"), MetricsValueType::Score(1));
+        expected_metrics.insert(String::from("fake1"), Some(MetricsValueType::Score(1)));
 
         let expected_file_analysis = Analysis {
             id: String::from("file1"),
@@ -785,7 +807,7 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert(String::from("fake1"), MetricsValueType::Score(1));
+        expected_metrics.insert(String::from("fake1"), Some(MetricsValueType::Score(1)));
 
         let expected_file1_analysis = Analysis {
             id: String::from("file1"),
@@ -799,7 +821,7 @@ mod tests {
         };
 
         let mut expected_folder_metrics = BTreeMap::new();
-        expected_folder_metrics.insert(String::from("fake1"), MetricsValueType::Score(2));
+        expected_folder_metrics.insert(String::from("fake1"), Some(MetricsValueType::Score(2)));
 
         let mut expected_folder1_analysis_content = BTreeMap::new();
         expected_folder1_analysis_content

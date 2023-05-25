@@ -63,7 +63,7 @@ mod end_2_end_test {
         // then
         let expected_stdout_json = string_to_json(expected_stdout);
         let actual_stdout_json = stdout_to_json(&mut cmd);
-        assert_eq!(actual_stdout_json, expected_stdout_json);
+        assert_eq!(expected_stdout_json, actual_stdout_json);
         Ok(())
     }
 
@@ -83,7 +83,7 @@ mod end_2_end_test {
                 "lines_count": 0,
                 "social_complexity": 0
             },
-            "folder_content": [
+            "folder_content_analyses": [
                 {
                     "file0.txt": {
                         "metrics": {
@@ -103,7 +103,7 @@ mod end_2_end_test {
 
         let expected_stdout_json = string_to_json(expected_stdout);
         let actual_stdout_json = stdout_to_json(&mut cmd);
-        assert_eq!(actual_stdout_json, expected_stdout_json);
+        assert_eq!(expected_stdout_json, actual_stdout_json);
         println!("execution of single_file e2e test");
         Ok(())
     }
@@ -131,7 +131,7 @@ mod end_2_end_test {
                 "lines_count": 5,
                 "social_complexity": 0
             },
-            "folder_content": [
+            "folder_content_analyses": [
                 {
                     "file5.txt": {
                         "metrics": {
@@ -146,7 +146,7 @@ mod end_2_end_test {
 
         let expected_stdout_json = string_to_json(expected_stdout);
         let actual_stdout_json = stdout_to_json(&mut cmd);
-        assert_eq!(actual_stdout_json, expected_stdout_json);
+        assert_eq!(expected_stdout_json, actual_stdout_json);
         Ok(())
     }
 
@@ -167,7 +167,7 @@ mod end_2_end_test {
                 "lines_count": 6,
                 "social_complexity": 0
             },
-            "folder_content":[
+            "folder_content_analyses":[
                 {
                 "file1.txt": {
                     "metrics": {
@@ -190,7 +190,7 @@ mod end_2_end_test {
 
         let expected_stdout_json = string_to_json(expected_stdout);
         let actual_stdout_json = stdout_to_json(&mut cmd);
-        assert_eq!(actual_stdout_json, expected_stdout_json);
+        assert_eq!(expected_stdout_json, actual_stdout_json);
         Ok(())
     }
 
@@ -209,26 +209,16 @@ mod end_2_end_test {
         let expected_stdout = r#"{
         "folder_with_one_empty_folder":{
             "metrics": {
-                "lines_count": 0,
-                "social_complexity": 0
+                "lines_count": null,
+                "social_complexity": null
             },
-            "folder_content":[
-                {
-                "empty_folder":{
-                    "metrics": {
-                        "lines_count": 0,
-                        "social_complexity": 0
-                    },
-                    "folder_content":[]
-                }
-           }
-           ]
+            "folder_content_analyses":[]
         }
     }"#;
 
         let expected_stdout_json = string_to_json(expected_stdout);
         let actual_stdout_json = stdout_to_json(&mut cmd);
-        assert_eq!(actual_stdout_json, expected_stdout_json);
+        assert_eq!(expected_stdout_json, actual_stdout_json);
         Ok(())
     }
 
@@ -250,7 +240,7 @@ mod end_2_end_test {
                 "lines_count": 11,
                 "social_complexity": 0
             },
-        "folder_content": [
+        "folder_content_analyses": [
             {
                 "file1.txt": {
                     "metrics": {
@@ -265,7 +255,7 @@ mod end_2_end_test {
                         "lines_count": 10,
                         "social_complexity": 0
                     },
-                "folder_content": [
+                "folder_content_analyses": [
                 {
                     "file10.txt": {
                         "metrics": {
@@ -281,7 +271,7 @@ mod end_2_end_test {
 
         let expected_stdout_json = string_to_json(expected_stdout);
         let actual_stdout_json = stdout_to_json(&mut cmd);
-        assert_eq!(actual_stdout_json, expected_stdout_json);
+        assert_eq!(expected_stdout_json, actual_stdout_json);
         Ok(())
     }
 

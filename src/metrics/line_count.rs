@@ -37,8 +37,9 @@ fn get_lines_count_value(content: &Analysis) -> Option<u32> {
         .metrics
         .get("lines_count")
         .and_then(|metric_value| match metric_value {
-            MetricsValueType::Score(score) => Some(*score),
-            MetricsValueType::Error(_) => None,
+            Some(MetricsValueType::Score(score)) => Some(*score),
+            Some(MetricsValueType::Error(_)) => None,
+            None => None,
         })
 }
 

@@ -26,7 +26,7 @@ fn build_json_folder_analysis(folder: &Analysis) -> Value {
         {
             folder.id.to_owned():{
             "metrics": folder.metrics,
-            "folder_content": folder_content_json
+            "folder_content_analyses": folder_content_json
              }
         }
     )
