@@ -1,4 +1,4 @@
-use crate::metrics::metric::{IMetric, MetricKind};
+use crate::metrics::metric::IMetric;
 use git2::Repository;
 use std::fs::read_dir;
 use std::path::{Path, PathBuf};
@@ -16,8 +16,8 @@ impl IMetric for SocialComplexityMetric {
         Ok(0)
     }
 
-    fn get_key(&self) -> MetricKind {
-        MetricKind::SocialComplexity
+    fn get_key(&self) -> &'static str{
+        "social_complexity"
     }
 }
 
