@@ -40,14 +40,6 @@ pub struct AnalysisInTree {
 
 /* **************************************************************** */
 
-// When using a specific lifetime reference ('a str) to a string during deserialization,
-// it can cause issues when the string being deserialized contains escape sequences (e.g., \n or \t).
-// Deserialization typically involves replacing these escape sequences with their corresponding characters,
-// such as newline or tab. However, using a reference with a specific lifetime presents a problem because
-// it is immutable, and modifying the string in place would violate Rust's borrowing rules.
-// The deserialization process requires modifying the string to replace escape sequences, which
-// is not possible with an immutable reference.
-
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Analysis {
     pub id: String,
@@ -79,7 +71,6 @@ impl Serialize for MetricsValueType {
 /* **************************************************************** */
 
 pub fn do_analysis(root: PathBuf) -> Analysis {
-    //analyse_folder(root)
     analyse_internal(
         &root,
         Box::new(FileExplorer::new(&root)),
@@ -395,12 +386,11 @@ mod tests {
         metrics: BTreeMap<MetricKind, Option<MetricsValueType>>,
         content: BTreeMap<String, Analysis>,
     ) -> Analysis {
-        let expected_result_analysis = Analysis {
+        Analysis {
             id: root_name,
             metrics,
             content: Some(content),
-        };
-        expected_result_analysis
+        }
     }
 
     #[test]
@@ -577,8 +567,6 @@ mod tests {
     #[test]
     fn internal_analyse_with_empty_root_and_fakemetric0() {
         // Given
-        let root_name = "empty_root";
-        let root = PathBuf::from(root_name);
         let files_to_analyze = vec![];
         let fake_file_explorer: Box<dyn IFileExplorer<Item = PathBuf>> =
             Box::new(FakeFileExplorer::new(files_to_analyze));
