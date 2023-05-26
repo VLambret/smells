@@ -12,7 +12,7 @@ pub struct FileExplorer {
 // TODO: (Vec<PathBuf>, Vec<std::io::Error>)
 impl IFileExplorer for FileExplorer {
     fn discover(&self) -> Vec<PathBuf> {
-        self.discover_inner(&self.root)
+        Self::discover_inner(&self.root)
     }
 }
 
@@ -23,14 +23,14 @@ impl FileExplorer {
         }
     }
 
-    fn discover_inner(&self, root: &PathBuf) -> Vec<PathBuf> {
+    fn discover_inner(root: &PathBuf) -> Vec<PathBuf> {
         let mut files = vec![];
         for file in read_dir(root).unwrap() {
             let file = file.unwrap().path();
             if file.is_file() {
                 files.push(file);
             } else {
-                files.extend(self.discover_inner(&file));
+                files.extend(Self::discover_inner(&file));
             }
         }
         files

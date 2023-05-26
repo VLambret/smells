@@ -47,11 +47,7 @@ fn _get_file_social_complexity(repo: &Repository, file: &Path) -> u32 {
         Err(_) => return 0,
     };
 
-    blame
-        .iter()
-        .map(|blame_hunk| blame_hunk.final_signature().name().unwrap().to_owned())
-        .count() as u32
-
+    blame.iter().count() as u32
 }
 
 fn _get_relative_path(path_to_repo: &Path, path: &Path) -> PathBuf {
