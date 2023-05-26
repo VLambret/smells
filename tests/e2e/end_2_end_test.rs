@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod end_2_end_test {
+mod end_2_end {
     use assert_cmd::cmd::Command;
     use predicates::prelude::*;
     use serde_json::Value;

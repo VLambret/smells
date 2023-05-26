@@ -1,4 +1,4 @@
-use crate::metrics::metric::IMetric;
+use crate::metrics::metric::{IMetric, MetricKind};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -12,8 +12,8 @@ impl IMetric for LinesCountMetric {
         file.read_to_string(&mut content).unwrap(); // TODO : remove unwrap
         Ok(content.lines().count() as u32)
     }
-    fn get_key(&self) -> &'static str {
-        "lines_count"
+    fn get_key(&self) -> MetricKind {
+        MetricKind::LinesCount
     }
 }
 

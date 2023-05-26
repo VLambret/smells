@@ -1,6 +1,6 @@
 use crate::data_sources::file_explorer::{FileExplorer, IFileExplorer};
 use crate::metrics::line_count::LinesCountMetric;
-use crate::metrics::metric::IMetric;
+use crate::metrics::metric::{IMetric, MetricKind};
 use crate::metrics::social_complexity::SocialComplexityMetric;
 use maplit::hashmap;
 use serde::{Deserialize, Serialize, Serializer};
@@ -18,10 +18,10 @@ pub struct AnalysesTree {
 pub type AnalysisInTreeId = String;
 
 impl AnalysesTree {
-    fn new(root_id: String) -> AnalysesTree {
+    fn new(root_id: String, analyses: HashMap<AnalysisInTreeId, AnalysisInTree>) -> AnalysesTree {
         AnalysesTree {
             root_id,
-            analyses: hashmap! {},
+            analyses,
         }
     }
 
@@ -33,7 +33,7 @@ impl AnalysesTree {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct AnalysisInTree {
     pub id: String,
-    pub metrics: BTreeMap<String, Option<MetricsValueType>>,
+    pub metrics: BTreeMap<MetricKind, Option<MetricsValueType>>,
     pub parent: Option<String>,
     pub folder_content: Option<Vec<String>>,
 }
@@ -48,22 +48,10 @@ pub struct AnalysisInTree {
 // The deserialization process requires modifying the string to replace escape sequences, which
 // is not possible with an immutable reference.
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-#[serde(bound(deserialize = "'de: 'static"))]
-pub struct AnalysisHashmap {
-    pub id: String,
-    pub metrics: BTreeMap<&'static str, Option<MetricsValueType>>,
-    pub parent: Option<String>,
-    pub folder_content: Option<Vec<String>>,
-}
-
-pub type AnalysisHashmapId = String;
-
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-#[serde(bound(deserialize = "'de: 'static"))]
 pub struct Analysis {
     pub id: String,
-    pub metrics: BTreeMap<&'static str, Option<MetricsValueType>>,
+    pub metrics: BTreeMap<MetricKind, Option<MetricsValueType>>,
     pub content: Option<BTreeMap<String, Analysis>>,
 }
 
@@ -78,8 +66,8 @@ pub enum MetricsValueType {
 
 impl Serialize for MetricsValueType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+        where
+            S: Serializer,
     {
         match self {
             MetricsValueType::Score(score) => serializer.serialize_u32(*score),
@@ -109,40 +97,39 @@ fn analyse_internal(
     file_explorer: Box<dyn IFileExplorer<Item = PathBuf>>,
     metrics: Vec<Box<dyn IMetric>>,
 ) -> Analysis {
-    let root_analysis = AnalysisHashmap {
+    let root_analysis = AnalysisInTree {
         id: String::from(root.to_string_lossy()),
         metrics: get_metrics_keys(&metrics),
         parent: None,
         folder_content: Some(vec![]),
     };
-
-    let root_id = String::from(root.to_path_buf().to_string_lossy());
-    let mut analysis_tree: HashMap<AnalysisHashmapId, AnalysisHashmap> =
-        hashmap! {root_id.clone() => root_analysis };
+    let root_id: AnalysisInTreeId = String::from(root.to_path_buf().to_string_lossy());
+    let mut analyses = AnalysesTree::new(root_id.clone(),
+                                         hashmap! {root_id => root_analysis });
 
     for file in file_explorer.discover() {
         let parents = get_parents_ordered_from_root(&file);
-        let mut last_parent_of_file_id: AnalysisHashmapId = root_id.clone();
+        let mut last_parent_of_file_id: AnalysisInTreeId = analyses.get_root().to_owned();
         for parent in parents {
             add_parent_analysis_to_analysis_tree(
-                &mut analysis_tree,
+                &mut analyses.analyses,
                 &mut last_parent_of_file_id,
                 parent,
             );
         }
         let file_analysis = create_and_push_file_analysis_into_analysis_tree(
             &metrics,
-            &mut analysis_tree,
+            &mut analyses.analyses,
             &file,
             &mut last_parent_of_file_id,
         );
-        propagate_file_scores_to_parents(&mut analysis_tree, file_analysis);
+        propagate_file_scores_to_parents(&mut analyses.analyses, file_analysis);
     }
-    convert_analysis_hashmap_to_final_analysis(analysis_tree.clone(), &root_id)
+    convert_analysis_hashmap_to_final_analysis(analyses.analyses.clone(), analyses.get_root())
 }
 
-fn get_metrics_keys(metrics: &Vec<Box<dyn IMetric>>) -> BTreeMap<&'static str, Option<MetricsValueType>> {
-    let mut metrics_keys: BTreeMap<&'static str, Option<MetricsValueType>> = BTreeMap::new();
+fn get_metrics_keys(metrics: &Vec<Box<dyn IMetric>>) -> BTreeMap<MetricKind, Option<MetricsValueType>> {
+    let mut metrics_keys: BTreeMap<MetricKind, Option<MetricsValueType>> = BTreeMap::new();
     for metric in metrics {
         metrics_keys.insert(metric.get_key(), None);
     }
@@ -164,13 +151,13 @@ fn get_parents_ordered_from_root(file: &Path) -> Vec<PathBuf> {
 
 // TODO: how to change mut
 fn add_parent_analysis_to_analysis_tree(
-    analysis_tree: &mut HashMap<AnalysisHashmapId, AnalysisHashmap>,
-    last_parent_of_file_id: &mut AnalysisHashmapId,
+    analysis_tree: &mut HashMap<AnalysisInTreeId, AnalysisInTree>,
+    last_parent_of_file_id: &mut AnalysisInTreeId,
     parent: PathBuf,
 ) {
     let parent_analysis_id = String::from(parent.to_string_lossy());
     if analysis_tree.get_mut(&parent_analysis_id).is_none() {
-        let mut parent_analysis = AnalysisHashmap {
+        let mut parent_analysis = AnalysisInTree{
             id: parent.to_string_lossy().into_owned(),
             metrics: BTreeMap::new(),
             parent: None,
@@ -184,9 +171,9 @@ fn add_parent_analysis_to_analysis_tree(
 
 // TODO: how to change mut
 fn connect_grand_father_with_parent(
-    analysis_tree: &mut HashMap<AnalysisHashmapId, AnalysisHashmap>,
+    analysis_tree: &mut HashMap<AnalysisInTreeId, AnalysisInTree>,
     parent_analysis_id: &str,
-    parent_analysis: &mut AnalysisHashmap,
+    parent_analysis: &mut AnalysisInTree,
 ) {
     if let Some(grand_parent) = PathBuf::from(parent_analysis.id.clone()).parent() {
         let grand_parent_id = String::from(grand_parent.to_path_buf().to_string_lossy());
@@ -202,12 +189,12 @@ fn connect_grand_father_with_parent(
 
 fn create_and_push_file_analysis_into_analysis_tree(
     metrics: &Vec<Box<dyn IMetric>>,
-    analysis_tree: &mut HashMap<AnalysisHashmapId, AnalysisHashmap>,
+    analysis_tree: &mut HashMap<AnalysisInTreeId, AnalysisInTree>,
     file: &Path,
-    last_parent_of_file_id: &mut AnalysisHashmapId,
-) -> AnalysisHashmap {
+    last_parent_of_file_id: &mut AnalysisInTreeId,
+) -> AnalysisInTree {
     let result_file_metrics = get_metrics_score(metrics, file);
-    let file_analysis = AnalysisHashmap {
+    let file_analysis = AnalysisInTree {
         id: file.to_string_lossy().into_owned(),
         metrics: result_file_metrics,
         parent: Some(last_parent_of_file_id.to_owned()),
@@ -228,7 +215,7 @@ fn create_and_push_file_analysis_into_analysis_tree(
 fn get_metrics_score(
     metrics: &Vec<Box<dyn IMetric>>,
     file: &Path,
-) -> BTreeMap<&'static str, Option<MetricsValueType>> {
+) -> BTreeMap<MetricKind, Option<MetricsValueType>> {
     let mut result_file_metrics = BTreeMap::new();
     for metric in metrics {
         let result_metric_analyze = match metric.analyze(file) {
@@ -241,17 +228,17 @@ fn get_metrics_score(
 }
 
 fn propagate_file_scores_to_parents(
-    analysis_tree: &mut HashMap<AnalysisHashmapId, AnalysisHashmap>,
-    file_analysis: AnalysisHashmap,
+    analysis_tree: &mut HashMap<AnalysisInTreeId, AnalysisInTree>,
+    file_analysis: AnalysisInTree,
 ) {
     let parent_id = file_analysis.parent;
     add_file_metrics_to_parent(analysis_tree, parent_id, file_analysis.metrics);
 }
 
 fn add_file_metrics_to_parent(
-    analysis_tree: &mut HashMap<AnalysisHashmapId, AnalysisHashmap>,
+    analysis_tree: &mut HashMap<AnalysisInTreeId, AnalysisInTree>,
     parent_id: Option<String>,
-    mut file_metrics: BTreeMap<&'static str, Option<MetricsValueType>>,
+    mut file_metrics: BTreeMap<MetricKind, Option<MetricsValueType>>,
 ) {
     if let Some(some_parent_id) = parent_id {
         if let Some(parent) = analysis_tree.get_mut(&*some_parent_id) {
@@ -268,8 +255,8 @@ fn add_file_metrics_to_parent(
 }
 
 fn aggregate_metrics(
-    file_metrics: &mut BTreeMap<&'static str, Option<MetricsValueType>>,
-    parent: &mut AnalysisHashmap,
+    file_metrics: &mut BTreeMap<MetricKind, Option<MetricsValueType>>,
+    parent: &mut AnalysisInTree,
 ) {
     let mut parent_metrics_iterable = parent.metrics.iter_mut();
     let mut file_scores_iterable = file_metrics.iter_mut();
@@ -289,7 +276,7 @@ fn aggregate_metrics(
 }
 
 fn convert_analysis_hashmap_to_final_analysis(
-    analysis_hashmap: HashMap<AnalysisHashmapId, AnalysisHashmap>,
+    analysis_hashmap: HashMap<AnalysisInTreeId, AnalysisInTree>,
     root_id: &String,
 ) -> Analysis {
     let root_analysis = analysis_hashmap.get(root_id).unwrap();
@@ -297,8 +284,8 @@ fn convert_analysis_hashmap_to_final_analysis(
 }
 
 fn build_final_analysis_structure(
-    node: &AnalysisHashmap,
-    analysis_tree: &HashMap<AnalysisHashmapId, AnalysisHashmap>,
+    node: &AnalysisInTree,
+    analysis_tree: &HashMap<AnalysisInTreeId, AnalysisInTree>,
 ) -> Analysis {
     let mut current_analysis = Analysis {
         id: String::from(
@@ -349,13 +336,12 @@ fn add_child_analysis_to_current_analysis_content(
 
 #[cfg(test)]
 mod tests {
+    use maplit::btreemap;
     use super::*;
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
-    use crate::metrics::line_count::LinesCountMetric;
-    use maplit::btreemap;
 
     pub struct FakeMetric {
-        pub metric_key: &'static str,
+        pub metric_key: MetricKind,
         pub metric_value: u32
     }
 
@@ -363,8 +349,8 @@ mod tests {
         fn analyze(&self, _file_path: &Path) -> Result<u32, String> {
             Ok(self.metric_value)
         }
-        fn get_key(&self) -> &'static str {
-            self.metric_key
+        fn get_key(&self) -> MetricKind {
+            self.metric_key.clone()
         }
     }
 
@@ -375,38 +361,38 @@ mod tests {
             // managed properly, as it bypasses Rust's usual memory management guarantees.
             // Ensure that the FakeMetric instances are properly dropped when no longer needed to
             // avoid leaking memory.
-            let metric_key = Box::leak(Box::new(format!("fake{}", metric_value))) as &'static str;
+            //let metric_key = Box::leak(Box::new(format!("fake{}", metric_value))) as &'static str;
             FakeMetric {
-                metric_key,
+                metric_key: MetricKind::FakeMetric,
                 metric_value,
             }
         }
     }
 
     pub struct BrokenMetric {
-        pub metric_key: &'static str
+        pub metric_key: MetricKind
     }
 
     impl IMetric for BrokenMetric {
         fn analyze(&self, _file_path: &Path) -> Result<u32, String> {
             Err(String::from("Analysis error"))
         }
-        fn get_key(&self) -> &'static str{
-            self.metric_key
+        fn get_key(&self) -> MetricKind{
+            self.metric_key.clone()
         }
     }
 
     impl BrokenMetric {
         pub fn new() -> BrokenMetric {
             BrokenMetric {
-                metric_key: "broken",
+                metric_key: MetricKind::BrokenMetric,
             }
         }
     }
 
     fn build_analysis_structure(
         root_name: String,
-        metrics: BTreeMap<&'static str, Option<MetricsValueType>>,
+        metrics: BTreeMap<MetricKind, Option<MetricsValueType>>,
         content: BTreeMap<String, Analysis>,
     ) -> Analysis {
         let expected_result_analysis = Analysis {
@@ -492,8 +478,8 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake4", Some(MetricsValueType::Score(4)));
-        expected_metrics.insert("fake10", Some(MetricsValueType::Score(10)));
+        expected_metrics.insert(MetricKind::FakeMetric, Some(MetricsValueType::Score(4)));
+        expected_metrics.insert(MetricKind::FakeMetric, Some(MetricsValueType::Score(10)));
 
         let expected_file_analysis = Analysis {
             id: String::from("file1"),
@@ -528,7 +514,7 @@ mod tests {
         // Then
         let mut expected_metrics = BTreeMap::new();
         let error_value = Some(MetricsValueType::Error("Analysis error".to_string()));
-        expected_metrics.insert("broken", error_value);
+        expected_metrics.insert(MetricKind::BrokenMetric, error_value);
 
         let expected_file_analysis = Analysis {
             id: String::from("file1"),
@@ -566,7 +552,7 @@ mod tests {
 
         let mut expected_metrics = BTreeMap::new();
         expected_metrics.insert(
-            "lines_count",
+            MetricKind::LinesCount,
             Some(MetricsValueType::Score(5)),
         );
 
@@ -605,7 +591,7 @@ mod tests {
         // Then
         let expected_root_analysis = Analysis {
             id: String::from("empty_root"),
-            metrics: btreemap! {"fake0" => None},
+            metrics: btreemap!{MetricKind::FakeMetric => None},
             content: Some(BTreeMap::new()),
         };
         assert_eq!(expected_root_analysis, actual_root_analysis)
@@ -626,7 +612,7 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake1", Some(MetricsValueType::Score(1)));
+        expected_metrics.insert(MetricKind::FakeMetric, Some(MetricsValueType::Score(1)));
 
         let expected_file_analysis = Analysis {
             id: String::from("file1"),
@@ -660,7 +646,7 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake1", Some(MetricsValueType::Score(1)));
+        expected_metrics.insert(MetricKind::FakeMetric, Some(MetricsValueType::Score(1)));
 
         let expected_file_analysis = Analysis {
             id: String::from("file1"),
@@ -709,7 +695,7 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake1", Some(MetricsValueType::Score(1)));
+        expected_metrics.insert(MetricKind::FakeMetric, Some(MetricsValueType::Score(1)));
 
         let expected_file1_analysis = Analysis {
             id: String::from("file1"),
@@ -723,7 +709,7 @@ mod tests {
         };
 
         let mut expected_folder_metrics = BTreeMap::new();
-        expected_folder_metrics.insert("fake1", Some(MetricsValueType::Score(2)));
+        expected_folder_metrics.insert(MetricKind::FakeMetric, Some(MetricsValueType::Score(2)));
 
         let mut expected_folder1_analysis_content = BTreeMap::new();
         expected_folder1_analysis_content
