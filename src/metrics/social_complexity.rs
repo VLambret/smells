@@ -13,17 +13,12 @@ impl SocialComplexityMetric {
 
 impl IMetric for SocialComplexityMetric {
     fn analyze(&self, _file_path: &Path) -> Result<u32, String> {
-        Ok((0))
+        Ok(0)
     }
 
-    fn get_key(&self) -> String {
-        String::from("social_complexity")
+    fn get_key(&self) -> &'static str {
+        "social_complexity"
     }
-}
-
-//print_number_of_authors_of_entire_repo()
-pub fn social_complexity(_root_path: &str) -> u32 {
-    0
 }
 
 // TODO: handle unwrap() + link to social_complexity + on va open le repo dans social_complexity
@@ -52,11 +47,11 @@ fn _get_file_social_complexity(repo: &Repository, file: &Path) -> u32 {
         Err(_) => return 0,
     };
 
-    let authors: Vec<String> = blame
+    blame
         .iter()
         .map(|blame_hunk| blame_hunk.final_signature().name().unwrap().to_owned())
-        .collect();
-    authors.len() as u32
+        .count() as u32
+
 }
 
 fn _get_relative_path(path_to_repo: &Path, path: &Path) -> PathBuf {
@@ -77,8 +72,7 @@ mod tests {
     use std::io::Write;
 
     fn _get_git_repositories_path() -> PathBuf {
-        let test_path = PathBuf::from("tests").join("data").join("git_repositories");
-        test_path
+        PathBuf::from("tests").join("data").join("git_repositories")
     }
 
     #[rstest(expected_social_complexity, case(0), case(1), case(2), case(10))]
@@ -116,7 +110,7 @@ mod tests {
             index.write_tree().unwrap()
         };
         let tree = repo.find_tree(tree_id).unwrap();
-        repo.commit(Some("HEAD"), &author, &author, "Initial commit", &tree, &[])
+        repo.commit(Some("HEAD"), author, author, "Initial commit", &tree, &[])
             .unwrap();
         create_file(&repo, file);
         let root_path = repo.path().parent().unwrap().to_path_buf();
@@ -129,9 +123,9 @@ mod tests {
     }
 
     fn commit_line_change_authored_by(repo: &Repository, file: &str, author: &Signature) {
-        update_file(&repo, file);
-        add_file_to_the_staging_area(&repo, file);
-        commit_changes_to_repo(&repo, author);
+        update_file(repo, file);
+        add_file_to_the_staging_area(repo, file);
+        commit_changes_to_repo(repo, author);
     }
 
     fn generate_author<'a>(author_index: u32) -> Signature<'a> {
@@ -180,7 +174,7 @@ mod tests {
                     .find_tree(repo.index().unwrap().write_tree().unwrap())
                     .unwrap();
                 let parents = &[&parent];
-                create_test_commit(repo, &author, &tree, parents);
+                create_test_commit(repo, author, &tree, parents);
             }
             Err(_) => {
                 let tree_id = {
@@ -189,7 +183,7 @@ mod tests {
                 };
                 let tree = repo.find_tree(tree_id).unwrap();
                 let parents = &[];
-                create_test_commit(repo, &author, &tree, parents);
+                create_test_commit(repo, author, &tree, parents);
             }
         }
     }
@@ -197,10 +191,10 @@ mod tests {
     fn create_test_commit(repo: &Repository, author: &Signature, tree: &Tree, parents: &[&Commit]) {
         repo.commit(
             Some("HEAD"),
-            &author,
-            &author,
+            author,
+            author,
             "Commit message",
-            &tree,
+            tree,
             parents,
         )
         .unwrap();

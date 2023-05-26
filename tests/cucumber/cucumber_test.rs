@@ -43,7 +43,7 @@ mod cucumber_test {
     }
 
     #[then("the cat is not hungry")]
-    fn cat_is_fed(world: &mut AnimalWorld) {
+    fn cat_is_fed(_world: &mut AnimalWorld) {
         assert!(true);
     }
 }

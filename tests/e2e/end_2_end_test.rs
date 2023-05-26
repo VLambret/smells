@@ -67,6 +67,7 @@ mod end_2_end_test {
         Ok(())
     }
 
+    #[test]
     fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::Error>> {
         // given
         let cmd_call = "smells";

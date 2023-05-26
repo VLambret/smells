@@ -1,4 +1,3 @@
-use crate::analysis::{Analysis, MetricsValueType};
 use crate::metrics::metric::IMetric;
 use std::fs::File;
 use std::io::Read;
@@ -13,8 +12,8 @@ impl IMetric for LinesCountMetric {
         file.read_to_string(&mut content).unwrap(); // TODO : remove unwrap
         Ok(content.lines().count() as u32)
     }
-    fn get_key(&self) -> String {
-        String::from("lines_count")
+    fn get_key(&self) -> &'static str {
+        "lines_count"
     }
 }
 
@@ -22,25 +21,6 @@ impl LinesCountMetric {
     pub fn new() -> LinesCountMetric {
         LinesCountMetric {}
     }
-}
-
-pub fn summary_lines_count_metric(folder_contents: &[Analysis]) -> u32 {
-    folder_contents
-        .iter()
-        .filter_map(get_lines_count_value)
-        .reduce(|a, b| a + b)
-        .unwrap_or(0)
-}
-
-fn get_lines_count_value(content: &Analysis) -> Option<u32> {
-    content
-        .metrics
-        .get("lines_count")
-        .and_then(|metric_value| match metric_value {
-            Some(MetricsValueType::Score(score)) => Some(*score),
-            Some(MetricsValueType::Error(_)) => None,
-            None => None,
-        })
 }
 
 #[cfg(test)]

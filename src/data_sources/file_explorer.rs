@@ -55,12 +55,6 @@ impl IFileExplorer for FakeFileExplorer {
     }
 }
 
-impl FakeFileExplorer {
-    pub fn new(files_to_analyze: Vec<PathBuf>) -> Self {
-        FakeFileExplorer { files_to_analyze }
-    }
-}
-
 impl Iterator for FakeFileExplorer {
     type Item = PathBuf;
 
@@ -76,6 +70,12 @@ mod file_explorer_tests {
     use std::fs;
     use std::fs::File;
     use std::path::PathBuf;
+
+    impl FakeFileExplorer {
+        pub fn new(files_to_analyze: Vec<PathBuf>) -> Self {
+            FakeFileExplorer { files_to_analyze }
+        }
+    }
 
     fn assert_contains_same_items(actual_files: Vec<PathBuf>, expected_files: Vec<PathBuf>) {
         let left: HashSet<&PathBuf> = HashSet::from_iter(expected_files.iter());
