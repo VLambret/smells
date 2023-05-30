@@ -2,11 +2,11 @@
 
 all: build test
 
-build:
+build: 
 	cargo build
 
-test:
-	cargo test --offline
+test: 
+	cargo test
 
 ################################################################################
 # BACKLOG
@@ -26,12 +26,22 @@ backlog.dot: backlog.py
 # DOCKER
 ################################################################################*
 
-IMAGE_NAME:=smells:latest
-CONTAINER_NAME:=smells
+IMAGE_NAME := smells-test:latest
+CONTAINER_NAME := smells_container1
 
 docker_build_image: ## Build an image from a Dockerfile
-	docker build -t $(IMAGE_NAME) .
- 
+	winpty docker build -t $(IMAGE_NAME) .
+
 docker_shell: ## Start a shell inside the container
 	echo $(PWD)
-	docker run -it --rm --name $(CONTAINER_NAME) $(IMAGE_NAME) /bin/bash
+	winpty docker run -it --rm --name $(CONTAINER_NAME) $(IMAGE_NAME) bash
+
+docker_run_tests: ## Create and run the container
+	 winpty docker run -t -i -v C:\Users\Lucas\git\smells:/app --rm \
+	  --name $(CONTAINER_NAME) $(IMAGE_NAME)
+
+docker_test: ## Run the existing container
+	winpty docker exec -it $(CONTAINER_NAME) bash
+
+docker_stop_rm: ## Stop and remove the specified container
+	winpty docker stop $(CONTAINER_NAME) && docker rm $(CONTAINER_NAME)
