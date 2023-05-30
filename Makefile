@@ -41,7 +41,7 @@ docker_run_tests: ## Create and run the container
 	  --name $(CONTAINER_NAME) $(IMAGE_NAME)
 
 docker_test: ## Run the existing container
-	winpty docker exec -it $(CONTAINER_NAME) bash
+	winpty docker exec -it $(CONTAINER_NAME) make test
 
 docker_stop_rm: ## Stop and remove the specified container
 	winpty docker stop $(CONTAINER_NAME) && docker rm $(CONTAINER_NAME)

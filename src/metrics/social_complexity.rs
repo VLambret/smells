@@ -16,7 +16,7 @@ impl IMetric for SocialComplexityMetric {
         Ok(0)
     }
 
-    fn get_key(&self) -> &'static str{
+    fn get_key(&self) -> &'static str {
         "social_complexity"
     }
 }
