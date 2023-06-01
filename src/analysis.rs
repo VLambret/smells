@@ -269,7 +269,7 @@ fn add_file_metrics_to_parent(
     }
 }
 
-fn aggregate_metrics(
+fn aggregate_metrics2(
     file_metrics: &mut BTreeMap<&'static str, Option<MetricsValueAggregable>>,
     parent: &mut AnalysisInTree,
 ) {
@@ -282,6 +282,7 @@ fn aggregate_metrics(
                 Some((_, Some(parent_aggregable))),
                 Some((_, Some(file_aggregable))),
             ) => {
+
                 if let MetricsValueType::Score(parent_score) = &mut parent_aggregable.value {
                     if let MetricsValueType::Score(file_score) = &mut file_aggregable.value {
                         *parent_score += *file_score;
@@ -290,6 +291,26 @@ fn aggregate_metrics(
             }
             (None, None) => break,
             _ => {}
+        }
+    }
+}
+
+fn aggregate_metrics(
+    file_metrics: &mut BTreeMap<&'static str, Option<MetricsValueAggregable>>,
+    parent: &mut AnalysisInTree,
+) {
+    let mut parent_metrics_iterable = parent.metrics.iter_mut();
+    let mut file_scores_iterable = file_metrics.iter();
+
+    while let (
+        Some((_, Some(parent_aggregable))),
+        Some((_, Some(file_aggregable)))
+    ) = (parent_metrics_iterable.next(), file_scores_iterable.next())
+    {
+        if let (MetricsValueType::Score(parent_score), MetricsValueType::Score(file_score))
+            = (&parent_aggregable.value, &file_aggregable.value) {
+            let other_aggregable = MetricsValueAggregable::new(MetricsValueType::Score(*parent_score + file_score));
+            parent_aggregable.value = other_aggregable.value;
         }
     }
 }
