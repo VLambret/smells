@@ -69,9 +69,9 @@ impl MetricsValueAggregable{
 
     fn aggregate(&mut self, other: &MetricsValueAggregable){
         if let (MetricsValueType::Score(parent_score), MetricsValueType::Score(file_score)) = (&self.value, &other.value) {
-            let mut new_score = *parent_score;
-            new_score += *file_score;
-            self.value = MetricsValueType::Score(new_score);
+            let mut parent_score = *parent_score;
+            parent_score += *file_score;
+            self.value = MetricsValueType::Score(parent_score);
         };
     }
 }
