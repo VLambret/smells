@@ -4,7 +4,6 @@ mod end_2_end {
     use predicates::prelude::*;
     use serde_json::Value;
     use std::path::Path;
-    //use super::EndToEndTest;
 
     fn string_to_json(expected_stdout: &str) -> Value {
         let expected_stdout_json: Value = serde_json::from_str(expected_stdout).unwrap();
@@ -27,6 +26,7 @@ mod end_2_end {
         // when
         let mut cmd = Command::cargo_bin(cmd_call)?;
         cmd.current_dir("tests/data/empty_folder");
+
         // then
         let expected_stdout = predicate::str::is_empty().not();
         cmd.assert().code(0).stdout(expected_stdout).stderr("");
@@ -50,15 +50,16 @@ mod end_2_end {
         // when
         let mut cmd = Command::cargo_bin(cmd_call)?;
         cmd.args(&[args]);
-        let expected_stdout = r#"{
-        "empty_folder": {
-            "metrics": {
-                "lines_count": 0,
-                "social_complexity": 0
-            },
-            "folder_content": []
-        }
-    }"#;
+        let expected_stdout =
+        r#"{
+            "empty_folder": {
+                "metrics": {
+                    "lines_count": 0,
+                    "social_complexity": 0
+                },
+                "folder_content": []
+            }
+        }"#;
 
         // then
         let expected_stdout_json = string_to_json(expected_stdout);
@@ -78,7 +79,8 @@ mod end_2_end {
         cmd.args(&[args]);
 
         // Then
-        let expected_stdout = r#"{
+        let expected_stdout =
+        r#"{
         "single_file_folder": {
             "metrics": {
                 "lines_count": 0,
@@ -95,12 +97,7 @@ mod end_2_end {
                 }
             ]
         }
-    }"#;
-
-        /*    cmd.assert()
-        .code(0)
-        .stdout(predicates::ord::eq(json_expected_stdout_to_str))
-        .stderr("");*/
+        }"#;
 
         let expected_stdout_json = string_to_json(expected_stdout);
         let actual_stdout_json = stdout_to_json(&mut cmd);
@@ -108,11 +105,6 @@ mod end_2_end {
         println!("execution of single_file e2e test");
         Ok(())
     }
-
-    // inventory::submit!(EndToEndTest {
-    //     name: "basic",
-    //     test_fn: smells_can_count_lines_of_a_single_file
-    // });
 
     #[test]
     fn smells_can_count_lines_of_a_single_file_other_case() -> Result<(), Box<dyn std::error::Error>>
@@ -126,24 +118,25 @@ mod end_2_end {
         cmd.args(&[args]);
 
         //then
-        let expected_stdout = r#"{
-        "single_file_folder_other": {
-            "metrics": {
-                "lines_count": 5,
-                "social_complexity": 0
-            },
-            "folder_content_analyses": [
-                {
-                    "file5.txt": {
-                        "metrics": {
-                            "lines_count": 5,
-                            "social_complexity": 0
+        let expected_stdout =
+        r#"{
+            "single_file_folder_other": {
+                "metrics": {
+                    "lines_count": 5,
+                    "social_complexity": 0
+                },
+                "folder_content_analyses": [
+                    {
+                        "file5.txt": {
+                            "metrics": {
+                                "lines_count": 5,
+                                "social_complexity": 0
+                            }
                         }
                     }
-                }
-            ]
-        }
-    }"#;
+                ]
+            }
+        }"#;
 
         let expected_stdout_json = string_to_json(expected_stdout);
         let actual_stdout_json = stdout_to_json(&mut cmd);
@@ -162,32 +155,33 @@ mod end_2_end {
         cmd.args(&[args]);
 
         //then
-        let expected_stdout = r#"{
-        "folder_with_multiple_files":{
-            "metrics": {
-                "lines_count": 6,
-                "social_complexity": 0
-            },
-            "folder_content_analyses":[
-                {
-                "file1.txt": {
-                    "metrics": {
-                        "lines_count": 1,
-                        "social_complexity": 0
-                    }
-                }
+        let expected_stdout =
+        r#"{
+            "folder_with_multiple_files":{
+                "metrics": {
+                    "lines_count": 6,
+                    "social_complexity": 0
                 },
-                {
-                "file5.txt": {
-                    "metrics": {
-                        "lines_count": 5,
-                        "social_complexity": 0
+                "folder_content_analyses":[
+                    {
+                    "file1.txt": {
+                        "metrics": {
+                            "lines_count": 1,
+                            "social_complexity": 0
+                        }
                     }
-                }
-                }
-            ]
-        }
-    }"#;
+                    },
+                    {
+                    "file5.txt": {
+                        "metrics": {
+                            "lines_count": 5,
+                            "social_complexity": 0
+                        }
+                    }
+                    }
+                ]
+            }
+        }"#;
 
         let expected_stdout_json = string_to_json(expected_stdout);
         let actual_stdout_json = stdout_to_json(&mut cmd);
@@ -207,15 +201,16 @@ mod end_2_end {
         cmd.args(&[args]);
 
         //then
-        let expected_stdout = r#"{
-        "folder_with_one_empty_folder":{
-            "metrics": {
-                "lines_count": null,
-                "social_complexity": null
-            },
-            "folder_content_analyses":[]
-        }
-    }"#;
+        let expected_stdout =
+        r#"{
+            "folder_with_one_empty_folder":{
+                "metrics": {
+                    "lines_count": null,
+                    "social_complexity": null
+                },
+                "folder_content_analyses":[]
+            }
+        }"#;
 
         let expected_stdout_json = string_to_json(expected_stdout);
         let actual_stdout_json = stdout_to_json(&mut cmd);
@@ -235,40 +230,41 @@ mod end_2_end {
         cmd.args(&[args]);
 
         //then
-        let expected_stdout = r#"{
-        "folder_with_folder_and_file": {
-            "metrics": {
-                "lines_count": 11,
-                "social_complexity": 0
-            },
-        "folder_content_analyses": [
-            {
-                "file1.txt": {
-                    "metrics": {
-                        "lines_count": 1,
-                        "social_complexity": 0
-                    }
-                }
-            },
-            {
-                "folder": {
-                    "metrics": {
-                        "lines_count": 10,
-                        "social_complexity": 0
-                    },
-                "folder_content_analyses": [
+        let expected_stdout =
+        r#"{
+            "folder_with_folder_and_file": {
+                "metrics": {
+                    "lines_count": 11,
+                    "social_complexity": 0
+                },
+            "folder_content_analyses": [
                 {
-                    "file10.txt": {
+                    "file1.txt": {
                         "metrics": {
-                            "lines_count": 10,
+                            "lines_count": 1,
                             "social_complexity": 0
                         }
                     }
+                },
+                {
+                    "folder": {
+                        "metrics": {
+                            "lines_count": 10,
+                            "social_complexity": 0
+                        },
+                    "folder_content_analyses": [
+                    {
+                        "file10.txt": {
+                            "metrics": {
+                                "lines_count": 10,
+                                "social_complexity": 0
+                            }
+                        }
+                    }]
+                    }
                 }]
-                }
-            }]
-        }
-    }"#;
+            }
+        }"#;
 
         let expected_stdout_json = string_to_json(expected_stdout);
         let actual_stdout_json = stdout_to_json(&mut cmd);
