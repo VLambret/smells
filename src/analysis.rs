@@ -3,7 +3,7 @@ use crate::metrics::line_count::LinesCountMetric;
 use crate::metrics::metric::IMetric;
 use crate::metrics::social_complexity::SocialComplexityMetric;
 use maplit::hashmap;
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Serialize, Serializer};
 use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::path::{Path, PathBuf};
@@ -33,7 +33,7 @@ impl AnalysesTree {
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct AnalysisInTree {
     pub id: String,
-    pub metrics: BTreeMap<&'static str, Option<MetricsValueType>>,
+    pub metrics: BTreeMap<&'static str, Option<MetricsValueAggregable>>,
     pub parent: Option<String>,
     pub folder_content: Option<Vec<String>>,
 }
@@ -43,25 +43,45 @@ pub struct AnalysisInTree {
 #[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct Analysis {
     pub id: String,
-    pub metrics: BTreeMap<&'static str, Option<MetricsValueType>>,
+    pub metrics: BTreeMap<&'static str, Option<MetricsValueAggregable>>,
     pub content: Option<BTreeMap<String, Analysis>>,
 }
 
 pub type AnalysisError = String;
 
-// TODO: rename variants
-#[derive(Debug, Hash, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Hash, Clone, PartialEq, Eq)]
 pub enum MetricsValueType {
     Score(u32),
     Error(AnalysisError),
 }
 
-impl Serialize for MetricsValueType {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MetricsValueAggregable{
+    value: MetricsValueType
+}
+
+impl MetricsValueAggregable{
+    fn new(value: MetricsValueType) -> Self {
+        MetricsValueAggregable{
+            value
+        }
+    }
+
+    fn get_score(&self) -> MetricsValueType {
+        self.value.clone()
+    }
+
+    fn aggregate(&self, other: MetricsValueAggregable) -> MetricsValueAggregable{
+        todo!()
+    }
+}
+
+impl Serialize for MetricsValueAggregable{
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
     {
-        match self {
+        match &self.value {
             MetricsValueType::Score(score) => serializer.serialize_u32(*score),
             MetricsValueType::Error(error) => serializer.serialize_str(error),
         }
@@ -119,8 +139,8 @@ fn analyse_internal(
     convert_analysis_hashmap_to_final_analysis(analyses.analyses.clone(), analyses.get_root())
 }
 
-fn get_metrics_keys(metrics: &Vec<Box<dyn IMetric>>) -> BTreeMap<&'static str, Option<MetricsValueType>> {
-    let mut metrics_keys: BTreeMap<&'static str, Option<MetricsValueType>> = BTreeMap::new();
+fn get_metrics_keys(metrics: &Vec<Box<dyn IMetric>>) -> BTreeMap<&'static str, Option<MetricsValueAggregable>> {
+    let mut metrics_keys: BTreeMap<&'static str, Option<MetricsValueAggregable>> = BTreeMap::new();
     for metric in metrics {
         metrics_keys.insert(metric.get_key(), None);
     }
@@ -206,12 +226,16 @@ fn create_and_push_file_analysis_into_analysis_tree(
 fn get_metrics_score(
     metrics: &Vec<Box<dyn IMetric>>,
     file: &Path,
-) -> BTreeMap<&'static str, Option<MetricsValueType>> {
+) -> BTreeMap<&'static str, Option<MetricsValueAggregable>> {
     let mut result_file_metrics = BTreeMap::new();
     for metric in metrics {
         let result_metric_analyze = match metric.analyze(file) {
-            Ok(file_metric) => MetricsValueType::Score(file_metric),
-            Err(error) => MetricsValueType::Error(error.to_string()),
+            Ok(file_metric) => {
+                MetricsValueAggregable::new(MetricsValueType::Score(file_metric))
+            },
+            Err(error) => {
+                MetricsValueAggregable::new(MetricsValueType::Error(error.to_string()))
+            },
         };
         result_file_metrics.insert(metric.get_key(), Some(result_metric_analyze));
     }
@@ -229,7 +253,7 @@ fn propagate_file_scores_to_parents(
 fn add_file_metrics_to_parent(
     analysis_tree: &mut HashMap<AnalysisInTreeId, AnalysisInTree>,
     parent_id: Option<String>,
-    mut file_metrics: BTreeMap<&'static str, Option<MetricsValueType>>,
+    mut file_metrics: BTreeMap<&'static str, Option<MetricsValueAggregable>>,
 ) {
     if let Some(some_parent_id) = parent_id {
         if let Some(parent) = analysis_tree.get_mut(&*some_parent_id) {
@@ -246,7 +270,7 @@ fn add_file_metrics_to_parent(
 }
 
 fn aggregate_metrics(
-    file_metrics: &mut BTreeMap<&'static str, Option<MetricsValueType>>,
+    file_metrics: &mut BTreeMap<&'static str, Option<MetricsValueAggregable>>,
     parent: &mut AnalysisInTree,
 ) {
     let mut parent_metrics_iterable = parent.metrics.iter_mut();
@@ -255,10 +279,14 @@ fn aggregate_metrics(
     loop {
         match (parent_metrics_iterable.next(), file_scores_iterable.next()) {
             (
-                Some((_, Some(MetricsValueType::Score(ref mut parent_score)))),
-                Some((_, Some(MetricsValueType::Score(ref mut file_score)))),
+                Some((_, Some(parent_aggregable))),
+                Some((_, Some(file_aggregable))),
             ) => {
-                *parent_score += *file_score;
+                if let MetricsValueType::Score(parent_score) = &mut parent_aggregable.value {
+                    if let MetricsValueType::Score(file_score) = &mut file_aggregable.value {
+                        *parent_score += *file_score;
+                    }
+                }
             }
             (None, None) => break,
             _ => {}
@@ -383,7 +411,7 @@ mod tests {
 
     fn build_analysis_structure(
         root_name: String,
-        metrics: BTreeMap<&'static str, Option<MetricsValueType>>,
+        metrics: BTreeMap<&'static str, Option<MetricsValueAggregable>>,
         content: BTreeMap<String, Analysis>,
     ) -> Analysis {
         Analysis {
@@ -468,8 +496,8 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake4", Some(MetricsValueType::Score(4)));
-        expected_metrics.insert("fake10", Some(MetricsValueType::Score(10)));
+        expected_metrics.insert("fake4", Some(MetricsValueAggregable::new(MetricsValueType::Score(4))));
+        expected_metrics.insert("fake10", Some(MetricsValueAggregable::new(MetricsValueType::Score(10))));
 
         let expected_file_analysis = Analysis {
             id: String::from("file1"),
@@ -503,7 +531,7 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        let error_value = Some(MetricsValueType::Error("Analysis error".to_string()));
+        let error_value = Some(MetricsValueAggregable::new(MetricsValueType::Error("Analysis error".to_string())));
         expected_metrics.insert("broken", error_value);
 
         let expected_file_analysis = Analysis {
@@ -543,7 +571,7 @@ mod tests {
         let mut expected_metrics = BTreeMap::new();
         expected_metrics.insert(
             "lines_count",
-            Some(MetricsValueType::Score(5)),
+            Some(MetricsValueAggregable::new(MetricsValueType::Score(5))),
         );
 
         let expected_file_analysis = Analysis {
@@ -600,7 +628,7 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake1", Some(MetricsValueType::Score(1)));
+        expected_metrics.insert("fake1", Some(MetricsValueAggregable::new(MetricsValueType::Score(1))));
 
         let expected_file_analysis = Analysis {
             id: String::from("file1"),
@@ -634,7 +662,7 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake1", Some(MetricsValueType::Score(1)));
+        expected_metrics.insert("fake1", Some(MetricsValueAggregable::new(MetricsValueType::Score(1))));
 
         let expected_file_analysis = Analysis {
             id: String::from("file1"),
@@ -683,7 +711,7 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake1", Some(MetricsValueType::Score(1)));
+        expected_metrics.insert("fake1", Some(MetricsValueAggregable::new(MetricsValueType::Score(1))));
 
         let expected_file1_analysis = Analysis {
             id: String::from("file1"),
@@ -697,7 +725,7 @@ mod tests {
         };
 
         let mut expected_folder_metrics = BTreeMap::new();
-        expected_folder_metrics.insert("fake1", Some(MetricsValueType::Score(2)));
+        expected_folder_metrics.insert("fake1", Some(MetricsValueAggregable::new(MetricsValueType::Score(2))));
 
         let mut expected_folder1_analysis_content = BTreeMap::new();
         expected_folder1_analysis_content
