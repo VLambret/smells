@@ -7,7 +7,7 @@ pub fn convert_analysis_to_formatted_json(analysis: Analysis) -> String {
 }
 
 pub fn convert_analysis_to_json(analysis: &Analysis) -> Value {
-    if analysis.content.is_some() {
+    if analysis.folder_content.is_some() {
         build_json_folder_analysis(analysis)
     } else {
         build_json_file_analysis(analysis)
@@ -16,7 +16,7 @@ pub fn convert_analysis_to_json(analysis: &Analysis) -> Value {
 
 fn build_json_folder_analysis(folder: &Analysis) -> Value {
     let mut folder_content_json = Vec::new();
-    if let Some(content) = &folder.content {
+    if let Some(content) = &folder.folder_content {
         for analysis in content.values() {
             let json_item = convert_analysis_to_json(analysis);
             folder_content_json.push(json_item);
@@ -24,7 +24,7 @@ fn build_json_folder_analysis(folder: &Analysis) -> Value {
     }
     json!(
         {
-            folder.id.to_owned():{
+            folder.file_name.to_owned():{
             "metrics": folder.metrics,
             "folder_content_analyses": folder_content_json
              }
@@ -35,7 +35,7 @@ fn build_json_folder_analysis(folder: &Analysis) -> Value {
 fn build_json_file_analysis(file: &Analysis) -> Value {
     json!(
         {
-            &file.id :{
+            &file.file_name :{
             "metrics": file.metrics
             }
         }
