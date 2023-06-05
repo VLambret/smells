@@ -8,7 +8,6 @@ use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::path::{Path, PathBuf};
 use std::string::String;
-use std::thread::current;
 
 /* **************************************************************** */
 
@@ -19,8 +18,6 @@ General smells :
 - Inconsistency : parent / parent_analysis ...
 - Analysis module too big
 - Obscured intent ?
-- AnalysisInTree : contains parent and children id, but not the analysis id
-- Analysis / content vs folder_content ? Unclear notions
 - Unwrap : capture errors
 */
 
@@ -57,10 +54,10 @@ pub struct AnalysisInTree {
 /* **************************************************************** */
 
 #[derive(Debug, Serialize, Clone, PartialEq)]
-pub struct Analysis {
+pub struct TopAnalysis {
     pub file_name: String,
     pub metrics: BTreeMap<&'static str, Option<MetricsValueAggregable>>,
-    pub folder_content: Option<BTreeMap<String, Analysis>>,
+    pub folder_content: Option<BTreeMap<String, TopAnalysis>>,
 }
 
 pub type AnalysisError = String;
@@ -106,7 +103,7 @@ impl Serialize for MetricsValueAggregable {
 
 /* **************************************************************** */
 
-pub fn do_analysis(root: PathBuf) -> Analysis {
+pub fn do_analysis(root: PathBuf) -> TopAnalysis {
     do_internal_analysis(
         &root,
         Box::new(FileExplorer::new(&root)),
@@ -123,7 +120,7 @@ fn do_internal_analysis(
     root: &Path,
     file_explorer: Box<dyn IFileExplorer<Item = PathBuf>>,
     metrics: Vec<Box<dyn IMetric>>,
-) -> Analysis {
+) -> TopAnalysis {
     let root_analysis = AnalysisInTree {
         file_name: String::from(root.to_string_lossy()),
         metrics: get_metrics_keys(&metrics),
@@ -252,7 +249,7 @@ fn get_file_metrics_score(
     result_file_metrics
 }
 
-// SMELLS: give file_analysis directly to add_file
+// SMELLS: give file_analysis directly to add_file ? Oui mais metrics reste constant
 fn propagate_file_scores_to_parents_analysis(
     tree: TreeOfAnalyses,
     file_analysis: AnalysisInTree,
@@ -305,7 +302,25 @@ fn aggregate_metrics(
     }
 }
 
-fn convert_tree_of_analyses_to_top_analysis(tree_of_analyses: TreeOfAnalyses) -> Analysis {
+fn aggregate_metrics_fct(
+    file_metrics: &BTreeMap<&'static str, Option<MetricsValueAggregable>>,
+    parent: AnalysisInTree,
+) -> AnalysisInTree {
+    let file_metrics_clone = file_metrics.clone();
+    let mut updated_parent = parent;
+
+    let mut parent_metrics_iterable = updated_parent.metrics.iter_mut();
+    let mut file_scores_iterable = file_metrics_clone.iter();
+
+    while let (Some((_, Some(parent_aggregable))), Some((_, Some(file_aggregable)))) =
+        (parent_metrics_iterable.next(), file_scores_iterable.next())
+    {
+        parent_aggregable.aggregate(file_aggregable);
+    }
+    updated_parent
+}
+
+fn convert_tree_of_analyses_to_top_analysis(tree_of_analyses: TreeOfAnalyses) -> TopAnalysis {
     build_final_analysis_structure(
         tree_of_analyses
             .analyses
@@ -318,8 +333,8 @@ fn convert_tree_of_analyses_to_top_analysis(tree_of_analyses: TreeOfAnalyses) ->
 fn build_final_analysis_structure(
     current_analysis_in_tree: &AnalysisInTree,
     analyses_in_tree_of_analyses: &HashMap<AnalysisInTreeId, AnalysisInTree>,
-) -> Analysis {
-    let mut current_analysis = Analysis {
+) -> TopAnalysis {
+    let mut current_analysis = TopAnalysis {
         file_name: PathBuf::from(&current_analysis_in_tree.file_name)
             .file_name()
             .unwrap()
@@ -354,9 +369,9 @@ fn build_final_analysis_structure(
 }
 
 fn add_child_analysis_to_current_analysis_content(
-    current_analysis: Analysis,
-    child_analysis: &Analysis,
-) -> Analysis {
+    current_analysis: TopAnalysis,
+    child_analysis: &TopAnalysis,
+) -> TopAnalysis {
     let mut new_current_analysis = current_analysis;
 
     let folder_content = new_current_analysis
@@ -429,9 +444,9 @@ mod tests {
     fn build_analysis_structure(
         root_name: String,
         metrics: BTreeMap<&'static str, Option<MetricsValueAggregable>>,
-        content: BTreeMap<String, Analysis>,
-    ) -> Analysis {
-        Analysis {
+        content: BTreeMap<String, TopAnalysis>,
+    ) -> TopAnalysis {
+        TopAnalysis {
             file_name: root_name,
             metrics,
             folder_content: Some(content),
@@ -474,12 +489,12 @@ mod tests {
         let actual_result_analysis = do_internal_analysis(&root, fake_file_explorer, metrics);
 
         // Then
-        let first_file_analysis = Analysis {
+        let first_file_analysis = TopAnalysis {
             file_name: String::from("file1"),
             metrics: BTreeMap::new(),
             folder_content: None,
         };
-        let second_file_analysis = Analysis {
+        let second_file_analysis = TopAnalysis {
             file_name: String::from("file2"),
             metrics: BTreeMap::new(),
             folder_content: None,
@@ -489,7 +504,7 @@ mod tests {
         expected_file_analysis.insert(second_file_analysis.file_name.clone(), second_file_analysis);
 
         //let expected_file_analysis = vec![first_file_analysis, second_file_analysis];
-        let expected_result_analysis = Analysis {
+        let expected_result_analysis = TopAnalysis {
             file_name: String::from(root_name),
             metrics: BTreeMap::new(),
             folder_content: Some(expected_file_analysis),
@@ -522,7 +537,7 @@ mod tests {
             Some(MetricsValueAggregable::new(MetricsValueType::Score(10))),
         );
 
-        let expected_file_analysis = Analysis {
+        let expected_file_analysis = TopAnalysis {
             file_name: String::from("file1"),
             metrics: expected_metrics.clone(),
             folder_content: None,
@@ -534,7 +549,7 @@ mod tests {
             expected_file_analysis,
         );
 
-        let expected_root_analysis = Analysis {
+        let expected_root_analysis = TopAnalysis {
             file_name: String::from(root_name),
             metrics: expected_metrics,
             folder_content: Some(expected_analysis_content),
@@ -562,7 +577,7 @@ mod tests {
         )));
         expected_metrics.insert("broken", error_value);
 
-        let expected_file_analysis = Analysis {
+        let expected_file_analysis = TopAnalysis {
             file_name: String::from("file1"),
             metrics: expected_metrics.clone(),
             folder_content: None,
@@ -574,7 +589,7 @@ mod tests {
             expected_file_analysis,
         );
 
-        let expected_root_analysis = Analysis {
+        let expected_root_analysis = TopAnalysis {
             file_name: String::from(root_name),
             metrics: expected_metrics.clone(),
             folder_content: Some(expected_analysis_content),
@@ -605,7 +620,7 @@ mod tests {
             Some(MetricsValueAggregable::new(MetricsValueType::Score(5))),
         );
 
-        let expected_file_analysis = Analysis {
+        let expected_file_analysis = TopAnalysis {
             file_name: "file5.txt".to_string(),
             metrics: expected_metrics.clone(),
             folder_content: None,
@@ -617,7 +632,7 @@ mod tests {
             expected_file_analysis,
         );
 
-        let expected_root_analysis = Analysis {
+        let expected_root_analysis = TopAnalysis {
             file_name: String::from("folder_with_multiple_files"),
             metrics: expected_metrics,
             folder_content: Some(expected_analysis_content),
@@ -639,7 +654,7 @@ mod tests {
             do_internal_analysis(&PathBuf::from("empty_root"), fake_file_explorer, metrics);
 
         // Then
-        let expected_root_analysis = Analysis {
+        let expected_root_analysis = TopAnalysis {
             file_name: String::from("empty_root"),
             metrics: btreemap! {"fake0" => None},
             folder_content: Some(BTreeMap::new()),
@@ -667,7 +682,7 @@ mod tests {
             Some(MetricsValueAggregable::new(MetricsValueType::Score(1))),
         );
 
-        let expected_file_analysis = Analysis {
+        let expected_file_analysis = TopAnalysis {
             file_name: String::from("file1"),
             metrics: expected_metrics.clone(),
             folder_content: None,
@@ -679,7 +694,7 @@ mod tests {
             expected_file_analysis,
         );
 
-        let expected_root_analysis = Analysis {
+        let expected_root_analysis = TopAnalysis {
             file_name: String::from(root_name),
             metrics: expected_metrics,
             folder_content: Some(expected_analysis_content),
@@ -707,7 +722,7 @@ mod tests {
             Some(MetricsValueAggregable::new(MetricsValueType::Score(1))),
         );
 
-        let expected_file_analysis = Analysis {
+        let expected_file_analysis = TopAnalysis {
             file_name: String::from("file1"),
             metrics: expected_metrics.clone(),
             folder_content: None,
@@ -718,7 +733,7 @@ mod tests {
             expected_file_analysis.file_name.clone(),
             expected_file_analysis,
         );
-        let expected_folder1_analysis = Analysis {
+        let expected_folder1_analysis = TopAnalysis {
             file_name: String::from("folder1"),
             metrics: expected_metrics.clone(),
             folder_content: Some(expected_analysis_content),
@@ -728,7 +743,7 @@ mod tests {
             expected_folder1_analysis.file_name.clone(),
             expected_folder1_analysis,
         );
-        let expected_root_analysis = Analysis {
+        let expected_root_analysis = TopAnalysis {
             file_name: String::from(root_name),
             metrics: expected_metrics,
             folder_content: Some(expected_root_analysis_content),
@@ -762,12 +777,12 @@ mod tests {
             Some(MetricsValueAggregable::new(MetricsValueType::Score(1))),
         );
 
-        let expected_file1_analysis = Analysis {
+        let expected_file1_analysis = TopAnalysis {
             file_name: String::from("file1"),
             metrics: expected_metrics.clone(),
             folder_content: None,
         };
-        let expected_file2_analysis = Analysis {
+        let expected_file2_analysis = TopAnalysis {
             file_name: String::from("file2"),
             metrics: expected_metrics.clone(),
             folder_content: None,
@@ -789,7 +804,7 @@ mod tests {
             expected_file2_analysis,
         );
 
-        let expected_folder1_analysis = Analysis {
+        let expected_folder1_analysis = TopAnalysis {
             file_name: String::from("folder1"),
             metrics: expected_folder_metrics.clone(),
             folder_content: Some(expected_folder1_analysis_content),
@@ -799,7 +814,7 @@ mod tests {
             expected_folder1_analysis.file_name.clone(),
             expected_folder1_analysis,
         );
-        let expected_root_analysis = Analysis {
+        let expected_root_analysis = TopAnalysis {
             file_name: String::from(root_name),
             metrics: expected_folder_metrics,
             folder_content: Some(expected_root_analysis_content),
