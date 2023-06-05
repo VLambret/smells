@@ -320,15 +320,15 @@ fn build_final_analysis_structure(
     analyses_in_tree_of_analyses: &HashMap<AnalysisInTreeId, AnalysisInTree>,
 ) -> Analysis {
     let mut current_analysis = Analysis {
-        file_name: String::from(
-            PathBuf::from(current_analysis_in_tree.file_name.clone())
-                .file_name()
-                .unwrap()
-                .to_string_lossy(),
-        ),
+        file_name: PathBuf::from(&current_analysis_in_tree.file_name)
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .to_string(),
         metrics: current_analysis_in_tree.metrics.clone(),
         folder_content: None,
     };
+
     if let Some(folder_content_id) = &current_analysis_in_tree.children_ids {
         if folder_content_id.is_empty() {
             current_analysis.folder_content = Some(BTreeMap::new());
@@ -341,32 +341,31 @@ fn build_final_analysis_structure(
                         child_analysis_in_tree,
                         analyses_in_tree_of_analyses,
                     );
-                    add_child_analysis_to_current_analysis_content(
-                        &mut current_analysis,
+                    current_analysis = add_child_analysis_to_current_analysis_content(
+                        current_analysis,
                         &child_analysis,
                     );
                 }
             }
         }
     }
+
     current_analysis
 }
 
-// TODO: mut
 fn add_child_analysis_to_current_analysis_content(
-    new_analysis: &mut Analysis,
+    current_analysis: Analysis,
     child_analysis: &Analysis,
-) {
-    if let Some(new_analysis_content) = new_analysis.folder_content.as_mut() {
-        new_analysis_content.insert(child_analysis.file_name.clone(), child_analysis.clone());
-    } else {
-        new_analysis.folder_content = Some(BTreeMap::new());
-        new_analysis
-            .folder_content
-            .as_mut()
-            .unwrap()
-            .insert(child_analysis.file_name.clone(), child_analysis.clone());
-    }
+) -> Analysis {
+    let mut new_current_analysis = current_analysis;
+
+    let folder_content = new_current_analysis
+        .folder_content
+        .get_or_insert_with(BTreeMap::new);
+
+    folder_content.insert(child_analysis.file_name.clone(), child_analysis.clone());
+
+    new_current_analysis
 }
 
 /* **************************************************************** */
