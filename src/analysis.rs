@@ -135,8 +135,7 @@ fn do_internal_analysis(
         TreeOfAnalyses::new(root_id.clone(), hashmap! {root_id => root_analysis });
     let updated_tree =
         analyse_files_and_update_tree(&metrics, tree_of_analyses, &file_explorer.discover());
-    // TODO: give updated_tree to function
-    convert_tree_of_analyses_to_top_analysis(updated_tree.analyses.clone(), updated_tree.get_root())
+    convert_tree_of_analyses_to_top_analysis(updated_tree)
 }
 
 fn analyse_files_and_update_tree(
@@ -310,13 +309,14 @@ fn aggregate_metrics(
     }
 }
 
-// SMELLS: give directly tree_of_analysis
-fn convert_tree_of_analyses_to_top_analysis(
-    analyses_in_tree_of_analyses: HashMap<AnalysisInTreeId, AnalysisInTree>,
-    root_id: &String,
-) -> Analysis {
-    let root_analysis = analyses_in_tree_of_analyses.get(root_id).unwrap();
-    build_final_analysis_structure(root_analysis, &analyses_in_tree_of_analyses)
+fn convert_tree_of_analyses_to_top_analysis(tree_of_analyses: TreeOfAnalyses) -> Analysis {
+    build_final_analysis_structure(
+        tree_of_analyses
+            .analyses
+            .get(tree_of_analyses.get_root())
+            .unwrap(),
+        &tree_of_analyses.analyses,
+    )
 }
 
 fn build_final_analysis_structure(
