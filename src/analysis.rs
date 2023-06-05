@@ -8,6 +8,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::path::{Path, PathBuf};
 use std::string::String;
+use std::thread::current;
 
 /* **************************************************************** */
 
@@ -23,6 +24,9 @@ General smells :
 - Unwrap : capture errors
 */
 
+/* **************************************************************** */
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TreeOfAnalyses {
     root_analysis_id: String,
     analyses: HashMap<AnalysisInTreeId, AnalysisInTree>,
@@ -47,7 +51,7 @@ pub struct AnalysisInTree {
     pub file_name: String,
     pub metrics: BTreeMap<&'static str, Option<MetricsValueAggregable>>,
     pub parent_id: Option<String>,
-    pub folder_content_id: Option<Vec<String>>,
+    pub children_ids: Option<Vec<String>>,
 }
 
 /* **************************************************************** */
@@ -68,19 +72,19 @@ pub enum MetricsValueType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MetricsValueAggregable{
-    value: MetricsValueType
+pub struct MetricsValueAggregable {
+    value: MetricsValueType,
 }
 
-impl MetricsValueAggregable{
+impl MetricsValueAggregable {
     fn new(value: MetricsValueType) -> Self {
-        MetricsValueAggregable{
-            value
-        }
+        MetricsValueAggregable { value }
     }
 
-    fn aggregate(&mut self, other: &MetricsValueAggregable){
-        if let (MetricsValueType::Score(parent_score), MetricsValueType::Score(file_score)) = (&self.value, &other.value) {
+    fn aggregate(&mut self, other: &MetricsValueAggregable) {
+        if let (MetricsValueType::Score(parent_score), MetricsValueType::Score(file_score)) =
+            (&self.value, &other.value)
+        {
             let mut parent_score = *parent_score;
             parent_score += *file_score;
             self.value = MetricsValueType::Score(parent_score);
@@ -88,10 +92,10 @@ impl MetricsValueAggregable{
     }
 }
 
-impl Serialize for MetricsValueAggregable{
+impl Serialize for MetricsValueAggregable {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         match &self.value {
             MetricsValueType::Score(score) => serializer.serialize_u32(*score),
@@ -124,121 +128,121 @@ fn do_internal_analysis(
         file_name: String::from(root.to_string_lossy()),
         metrics: get_metrics_keys(&metrics),
         parent_id: None,
-        folder_content_id: Some(vec![]),
+        children_ids: Some(vec![]),
     };
-    let root_id: AnalysisInTreeId = String::from(root.to_path_buf().to_string_lossy());
-    let mut tree_of_analyses = TreeOfAnalyses::new(root_id.clone(),
-                                                   hashmap! {root_id => root_analysis });
-
-    for file in file_explorer.discover() {
-        analyse_single_file(&metrics, &mut tree_of_analyses, &file);
-    }
-    convert_analysis_in_tree_of_analyses_to_final_analysis(tree_of_analyses.analyses.clone(), tree_of_analyses.get_root())
+    let root_id: AnalysisInTreeId = root.to_string_lossy().to_string();
+    let tree_of_analyses =
+        TreeOfAnalyses::new(root_id.clone(), hashmap! {root_id => root_analysis });
+    let updated_tree =
+        analyse_files_and_update_tree(&metrics, tree_of_analyses, &file_explorer.discover());
+    // TODO: give updated_tree to function
+    convert_tree_of_analyses_to_top_analysis(updated_tree.analyses.clone(), updated_tree.get_root())
 }
 
-fn analyse_single_file(metrics: &Vec<Box<dyn IMetric>>, tree_of_analyses: &mut TreeOfAnalyses, file: &Path) {
-    let parents = get_parents_ordered_from_root(file);
-    let mut last_parent_of_file_id: AnalysisInTreeId = tree_of_analyses.get_root().to_owned();
-    for parent in parents {
-        add_parent_analysis_to_tree_of_analyses(
-            &mut tree_of_analyses.analyses,
-            &mut last_parent_of_file_id,
-            parent,
-        );
+fn analyse_files_and_update_tree(
+    metrics: &Vec<Box<dyn IMetric>>,
+    tree_of_analyses: TreeOfAnalyses,
+    files: &[PathBuf],
+) -> TreeOfAnalyses {
+    match files.split_first() {
+        Some((current_file, remaining_files)) => {
+            let tree_with_parents_analysis =
+                add_analysis_of_parents_to_tree(current_file, tree_of_analyses);
+            let single_file_analysis = analyse_single_file(metrics, current_file);
+            let tree_with_file_analysis =
+                add_file_analysis_to_tree(tree_with_parents_analysis, single_file_analysis);
+            analyse_files_and_update_tree(metrics, tree_with_file_analysis, remaining_files)
+        }
+        None => tree_of_analyses,
     }
-    let file_analysis = create_and_push_file_analysis_into_tree_of_analysis(
-        metrics,
-        &mut tree_of_analyses.analyses,
-        file,
-        &mut last_parent_of_file_id,
-    );
-    propagate_file_scores_to_parents_analysis(&mut tree_of_analyses.analyses, file_analysis);
 }
 
-fn get_metrics_keys(metrics: &Vec<Box<dyn IMetric>>) -> BTreeMap<&'static str, Option<MetricsValueAggregable>> {
+fn add_analysis_of_parents_to_tree(current_path: &Path, tree: TreeOfAnalyses) -> TreeOfAnalyses {
+    let parent_path = current_path.parent();
+    match parent_path {
+        // Si pas de parent (= si root)
+        None => tree,
+        // S'il y a un parent
+        Some(parent_path) if parent_path != Path::new("") => {
+            let current_id = current_path.to_string_lossy().to_string();
+            let mut updated_tree = tree;
+            let parent_id = parent_path.to_string_lossy().to_string();
+
+            let parent_analysis = updated_tree.analyses.entry(parent_id).or_insert_with(|| {
+                // On récupère l'id de son parent s'il existe
+                let parent_of_parent_path = parent_path.parent();
+                let parent_of_parent_id =
+                    parent_of_parent_path.map(|p| p.to_string_lossy().to_string());
+
+                AnalysisInTree {
+                    file_name: parent_path.to_string_lossy().into_owned(),
+                    metrics: BTreeMap::new(),
+                    parent_id: parent_of_parent_id,
+                    children_ids: Some(vec![current_id.clone()]),
+                }
+            });
+
+            // Mise à jour de l'analyse du parent
+            if let Some(children) = &mut parent_analysis.children_ids {
+                children.push(current_id);
+            } else {
+                parent_analysis.children_ids = Some(vec![current_id]);
+            }
+
+            add_analysis_of_parents_to_tree(parent_path, updated_tree)
+        }
+        _ => tree,
+    }
+}
+
+fn add_file_analysis_to_tree(
+    tree: TreeOfAnalyses,
+    file_analysis: AnalysisInTree,
+) -> TreeOfAnalyses {
+    let mut updated_tree = tree;
+    let mut updated_file_analysis = file_analysis;
+    let file_id = updated_file_analysis.clone().file_name;
+    let parent_id = PathBuf::from(file_id.clone())
+        .parent()
+        .unwrap()
+        .to_string_lossy()
+        .to_string();
+    updated_file_analysis.parent_id = Some(parent_id.clone());
+
+    if let Some(parent_analysis) = updated_tree.analyses.get_mut(&parent_id) {
+        if let Some(children) = parent_analysis.children_ids.take() {
+            parent_analysis.children_ids = Some([children, vec![file_id.clone()]].concat());
+        } else {
+            parent_analysis.children_ids = Some(vec![file_id.clone()]);
+        }
+    }
+    updated_tree
+        .analyses
+        .insert(file_id, updated_file_analysis.clone());
+    // propagate devrait prendre l'id du file
+    propagate_file_scores_to_parents_analysis(&mut updated_tree.analyses, updated_file_analysis);
+    updated_tree
+}
+
+fn analyse_single_file(metrics: &Vec<Box<dyn IMetric>>, current_file: &Path) -> AnalysisInTree {
+    let result_file_metrics = get_file_metrics_score(metrics, current_file);
+    let file_analysis = AnalysisInTree {
+        file_name: current_file.to_string_lossy().to_string(),
+        metrics: result_file_metrics,
+        parent_id: None,
+        children_ids: None,
+    };
+    file_analysis
+}
+
+fn get_metrics_keys(
+    metrics: &Vec<Box<dyn IMetric>>,
+) -> BTreeMap<&'static str, Option<MetricsValueAggregable>> {
     let mut metrics_keys: BTreeMap<&'static str, Option<MetricsValueAggregable>> = BTreeMap::new();
     for metric in metrics {
         metrics_keys.insert(metric.get_key(), None);
     }
     metrics_keys
-}
-
-fn get_parents_ordered_from_root(file: &Path) -> Vec<PathBuf> {
-    let mut parents = Vec::new();
-    let mut current = file.parent();
-
-    while let Some(parent) = current {
-        parents.push(parent.to_path_buf());
-        current = parent.parent();
-    }
-
-    parents.reverse();
-    parents
-}
-
-// TODO: how to change mut
-fn add_parent_analysis_to_tree_of_analyses(
-    analysis_in_tree_of_analyses: &mut HashMap<AnalysisInTreeId, AnalysisInTree>,
-    last_parent_of_file_id: &mut AnalysisInTreeId,
-    parent: PathBuf,
-) {
-    let parent_analysis_id = String::from(parent.to_string_lossy());
-    if analysis_in_tree_of_analyses.get_mut(&parent_analysis_id).is_none() {
-        let mut parent_analysis = AnalysisInTree{
-            file_name: parent.to_string_lossy().into_owned(),
-            metrics: BTreeMap::new(),
-            parent_id: None,
-            folder_content_id: Some(vec![]),
-        };
-        connect_grand_father_with_parent_in_tree_of_analyses(analysis_in_tree_of_analyses, &parent_analysis_id, &mut parent_analysis);
-        analysis_in_tree_of_analyses.insert(parent_analysis_id.clone(), parent_analysis);
-    }
-    *last_parent_of_file_id = parent_analysis_id;
-}
-
-// TODO: how to change mut
-fn connect_grand_father_with_parent_in_tree_of_analyses(
-    analysis_in_tree_of_analyses: &mut HashMap<AnalysisInTreeId, AnalysisInTree>,
-    parent_analysis_id: &str,
-    parent_analysis: &mut AnalysisInTree,
-) {
-    if let Some(grand_parent) = PathBuf::from(parent_analysis.file_name.clone()).parent() {
-        let grand_parent_id = String::from(grand_parent.to_path_buf().to_string_lossy());
-        if let Some(grand_parent_analysis) = analysis_in_tree_of_analyses.get_mut(&grand_parent_id) {
-            grand_parent_analysis
-                .folder_content_id
-                .get_or_insert(vec![])
-                .push(parent_analysis_id.to_owned());
-            parent_analysis.parent_id = Some(grand_parent_id);
-        }
-    }
-}
-
-// SMELLS: too many arguments
-// SMELLS: do two different things
-fn create_and_push_file_analysis_into_tree_of_analysis(
-    metrics: &Vec<Box<dyn IMetric>>,
-    analyses_in_tree_of_analyses: &mut HashMap<AnalysisInTreeId, AnalysisInTree>,
-    file: &Path,
-    last_parent_of_file_id: &mut AnalysisInTreeId,
-) -> AnalysisInTree {
-    let result_file_metrics = get_file_metrics_score(metrics, file);
-    let file_analysis = AnalysisInTree {
-        file_name: file.to_string_lossy().into_owned(),
-        metrics: result_file_metrics,
-        parent_id: Some(last_parent_of_file_id.to_owned()),
-        folder_content_id: None,
-    };
-    let file_id = String::from(file.to_path_buf().to_string_lossy());
-    analyses_in_tree_of_analyses.insert(file_id.clone(), file_analysis.clone());
-
-    let last_parent_content = analyses_in_tree_of_analyses
-        .get_mut(last_parent_of_file_id)
-        .unwrap()
-        .folder_content_id
-        .get_or_insert(vec![]);
-    last_parent_content.push(file_id);
-    file_analysis
 }
 
 fn get_file_metrics_score(
@@ -248,12 +252,8 @@ fn get_file_metrics_score(
     let mut result_file_metrics = BTreeMap::new();
     for metric in metrics {
         let result_metric_analyze = match metric.analyze(file) {
-            Ok(file_metric) => {
-                MetricsValueAggregable::new(MetricsValueType::Score(file_metric))
-            },
-            Err(error) => {
-                MetricsValueAggregable::new(MetricsValueType::Error(error.to_string()))
-            },
+            Ok(file_metric) => MetricsValueAggregable::new(MetricsValueType::Score(file_metric)),
+            Err(error) => MetricsValueAggregable::new(MetricsValueType::Error(error.to_string())),
         };
         result_file_metrics.insert(metric.get_key(), Some(result_metric_analyze));
     }
@@ -266,7 +266,11 @@ fn propagate_file_scores_to_parents_analysis(
     file_analysis: AnalysisInTree,
 ) {
     let parent_id = file_analysis.parent_id;
-    add_file_metrics_to_parents_analysis(analyses_in_tree_of_analyses, parent_id, file_analysis.metrics);
+    add_file_metrics_to_parents_analysis(
+        analyses_in_tree_of_analyses,
+        parent_id,
+        file_analysis.metrics,
+    );
 }
 
 fn add_file_metrics_to_parents_analysis(
@@ -283,7 +287,11 @@ fn add_file_metrics_to_parents_analysis(
                 aggregate_metrics(&mut file_metrics, parent)
             }
             let grand_father = parent.parent_id.clone();
-            add_file_metrics_to_parents_analysis(analyses_in_tree_of_analyses, grand_father, file_metrics);
+            add_file_metrics_to_parents_analysis(
+                analyses_in_tree_of_analyses,
+                grand_father,
+                file_metrics,
+            );
         }
     }
 }
@@ -295,17 +303,15 @@ fn aggregate_metrics(
     let mut parent_metrics_iterable = parent.metrics.iter_mut();
     let mut file_scores_iterable = file_metrics.iter();
 
-    while let (
-        Some((_, Some(parent_aggregable))),
-        Some((_, Some(file_aggregable)))
-    ) = (parent_metrics_iterable.next(), file_scores_iterable.next())
+    while let (Some((_, Some(parent_aggregable))), Some((_, Some(file_aggregable)))) =
+        (parent_metrics_iterable.next(), file_scores_iterable.next())
     {
         parent_aggregable.aggregate(file_aggregable);
     }
 }
 
 // SMELLS: give directly tree_of_analysis
-fn convert_analysis_in_tree_of_analyses_to_final_analysis(
+fn convert_tree_of_analyses_to_top_analysis(
     analyses_in_tree_of_analyses: HashMap<AnalysisInTreeId, AnalysisInTree>,
     root_id: &String,
 ) -> Analysis {
@@ -327,13 +333,18 @@ fn build_final_analysis_structure(
         metrics: current_analysis_in_tree.metrics.clone(),
         folder_content: None,
     };
-    if let Some(folder_content_id) = &current_analysis_in_tree.folder_content_id {
+    if let Some(folder_content_id) = &current_analysis_in_tree.children_ids {
         if folder_content_id.is_empty() {
             current_analysis.folder_content = Some(BTreeMap::new());
         } else {
             for child_file_id in folder_content_id {
-                if let Some(child_analysis_in_tree) = analyses_in_tree_of_analyses.get(child_file_id) {
-                    let child_analysis = build_final_analysis_structure(child_analysis_in_tree, analyses_in_tree_of_analyses);
+                if let Some(child_analysis_in_tree) =
+                    analyses_in_tree_of_analyses.get(child_file_id)
+                {
+                    let child_analysis = build_final_analysis_structure(
+                        child_analysis_in_tree,
+                        analyses_in_tree_of_analyses,
+                    );
                     add_child_analysis_to_current_analysis_content(
                         &mut current_analysis,
                         &child_analysis,
@@ -366,13 +377,13 @@ fn add_child_analysis_to_current_analysis_content(
 
 #[cfg(test)]
 mod tests {
-    use maplit::btreemap;
     use super::*;
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
+    use maplit::btreemap;
 
     pub struct FakeMetric {
         pub metric_key: &'static str,
-        pub metric_value: u32
+        pub metric_value: u32,
     }
 
     impl IMetric for FakeMetric {
@@ -400,14 +411,14 @@ mod tests {
     }
 
     pub struct BrokenMetric {
-        pub metric_key: &'static str
+        pub metric_key: &'static str,
     }
 
     impl IMetric for BrokenMetric {
         fn analyze(&self, _file_path: &Path) -> Result<u32, String> {
             Err(String::from("Analysis error"))
         }
-        fn get_key(&self) -> &'static str{
+        fn get_key(&self) -> &'static str {
             self.metric_key
         }
     }
@@ -507,8 +518,14 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake4", Some(MetricsValueAggregable::new(MetricsValueType::Score(4))));
-        expected_metrics.insert("fake10", Some(MetricsValueAggregable::new(MetricsValueType::Score(10))));
+        expected_metrics.insert(
+            "fake4",
+            Some(MetricsValueAggregable::new(MetricsValueType::Score(4))),
+        );
+        expected_metrics.insert(
+            "fake10",
+            Some(MetricsValueAggregable::new(MetricsValueType::Score(10))),
+        );
 
         let expected_file_analysis = Analysis {
             file_name: String::from("file1"),
@@ -517,7 +534,10 @@ mod tests {
         };
 
         let mut expected_analysis_content = BTreeMap::new();
-        expected_analysis_content.insert(expected_file_analysis.file_name.clone(), expected_file_analysis);
+        expected_analysis_content.insert(
+            expected_file_analysis.file_name.clone(),
+            expected_file_analysis,
+        );
 
         let expected_root_analysis = Analysis {
             file_name: String::from(root_name),
@@ -542,7 +562,9 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        let error_value = Some(MetricsValueAggregable::new(MetricsValueType::Error("Analysis error".to_string())));
+        let error_value = Some(MetricsValueAggregable::new(MetricsValueType::Error(
+            "Analysis error".to_string(),
+        )));
         expected_metrics.insert("broken", error_value);
 
         let expected_file_analysis = Analysis {
@@ -552,7 +574,10 @@ mod tests {
         };
 
         let mut expected_analysis_content = BTreeMap::new();
-        expected_analysis_content.insert(expected_file_analysis.file_name.clone(), expected_file_analysis);
+        expected_analysis_content.insert(
+            expected_file_analysis.file_name.clone(),
+            expected_file_analysis,
+        );
 
         let expected_root_analysis = Analysis {
             file_name: String::from(root_name),
@@ -592,7 +617,10 @@ mod tests {
         };
 
         let mut expected_analysis_content = BTreeMap::new();
-        expected_analysis_content.insert(expected_file_analysis.file_name.clone(), expected_file_analysis);
+        expected_analysis_content.insert(
+            expected_file_analysis.file_name.clone(),
+            expected_file_analysis,
+        );
 
         let expected_root_analysis = Analysis {
             file_name: String::from("folder_with_multiple_files"),
@@ -618,7 +646,7 @@ mod tests {
         // Then
         let expected_root_analysis = Analysis {
             file_name: String::from("empty_root"),
-            metrics: btreemap!{"fake0" => None},
+            metrics: btreemap! {"fake0" => None},
             folder_content: Some(BTreeMap::new()),
         };
         assert_eq!(expected_root_analysis, actual_root_analysis)
@@ -639,7 +667,10 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake1", Some(MetricsValueAggregable::new(MetricsValueType::Score(1))));
+        expected_metrics.insert(
+            "fake1",
+            Some(MetricsValueAggregable::new(MetricsValueType::Score(1))),
+        );
 
         let expected_file_analysis = Analysis {
             file_name: String::from("file1"),
@@ -648,7 +679,10 @@ mod tests {
         };
 
         let mut expected_analysis_content = BTreeMap::new();
-        expected_analysis_content.insert(expected_file_analysis.file_name.clone(), expected_file_analysis);
+        expected_analysis_content.insert(
+            expected_file_analysis.file_name.clone(),
+            expected_file_analysis,
+        );
 
         let expected_root_analysis = Analysis {
             file_name: String::from(root_name),
@@ -673,7 +707,10 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake1", Some(MetricsValueAggregable::new(MetricsValueType::Score(1))));
+        expected_metrics.insert(
+            "fake1",
+            Some(MetricsValueAggregable::new(MetricsValueType::Score(1))),
+        );
 
         let expected_file_analysis = Analysis {
             file_name: String::from("file1"),
@@ -682,7 +719,10 @@ mod tests {
         };
 
         let mut expected_analysis_content = BTreeMap::new();
-        expected_analysis_content.insert(expected_file_analysis.file_name.clone(), expected_file_analysis);
+        expected_analysis_content.insert(
+            expected_file_analysis.file_name.clone(),
+            expected_file_analysis,
+        );
         let expected_folder1_analysis = Analysis {
             file_name: String::from("folder1"),
             metrics: expected_metrics.clone(),
@@ -722,7 +762,10 @@ mod tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake1", Some(MetricsValueAggregable::new(MetricsValueType::Score(1))));
+        expected_metrics.insert(
+            "fake1",
+            Some(MetricsValueAggregable::new(MetricsValueType::Score(1))),
+        );
 
         let expected_file1_analysis = Analysis {
             file_name: String::from("file1"),
@@ -736,13 +779,20 @@ mod tests {
         };
 
         let mut expected_folder_metrics = BTreeMap::new();
-        expected_folder_metrics.insert("fake1", Some(MetricsValueAggregable::new(MetricsValueType::Score(2))));
+        expected_folder_metrics.insert(
+            "fake1",
+            Some(MetricsValueAggregable::new(MetricsValueType::Score(2))),
+        );
 
         let mut expected_folder1_analysis_content = BTreeMap::new();
-        expected_folder1_analysis_content
-            .insert(expected_file1_analysis.file_name.clone(), expected_file1_analysis);
-        expected_folder1_analysis_content
-            .insert(expected_file2_analysis.file_name.clone(), expected_file2_analysis);
+        expected_folder1_analysis_content.insert(
+            expected_file1_analysis.file_name.clone(),
+            expected_file1_analysis,
+        );
+        expected_folder1_analysis_content.insert(
+            expected_file2_analysis.file_name.clone(),
+            expected_file2_analysis,
+        );
 
         let expected_folder1_analysis = Analysis {
             file_name: String::from("folder1"),
