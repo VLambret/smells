@@ -276,8 +276,9 @@ fn add_file_metrics_to_parents_analysis(
                 {
                     parent_analysis.metrics = file_metrics.clone();
                 } else {
-                    let mut file_metrics_clone = file_metrics.clone();
-                    aggregate_metrics(&mut file_metrics_clone, parent_analysis);
+                    let parent_analysis_clone = parent_analysis.clone();
+                    let updated_parent = aggregate_metrics(&file_metrics, parent_analysis_clone);
+                    parent_analysis.metrics = updated_parent.metrics;
                 }
                 let grand_father = parent_analysis.parent_id.clone();
                 add_file_metrics_to_parents_analysis(updated_tree, grand_father, file_metrics)
@@ -289,20 +290,6 @@ fn add_file_metrics_to_parents_analysis(
 }
 
 fn aggregate_metrics(
-    file_metrics: &mut BTreeMap<&'static str, Option<MetricsValueAggregable>>,
-    parent: &mut AnalysisInTree,
-) {
-    let mut parent_metrics_iterable = parent.metrics.iter_mut();
-    let mut file_scores_iterable = file_metrics.iter();
-
-    while let (Some((_, Some(parent_aggregable))), Some((_, Some(file_aggregable)))) =
-        (parent_metrics_iterable.next(), file_scores_iterable.next())
-    {
-        parent_aggregable.aggregate(file_aggregable);
-    }
-}
-
-fn aggregate_metrics_fct(
     file_metrics: &BTreeMap<&'static str, Option<MetricsValueAggregable>>,
     parent: AnalysisInTree,
 ) -> AnalysisInTree {
