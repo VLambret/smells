@@ -159,16 +159,13 @@ fn analyse_files_and_update_tree(
 fn add_analysis_of_parents_to_tree(current_path: &Path, tree: TreeOfAnalyses) -> TreeOfAnalyses {
     let parent_path = current_path.parent();
     match parent_path {
-        // Si pas de parent (= si root)
         None => tree,
-        // S'il y a un parent
         Some(parent_path) if parent_path != Path::new("") => {
             let current_id = current_path.to_string_lossy().to_string();
             let mut updated_tree = tree;
             let parent_id = parent_path.to_string_lossy().to_string();
 
             let parent_analysis = updated_tree.analyses.entry(parent_id).or_insert_with(|| {
-                // On récupère l'id de son parent s'il existe
                 let parent_of_parent_path = parent_path.parent();
                 let parent_of_parent_id =
                     parent_of_parent_path.map(|p| p.to_string_lossy().to_string());
@@ -180,8 +177,6 @@ fn add_analysis_of_parents_to_tree(current_path: &Path, tree: TreeOfAnalyses) ->
                     children_ids: Some(vec![current_id.clone()]),
                 }
             });
-
-            // Mise à jour de l'analyse du parent
             if let Some(children) = &mut parent_analysis.children_ids {
                 children.push(current_id);
             } else {
@@ -218,7 +213,7 @@ fn add_file_analysis_to_tree(
     updated_tree
         .analyses
         .insert(file_id, updated_file_analysis.clone());
-    // propagate devrait prendre l'id du file
+    // TODO: propagate devrait prendre l'id du file
     propagate_file_scores_to_parents_analysis(&mut updated_tree.analyses, updated_file_analysis);
     updated_tree
 }
