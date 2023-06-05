@@ -213,9 +213,7 @@ fn add_file_analysis_to_tree(
     updated_tree
         .analyses
         .insert(file_id, updated_file_analysis.clone());
-    // TODO: propagate devrait prendre l'id du file
-    propagate_file_scores_to_parents_analysis(&mut updated_tree.analyses, updated_file_analysis);
-    updated_tree
+    propagate_file_scores_to_parents_analysis(updated_tree, updated_file_analysis)
 }
 
 fn analyse_single_file(metrics: &Vec<Box<dyn IMetric>>, current_file: &Path) -> AnalysisInTree {
@@ -256,36 +254,39 @@ fn get_file_metrics_score(
 
 // SMELLS: give file_analysis directly to add_file
 fn propagate_file_scores_to_parents_analysis(
-    analyses_in_tree_of_analyses: &mut HashMap<AnalysisInTreeId, AnalysisInTree>,
+    tree: TreeOfAnalyses,
     file_analysis: AnalysisInTree,
-) {
+) -> TreeOfAnalyses {
     let parent_id = file_analysis.parent_id;
-    add_file_metrics_to_parents_analysis(
-        analyses_in_tree_of_analyses,
-        parent_id,
-        file_analysis.metrics,
-    );
+    add_file_metrics_to_parents_analysis(tree, parent_id, file_analysis.metrics)
 }
 
 fn add_file_metrics_to_parents_analysis(
-    analyses_in_tree_of_analyses: &mut HashMap<AnalysisInTreeId, AnalysisInTree>,
+    tree: TreeOfAnalyses,
     parent_id: Option<String>,
-    mut file_metrics: BTreeMap<&'static str, Option<MetricsValueAggregable>>,
-) {
-    if let Some(some_parent_id) = parent_id {
-        if let Some(parent) = analyses_in_tree_of_analyses.get_mut(&*some_parent_id) {
-            if parent.metrics.is_empty() || parent.metrics.iter().all(|(_, value)| value.is_none())
-            {
-                parent.metrics = file_metrics.clone();
+    file_metrics: BTreeMap<&'static str, Option<MetricsValueAggregable>>,
+) -> TreeOfAnalyses {
+    match parent_id {
+        None => tree,
+        Some(parent_id) => {
+            let mut updated_tree = tree;
+            if let Some(parent_analysis) = updated_tree.analyses.get_mut(&parent_id) {
+                if parent_analysis.metrics.is_empty()
+                    || parent_analysis
+                        .metrics
+                        .values()
+                        .all(|value| value.is_none())
+                {
+                    parent_analysis.metrics = file_metrics.clone();
+                } else {
+                    let mut file_metrics_clone = file_metrics.clone();
+                    aggregate_metrics(&mut file_metrics_clone, parent_analysis);
+                }
+                let grand_father = parent_analysis.parent_id.clone();
+                add_file_metrics_to_parents_analysis(updated_tree, grand_father, file_metrics)
             } else {
-                aggregate_metrics(&mut file_metrics, parent)
+                updated_tree
             }
-            let grand_father = parent.parent_id.clone();
-            add_file_metrics_to_parents_analysis(
-                analyses_in_tree_of_analyses,
-                grand_father,
-                file_metrics,
-            );
         }
     }
 }
