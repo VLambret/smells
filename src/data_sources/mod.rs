@@ -1,1 +1,1 @@
-pub(crate) mod file_explorer;
+pub mod file_explorer;

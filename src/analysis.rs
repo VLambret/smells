@@ -116,7 +116,7 @@ pub fn do_analysis(root: PathBuf) -> TopAnalysis {
 
 /* **************************************************************** */
 
-fn do_internal_analysis(
+pub fn do_internal_analysis(
     root: &Path,
     file_explorer: &dyn IFileExplorer,
     metrics: &Vec<Box<dyn IMetric>>,
@@ -377,7 +377,9 @@ mod tests {
     use super::*;
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
     use maplit::btreemap;
+    use std::fmt::{Debug, Formatter};
 
+    #[derive(Debug)]
     pub struct FakeMetric {
         pub metric_key: &'static str,
         pub metric_value: u32,
@@ -406,7 +408,7 @@ mod tests {
             }
         }
     }
-
+    #[derive(Debug)]
     pub struct BrokenMetric {
         pub metric_key: &'static str,
     }

@@ -1,8 +1,10 @@
 use crate::metrics::metric::IMetric;
+use std::fmt::Debug;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
+#[derive(Debug)]
 pub struct LinesCountMetric {}
 
 impl IMetric for LinesCountMetric {
@@ -16,17 +18,14 @@ impl IMetric for LinesCountMetric {
         "lines_count"
     }
 }
-
 impl LinesCountMetric {
     pub fn new() -> LinesCountMetric {
         LinesCountMetric {}
     }
 }
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
-
     #[rstest(
         input,
         expected,

@@ -1,18 +1,16 @@
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::fs::read_dir;
 use std::path::{Path, PathBuf};
+
 pub trait IFileExplorer: Debug {
     fn discover(&self) -> Vec<PathBuf>;
 }
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct FileExplorer {
     root: PathBuf,
 }
-impl Debug for FileExplorer {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.root)
-    }
-} // TODO: (Vec<PathBuf>, Vec<std::io::Error>)
+
+// TODO: (Vec<PathBuf>, Vec<std::io::Error>)
 impl IFileExplorer for FileExplorer {
     fn discover(&self) -> Vec<PathBuf> {
         Self::discover_inner(&self.root)
@@ -43,6 +41,8 @@ impl Iterator for FileExplorer {
         Some(PathBuf::from(""))
     }
 }
+
+#[derive(Debug)]
 pub struct FakeFileExplorer {
     files_to_analyze: Vec<PathBuf>,
 }
@@ -51,11 +51,7 @@ impl FakeFileExplorer {
         FakeFileExplorer { files_to_analyze }
     }
 }
-impl Debug for FakeFileExplorer {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.files_to_analyze)
-    }
-}
+
 impl IFileExplorer for FakeFileExplorer {
     fn discover(&self) -> Vec<PathBuf> {
         self.files_to_analyze.clone()
