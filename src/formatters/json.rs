@@ -1,12 +1,12 @@
-use crate::analysis::Analysis;
+use crate::analysis::TopAnalysis;
 use serde_json::{json, Value};
 
 // print analysis result json
-pub fn convert_analysis_to_formatted_json(analysis: Analysis) -> String {
+pub fn convert_analysis_to_formatted_json(analysis: TopAnalysis) -> String {
     format_json_output(&serde_json::to_string(&convert_analysis_to_json(&analysis)).unwrap())
 }
 
-pub fn convert_analysis_to_json(analysis: &Analysis) -> Value {
+pub fn convert_analysis_to_json(analysis: &TopAnalysis) -> Value {
     if analysis.folder_content.is_some() {
         build_json_folder_analysis(analysis)
     } else {
@@ -14,7 +14,7 @@ pub fn convert_analysis_to_json(analysis: &Analysis) -> Value {
     }
 }
 
-fn build_json_folder_analysis(folder: &Analysis) -> Value {
+fn build_json_folder_analysis(folder: &TopAnalysis) -> Value {
     let mut folder_content_json = Vec::new();
     if let Some(content) = &folder.folder_content {
         for analysis in content.values() {
@@ -32,7 +32,7 @@ fn build_json_folder_analysis(folder: &Analysis) -> Value {
     )
 }
 
-fn build_json_file_analysis(file: &Analysis) -> Value {
+fn build_json_file_analysis(file: &TopAnalysis) -> Value {
     json!(
         {
             &file.file_name :{
