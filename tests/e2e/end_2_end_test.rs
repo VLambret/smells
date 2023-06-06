@@ -50,8 +50,7 @@ mod end_2_end {
         // when
         let mut cmd = Command::cargo_bin(cmd_call)?;
         cmd.args(&[args]);
-        let expected_stdout =
-        r#"{
+        let expected_stdout = r#"{
             "empty_folder": {
                 "metrics": {
                     "lines_count": 0,
@@ -79,8 +78,7 @@ mod end_2_end {
         cmd.args(&[args]);
 
         // Then
-        let expected_stdout =
-        r#"{
+        let expected_stdout = r#"{
         "single_file_folder": {
             "metrics": {
                 "lines_count": 0,
@@ -118,8 +116,7 @@ mod end_2_end {
         cmd.args(&[args]);
 
         //then
-        let expected_stdout =
-        r#"{
+        let expected_stdout = r#"{
             "single_file_folder_other": {
                 "metrics": {
                     "lines_count": 5,
@@ -155,8 +152,7 @@ mod end_2_end {
         cmd.args(&[args]);
 
         //then
-        let expected_stdout =
-        r#"{
+        let expected_stdout = r#"{
             "folder_with_multiple_files":{
                 "metrics": {
                     "lines_count": 6,
@@ -201,8 +197,7 @@ mod end_2_end {
         cmd.args(&[args]);
 
         //then
-        let expected_stdout =
-        r#"{
+        let expected_stdout = r#"{
             "folder_with_one_empty_folder":{
                 "metrics": {
                     "lines_count": null,
@@ -230,8 +225,7 @@ mod end_2_end {
         cmd.args(&[args]);
 
         //then
-        let expected_stdout =
-        r#"{
+        let expected_stdout = r#"{
             "folder_with_folder_and_file": {
                 "metrics": {
                     "lines_count": 11,
