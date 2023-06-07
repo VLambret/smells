@@ -2,6 +2,7 @@ use crate::metrics::metric::{IMetric, IMetricAggregatable};
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::Read;
+use std::ops::Add;
 use std::path::Path;
 
 #[derive(Debug)]
@@ -42,9 +43,23 @@ impl LinesCountMetric {
         LinesCountMetric {}
     }
 }
+
+impl Add for LinesCountMetricAggregatable {
+    type Output = LinesCountMetricAggregatable;
+
+    fn add(self, other: Self) -> Self::Output {
+        LinesCountMetricAggregatable {
+            line_count: self.line_count + other.line_count,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::metrics::line_count::LinesCountMetricAggregatable;
+    use crate::metrics::metric::IMetricAggregatable;
     use rstest::rstest;
+
     #[rstest(
         input,
         expected,
@@ -59,5 +74,15 @@ mod tests {
         let content = input.to_owned();
         let line_count = content.lines().count() as u32;
         assert_eq!(line_count, expected);
+    }
+
+    #[test]
+    fn add_two_metrics() {
+        let m1 = LinesCountMetricAggregatable::new(3);
+        let m2 = LinesCountMetricAggregatable::new(7);
+
+        let m3: LinesCountMetricAggregatable = m1 + m2;
+
+        assert_eq!(m3.get_score(), Ok(10));
     }
 }
