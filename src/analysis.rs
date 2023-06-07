@@ -240,7 +240,7 @@ fn get_file_metrics_score(
 ) -> BTreeMap<&'static str, Option<MetricsValueAggregable>> {
     let mut result_file_metrics = BTreeMap::new();
     for metric in metrics {
-        let result_metric_analyze = match metric.analyze(file) {
+        let result_metric_analyze = match metric.analyze(file).get_score() {
             Ok(file_metric) => MetricsValueAggregable::new(MetricsValueType::Score(file_metric)),
             Err(error) => MetricsValueAggregable::new(MetricsValueType::Error(error.to_string())),
         };
@@ -376,6 +376,8 @@ fn add_child_analysis_to_current_analysis_content(
 mod tests {
     use super::*;
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
+    use crate::metrics::line_count::LinesCountMetricAggregatable;
+    use crate::metrics::metric::IMetricAggregatable;
     use maplit::btreemap;
     use std::fmt::{Debug, Formatter};
 
@@ -386,9 +388,10 @@ mod tests {
     }
 
     impl IMetric for FakeMetric {
-        fn analyze(&self, _file_path: &Path) -> Result<u32, String> {
-            Ok(self.metric_value)
+        fn analyze(&self, file_path: &Path) -> Box<dyn IMetricAggregatable> {
+            Box::new(LinesCountMetricAggregatable::new(self.metric_value as u64))
         }
+
         fn get_key(&self) -> &'static str {
             self.metric_key
         }
@@ -413,10 +416,27 @@ mod tests {
         pub metric_key: &'static str,
     }
 
-    impl IMetric for BrokenMetric {
-        fn analyze(&self, _file_path: &Path) -> Result<u32, String> {
-            Err(String::from("Analysis error"))
+    pub struct ErrorAggregatable {
+        error_message: String,
+    }
+
+    impl ErrorAggregatable {
+        fn new(error_message: String) -> ErrorAggregatable {
+            ErrorAggregatable { error_message }
         }
+    }
+
+    impl IMetricAggregatable for ErrorAggregatable {
+        fn get_score(&self) -> Result<u32, String> {
+            Err(self.error_message.clone())
+        }
+    }
+
+    impl IMetric for BrokenMetric {
+        fn analyze(&self, file_path: &Path) -> Box<dyn IMetricAggregatable> {
+            Box::new(ErrorAggregatable::new(String::from("Analysis error")))
+        }
+
         fn get_key(&self) -> &'static str {
             self.metric_key
         }

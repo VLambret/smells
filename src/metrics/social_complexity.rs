@@ -1,4 +1,4 @@
-use crate::metrics::metric::IMetric;
+use crate::metrics::metric::{IMetric, IMetricAggregatable};
 use git2::Repository;
 use std::fmt::Debug;
 use std::fs::read_dir;
@@ -13,10 +13,25 @@ impl SocialComplexityMetric {
     }
 }
 
-impl IMetric for SocialComplexityMetric {
-    fn analyze(&self, _file_path: &Path) -> Result<u32, String> {
+pub struct SocialComplexityMetricAggregatable {}
+
+impl SocialComplexityMetricAggregatable {
+    fn new() -> Self {
+        SocialComplexityMetricAggregatable {}
+    }
+}
+
+impl IMetricAggregatable for SocialComplexityMetricAggregatable {
+    fn get_score(&self) -> Result<u32, String> {
         Ok(0)
     }
+}
+
+impl IMetric for SocialComplexityMetric {
+    fn analyze(&self, file_path: &Path) -> Box<dyn IMetricAggregatable> {
+        Box::new(SocialComplexityMetricAggregatable::new())
+    }
+
     fn get_key(&self) -> &'static str {
         "social_complexity"
     }
