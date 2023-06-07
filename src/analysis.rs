@@ -380,6 +380,7 @@ mod tests {
     use crate::metrics::metric::IMetricAggregatable;
     use maplit::btreemap;
     use std::fmt::{Debug, Formatter};
+    use std::ops::Add;
 
     #[derive(Debug)]
     pub struct FakeMetric {
@@ -416,17 +417,19 @@ mod tests {
         pub metric_key: &'static str,
     }
 
-    pub struct ErrorAggregatable {
+    pub struct BrokenMetricAggregatable {
         error_message: String,
     }
 
-    impl ErrorAggregatable {
-        fn new(error_message: String) -> ErrorAggregatable {
-            ErrorAggregatable { error_message }
+    impl BrokenMetricAggregatable {
+        fn new() -> BrokenMetricAggregatable {
+            BrokenMetricAggregatable {
+                error_message: String::from("Analysis error"),
+            }
         }
     }
 
-    impl IMetricAggregatable for ErrorAggregatable {
+    impl IMetricAggregatable for BrokenMetricAggregatable {
         fn get_score(&self) -> Result<u32, String> {
             Err(self.error_message.clone())
         }
@@ -434,7 +437,7 @@ mod tests {
 
     impl IMetric for BrokenMetric {
         fn analyze(&self, file_path: &Path) -> Box<dyn IMetricAggregatable> {
-            Box::new(ErrorAggregatable::new(String::from("Analysis error")))
+            Box::new(BrokenMetricAggregatable::new())
         }
 
         fn get_key(&self) -> &'static str {
@@ -447,6 +450,13 @@ mod tests {
             BrokenMetric {
                 metric_key: "broken",
             }
+        }
+    }
+    impl Add for BrokenMetric {
+        type Output = BrokenMetricAggregatable;
+
+        fn add(self, other: Self) -> Self::Output {
+            BrokenMetricAggregatable::new()
         }
     }
 
