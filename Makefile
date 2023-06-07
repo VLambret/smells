@@ -29,19 +29,17 @@ backlog.dot: backlog.py
 IMAGE_NAME := smells-test:latest
 CONTAINER_NAME := smells_container1
 
+DOCKER_RUN := winpty docker run -t -i -v C:\Users\Lucas\git\smells:/app --rm \
+	--name $(CONTAINER_NAME) $(IMAGE_NAME)
+
 docker_build_image: ## Build an image from a Dockerfile
 	winpty docker build -t $(IMAGE_NAME) .
 
-docker_shell: ## Start a shell inside the container
-	echo $(PWD)
-	winpty docker run -it --rm --name $(CONTAINER_NAME) $(IMAGE_NAME) bash
-
 docker_tests: ## Create the container
-	winpty docker run -t -i -v C:\Users\Lucas\git\smells:/app --rm \
-	--name $(CONTAINER_NAME) $(IMAGE_NAME)
+	 $(DOCKER_RUN) cargo test
 
-docker_bash: ## Run the existing container
-	winpty docker exec -it $(CONTAINER_NAME) bash
+docker_shell: ## Run a shell in the container
+	 $(DOCKER_RUN) bash
 
 docker_stop_rm: ## Stop and remove the specified container
 	winpty docker stop $(CONTAINER_NAME) && docker rm $(CONTAINER_NAME)
