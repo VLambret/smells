@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 
 pub trait IFileExplorer: Debug {
     fn discover(&self) -> Vec<PathBuf>;
+    fn get_root(&self) -> PathBuf;
 }
 #[derive(Debug, Clone)]
 pub struct FileExplorer {
@@ -14,6 +15,10 @@ pub struct FileExplorer {
 impl IFileExplorer for FileExplorer {
     fn discover(&self) -> Vec<PathBuf> {
         Self::discover_inner(&self.root)
+    }
+
+    fn get_root(&self) -> PathBuf {
+        self.root.clone()
     }
 }
 impl FileExplorer {
@@ -55,6 +60,10 @@ impl FakeFileExplorer {
 impl IFileExplorer for FakeFileExplorer {
     fn discover(&self) -> Vec<PathBuf> {
         self.files_to_analyze.clone()
+    }
+
+    fn get_root(&self) -> PathBuf {
+        PathBuf::from("root")
     }
 }
 impl Iterator for FakeFileExplorer {
