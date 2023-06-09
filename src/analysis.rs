@@ -87,9 +87,9 @@ fn build_final_analysis_structure(file_analyses: HashMap<PathBuf, FileAnalysis>)
 #[cfg(test)]
 mod implementation_test {
     use super::*;
-    use crate::analysis::unit_tests::FakeMetric;
+    use crate::analysis::unit_tests::{BrokenMetric, FakeMetric};
     use crate::data_sources::file_explorer::FakeFileExplorer;
-    use crate::metrics::metric::MetricResultType::Score;
+    use crate::metrics::metric::MetricResultType::{Error, Score};
 
     #[test]
     fn analysis_with_0_file_should_return_empty_hashmap() {
@@ -104,6 +104,40 @@ mod implementation_test {
 
         //then
         assert_eq!(analyses.len(), 0);
+    }
+
+    #[test]
+    fn analysis_with_1_file_and_brokenmetric_should_return_an_error() {
+        // Given
+        let files_to_analyze = vec![PathBuf::from("root").join("file1")];
+        let fake_file_explorer: Box<dyn IFileExplorer> =
+            Box::new(FakeFileExplorer::new(files_to_analyze));
+
+        // When
+        let analyses = analyse_all_files(
+            fake_file_explorer.discover(),
+            &vec![Box::new(BrokenMetric::new())],
+        );
+
+        // Then
+        assert_eq!(
+            analyses.values().next().unwrap().file_path,
+            PathBuf::from("root").join("file1")
+        );
+        assert_eq!(
+            analyses
+                .values()
+                .next()
+                .unwrap()
+                .metrics
+                .first()
+                .unwrap()
+                .get_score(),
+            (
+                String::from("broken"),
+                Error(String::from("Analysis error"))
+            )
+        );
     }
 
     #[test]
@@ -138,7 +172,7 @@ mod implementation_test {
     }
 
     #[test]
-    fn analysis_with_2_files_should_return_one_analysis() {
+    fn analysis_with_2_files_should_return_two_analysis() {
         // Given
         let files_to_analyze = vec![
             PathBuf::from("root").join("file1"),
