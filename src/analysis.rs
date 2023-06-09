@@ -79,6 +79,7 @@ fn get_file_metrics_value(
         .collect()
 }
 
+// TODO: root metrics
 fn build_final_analysis_structure(
     root: PathBuf,
     file_analyses: HashMap<PathBuf, FileAnalysis>,
@@ -423,7 +424,6 @@ mod unit_tests {
     }
 
     #[test]
-    #[ignore]
     fn analyse_internal_with_1_file_and_brokenmetric() {
         // Given
         let root_name = "root";
