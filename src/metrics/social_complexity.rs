@@ -1,42 +1,38 @@
-use crate::metrics::metric::{IMetric, IMetricAggregatable};
+use crate::metrics::metric::MetricResultType::Score;
+use crate::metrics::metric::{IMetric, IMetricValue, MetricResultType};
 use git2::Repository;
 use std::fmt::Debug;
 use std::fs::read_dir;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct SocialComplexityMetric {}
 
 impl SocialComplexityMetric {
     pub fn new() -> Self {
-        SocialComplexityMetric {}
-    }
-}
-
-pub struct SocialComplexityMetricAggregatable {}
-
-impl SocialComplexityMetricAggregatable {
-    fn new() -> Self {
-        SocialComplexityMetricAggregatable {}
-    }
-}
-
-impl IMetricAggregatable for SocialComplexityMetricAggregatable {
-    fn get_score(&self) -> Result<u32, String> {
-        Ok(0)
+        SocialComplexityMetric::default()
     }
 }
 
 impl IMetric for SocialComplexityMetric {
-    fn analyze(&self, file_path: &Path) -> Box<dyn IMetricAggregatable> {
-        Box::new(SocialComplexityMetricAggregatable::new())
+    fn analyse(&self, _file_path: &Path) -> Box<dyn IMetricValue> {
+        Box::new(SocialComplexityValue { authors: vec![] })
     }
+}
 
-    fn get_key(&self) -> &'static str {
-        "social_complexity"
+#[derive(Debug, PartialEq)]
+struct SocialComplexityValue {
+    authors: Vec<String>,
+}
+
+impl IMetricValue for SocialComplexityValue {
+    fn get_score(&self) -> (String, MetricResultType) {
+        (String::from("social_complexity"), Score(0))
     }
-} // TODO: handle unwrap() + link to social_complexity + on va open le repo dans social_complexity
-  // print_number_of_authors_of_repo_dir2()
+}
+
+// TODO: handle unwrap() + link to social_complexity + on va open le repo dans social_complexity
+// print_number_of_authors_of_repo_dir2()
 fn _get_number_of_authors_of_repo_dir(repo: &Repository, path: PathBuf) -> u32 {
     let mut authors_number = 0;
     for file in read_dir(path).unwrap() {
@@ -51,6 +47,7 @@ fn _get_number_of_authors_of_repo_dir(repo: &Repository, path: PathBuf) -> u32 {
     }
     authors_number
 }
+
 fn _get_file_social_complexity(repo: &Repository, file: &Path) -> u32 {
     let relative_file_path = _get_relative_path(repo.path(), file);
     let blame = match repo.blame_file(&relative_file_path, None) {
@@ -60,6 +57,7 @@ fn _get_file_social_complexity(repo: &Repository, file: &Path) -> u32 {
     };
     blame.iter().count() as u32
 }
+
 fn _get_relative_path(path_to_repo: &Path, path: &Path) -> PathBuf {
     let mut relative_path = path.to_path_buf();
     if path.is_absolute() {
@@ -67,6 +65,7 @@ fn _get_relative_path(path_to_repo: &Path, path: &Path) -> PathBuf {
     }
     relative_path
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

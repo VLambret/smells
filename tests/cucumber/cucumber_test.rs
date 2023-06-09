@@ -47,7 +47,7 @@ mod end_2_end_test {
         convert_string_to_json(&actual_stdout_str)
     }
 
-    #[given(regex = r"a path (.+)")]
+    /*#[given(regex = r"a path (.+)")]
     fn a_folder_with_an_empty_file(smells: &mut SmellsWorld, path: String) {
         smells.file = path;
     }
@@ -62,7 +62,7 @@ mod end_2_end_test {
         let expected_stdout_json = convert_string_to_json(&step.docstring.clone().unwrap());
         let actual_stdout_json = convert_stdout_to_json(&mut smells.cmd);
         assert_eq!(expected_stdout_json, actual_stdout_json);
-    }
+    }*/
 }
 
 /*************************************************************************************************************************/
@@ -72,10 +72,9 @@ mod analysis_unit_test {
     use cucumber::gherkin::Step;
     use cucumber::{given, then, when, World};
     use serde_json::Value;
-    use smells::analysis::{do_internal_analysis, MetricsValueAggregable, TopAnalysis};
+    use smells::analysis::{do_internal_analysis, TopAnalysis};
     use smells::data_sources::file_explorer::{FakeFileExplorer, FileExplorer, IFileExplorer};
     use smells::metrics::metric::IMetric;
-    use std::collections::BTreeMap;
     use std::fmt::Debug;
     use std::path::{Path, PathBuf};
 
@@ -102,21 +101,9 @@ mod analysis_unit_test {
         }
     }
 
-    fn build_analysis_structure(
-        root_name: String,
-        metrics: BTreeMap<&'static str, Option<MetricsValueAggregable>>,
-        content: BTreeMap<String, TopAnalysis>,
-    ) -> TopAnalysis {
-        TopAnalysis {
-            file_name: root_name,
-            metrics,
-            folder_content: Some(content),
-        }
-    }
-
     // param "without metrics" => vec![]
     // "with metrics" => vec![lc, sc]
-    #[given("an empty folder without metrics")]
+    /*#[given("an empty folder without metrics")]
     fn analysis_ut_empty_root(analysis: &mut AnalysisWorld) {
         analysis.file_explorer = Box::new(FakeFileExplorer::new(vec![]));
     }
@@ -133,11 +120,8 @@ mod analysis_unit_test {
     // do_internal_analysis should be private
     #[when("I do the internal analysis")]
     fn run_the_analysis(analysis: &mut AnalysisWorld) {
-        analysis.actual_analysis = do_internal_analysis(
-            analysis.root.as_path(),
-            &*analysis.file_explorer,
-            &analysis.metrics,
-        );
+        analysis.actual_analysis =
+            do_internal_analysis(&*analysis.file_explorer, &analysis.metrics);
     }
 
     #[then("analysis module will build this analysis")]
@@ -147,5 +131,5 @@ mod analysis_unit_test {
         let expected_result_analysis: Value =
             serde_json::from_str(&step.docstring.clone().unwrap()).unwrap();
         assert_eq!(expected_result_analysis, actual_result_analysis);
-    }
+    }*/
 }

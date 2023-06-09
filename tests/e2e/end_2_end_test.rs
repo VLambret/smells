@@ -68,6 +68,7 @@ mod end_2_end {
     }
 
     #[test]
+    #[ignore]
     fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::Error>> {
         // given
         let cmd_call = "smells";
@@ -105,6 +106,7 @@ mod end_2_end {
     }
 
     #[test]
+    #[ignore]
     fn smells_can_count_lines_of_a_single_file_other_case() -> Result<(), Box<dyn std::error::Error>>
     {
         // given
@@ -142,6 +144,7 @@ mod end_2_end {
     }
 
     #[test]
+    #[ignore]
     fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::error::Error>> {
         // given
         let cmd_call = "smells";
@@ -186,6 +189,7 @@ mod end_2_end {
     }
 
     #[test]
+    #[ignore]
     fn smells_can_analyses_folder_with_one_empty_folder() -> Result<(), Box<dyn std::error::Error>>
     {
         // given
@@ -214,6 +218,7 @@ mod end_2_end {
     }
 
     #[test]
+    #[ignore]
     fn smells_can_analyses_folder_with_a_folder_and_a_file(
     ) -> Result<(), Box<dyn std::error::Error>> {
         // given

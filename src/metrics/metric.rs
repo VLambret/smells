@@ -1,11 +1,20 @@
+use serde::Serialize;
 use std::fmt::Debug;
 use std::path::Path;
 
-pub trait IMetricAggregatable {
-    fn get_score(&self) -> Result<u32, String>;
-}
+pub type AnalysisError = String;
 
 pub trait IMetric: Debug {
-    fn analyze(&self, file_path: &Path) -> Box<dyn IMetricAggregatable>;
-    fn get_key(&self) -> &'static str;
+    fn analyse(&self, file_path: &Path) -> Box<dyn IMetricValue>;
+}
+
+// Ou Result<MST, String> ?
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+pub enum MetricResultType {
+    Score(u64),
+    Error(AnalysisError),
+}
+
+pub trait IMetricValue: Debug {
+    fn get_score(&self) -> (String, MetricResultType);
 }
