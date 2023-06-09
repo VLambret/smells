@@ -93,7 +93,15 @@ fn build_final_analysis_structure(
                     .unwrap()
                     .to_string_lossy()
                     .to_string(),
-                metrics: btreemap! {},
+                metrics: file_analysis
+                    .1
+                    .metrics
+                    .iter()
+                    .fold(BTreeMap::new(), |mut acc, metric| {
+                        let (key, score) = metric.get_score();
+                        acc.insert(Box::leak(Box::new(key)) as &'static str, Some(score));
+                        acc
+                    }),
                 folder_content: None,
             };
             (file_top_analysis.file_name.to_owned(), file_top_analysis)
@@ -102,9 +110,19 @@ fn build_final_analysis_structure(
 
     TopAnalysis {
         file_name: root.file_name().unwrap().to_string_lossy().to_string(),
-        metrics: btreemap! {},
+        metrics: get_root_metrics(folder_content.clone()),
         folder_content: Some(folder_content),
     }
+}
+
+fn get_root_metrics(
+    analyses: BTreeMap<String, TopAnalysis>,
+) -> BTreeMap<&'static str, Option<MetricResultType>> {
+    return if analyses.is_empty() {
+        BTreeMap::new()
+    } else {
+        analyses.values().next().unwrap().metrics.clone()
+    };
 }
 
 /* **************************************************************** */
@@ -366,7 +384,6 @@ mod unit_tests {
     }
 
     #[test]
-    #[ignore]
     fn analyse_internal_with_1_file_and_fakemetric4_and_fakemetric10() {
         // Given
         let root_name = "root";
