@@ -83,10 +83,27 @@ fn build_final_analysis_structure(
     root: PathBuf,
     file_analyses: HashMap<PathBuf, FileAnalysis>,
 ) -> TopAnalysis {
+    let folder_content: BTreeMap<String, TopAnalysis> = file_analyses
+        .iter()
+        .map(|file_analysis| {
+            let file_top_analysis = TopAnalysis {
+                file_name: file_analysis
+                    .0
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .to_string(),
+                metrics: btreemap! {},
+                folder_content: None,
+            };
+            (file_top_analysis.file_name.to_owned(), file_top_analysis)
+        })
+        .collect();
+
     TopAnalysis {
         file_name: root.file_name().unwrap().to_string_lossy().to_string(),
         metrics: btreemap! {},
-        folder_content: Some(btreemap! {}),
+        folder_content: Some(folder_content),
     }
 }
 
@@ -309,7 +326,6 @@ mod unit_tests {
         assert_eq!(expected_result_analysis, actual_result_analysis);
     }
     #[test]
-    #[ignore]
     fn analyse_internal_with_2_files_and_empty_metrics() {
         // Given
         let root_name = "root";
