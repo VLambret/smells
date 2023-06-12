@@ -4,8 +4,8 @@ use crate::metrics::metric::{IMetric, IMetricValue, MetricResultType};
 use crate::metrics::social_complexity::SocialComplexityMetric;
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
-use std::path::PathBuf;
-use maplit::{btreemap, hashmap};
+use std::path::{Path, PathBuf};
+use maplit::btreemap;
 
 /* **************************************************************** */
 
@@ -29,7 +29,7 @@ pub fn do_analysis(root: PathBuf) -> TopAnalysis {
     do_internal_analysis(
         &root,
         &FileExplorer::new(&root),
-        &vec![
+        &[
             Box::new(LinesCountMetric::new()),
             Box::new(SocialComplexityMetric::new()),
         ],
@@ -39,20 +39,16 @@ pub fn do_analysis(root: PathBuf) -> TopAnalysis {
 /* **************************************************************** */
 
 pub fn do_internal_analysis(
-    root: &PathBuf,
+    root: &Path,
     file_explorer: &dyn IFileExplorer,
-    metrics: &Vec<Box<dyn IMetric>>,
+    metrics: &[Box<dyn IMetric>],
 ) -> TopAnalysis {
-    let file_analyses: HashMap<PathBuf, FileAnalysis> =
-        analyse_all_files(file_explorer.discover(), metrics);
-    let final_analysis: TopAnalysis =
-        build_final_analysis_structure(root, file_analyses);
-    final_analysis
+    build_final_analysis_structure(root,analyse_all_files(file_explorer.discover(), metrics))
 }
 
 fn analyse_all_files(
     files_to_analyse: Vec<PathBuf>,
-    metrics: &Vec<Box<dyn IMetric>>,
+    metrics: &[Box<dyn IMetric>],
 ) -> HashMap<PathBuf, FileAnalysis> {
     files_to_analyse
         .iter()
@@ -63,7 +59,7 @@ fn analyse_all_files(
         .collect()
 }
 
-fn analyse_single_file(current_file: &PathBuf, metrics: &Vec<Box<dyn IMetric>>) -> FileAnalysis {
+fn analyse_single_file(current_file: &PathBuf, metrics: &[Box<dyn IMetric>]) -> FileAnalysis {
     let result_file_metrics = get_file_metrics_value(current_file, metrics);
     FileAnalysis {
         file_path: current_file.to_owned(),
@@ -72,7 +68,7 @@ fn analyse_single_file(current_file: &PathBuf, metrics: &Vec<Box<dyn IMetric>>) 
 }
 
 fn get_file_metrics_value(
-    current_file: &PathBuf,
+    current_file: &Path,
     metrics: &[Box<dyn IMetric>],
 ) -> Vec<Box<dyn IMetricValue>> {
     metrics
@@ -82,34 +78,12 @@ fn get_file_metrics_value(
 }
 
 // TODO: root metrics
+// la on passe que les files analyses et pas la hierarchie de dossiers
 fn build_final_analysis_structure(
-    root: &PathBuf,
-    file_analyses: HashMap<PathBuf, FileAnalysis>,
+    root: &Path,
+    file_analyses: HashMap<PathBuf, FileAnalysis>, // TODO: vec![FileAnalysis]
 ) -> TopAnalysis {
-    let folder_content = file_analyses
-        .into_iter()
-        .map(|(file_path, file_analysis)| {
-            let file_name = file_path
-                .file_name()
-                .unwrap()
-                .to_string_lossy()
-                .to_string();
-            let metrics = file_analysis
-                .metrics
-                .iter()
-                .map(|metric| {
-                    //let (key, score) = metric.get_score();
-                    (metric.get_key(), Some(metric.get_score()))
-                })
-                .collect();
-
-            (file_name.clone(), TopAnalysis {
-                file_name,
-                metrics,
-                folder_content: None,
-            })
-        })
-        .collect::<BTreeMap<_, _>>();
+    let folder_content = build_folder_content(file_analyses);
 
     TopAnalysis {
         file_name: root.file_name().unwrap().to_string_lossy().to_string(),
@@ -118,17 +92,35 @@ fn build_final_analysis_structure(
     }
 }
 
+fn build_folder_content(file_analyses: HashMap<PathBuf, FileAnalysis>) -> BTreeMap<String, TopAnalysis> {
+    file_analyses
+        .into_iter()
+        .map(|(file_path, file_analysis)| {
+            let file_name = file_path
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .to_string();
+
+            let metrics = file_analysis
+                .metrics
+                .iter()
+                .map(|metric| { (metric.get_key(), Some(metric.get_score()))}) //let (key, score) = metric.get_score();
+                .collect();
+
+            (file_name.clone(), TopAnalysis {
+                file_name,
+                metrics,
+                folder_content: None,
+            })
+        })
+        .collect()
+}
+
 fn get_root_metrics(
     analyses: BTreeMap<String, TopAnalysis>,
 ) -> BTreeMap<&'static str, Option<MetricResultType>> {
-    //println!("{:?}", analyses);
     if analyses.is_empty() {
-        let _key = analyses
-            .values()
-            .next()
-            .and_then(|analysis| analysis.metrics.keys().next())
-            .unwrap_or(&"");
-
         btreemap!{}
     } else {
        analyses.values().next().unwrap().metrics.clone()
@@ -152,7 +144,7 @@ mod analyse_all_files_test {
         //when
         let analyses = analyse_all_files(
             fake_file_explorer.discover(),
-            &vec![Box::new(FakeMetric::new(2))],
+            &[Box::new(FakeMetric::new(2))],
         );
 
         //then
@@ -169,7 +161,7 @@ mod analyse_all_files_test {
         // When
         let analyses = analyse_all_files(
             fake_file_explorer.discover(),
-            &vec![Box::new(BrokenMetric::new())],
+            &[Box::new(BrokenMetric::new())],
         );
 
         // Then
@@ -200,7 +192,7 @@ mod analyse_all_files_test {
         // When
         let analyses = analyse_all_files(
             fake_file_explorer.discover(),
-            &vec![Box::new(FakeMetric::new(2))],
+            &[Box::new(FakeMetric::new(2))],
         );
 
         // Then
@@ -234,7 +226,7 @@ mod analyse_all_files_test {
         // When
         let analyses = analyse_all_files(
             fake_file_explorer.discover(),
-            &vec![Box::new(FakeMetric::new(2))],
+            &[Box::new(FakeMetric::new(2))],
         );
 
         // Then
@@ -344,7 +336,7 @@ mod internal_analysis_unit_tests {
         let fake_file_explorer: Box<dyn IFileExplorer> = Box::new(FakeFileExplorer::new(vec![]));
 
         // When
-        let actual_result_analysis = do_internal_analysis(&root, &*fake_file_explorer, &vec![]);
+        let actual_result_analysis = do_internal_analysis(&root, &*fake_file_explorer, &[]);
 
         // Then
         let expected_result_analysis = build_analysis_structure(
@@ -449,7 +441,7 @@ mod internal_analysis_unit_tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        let error_value = Some(MetricResultType::Error("Analysis error".to_string()));
+        let error_value = Some(Error("Analysis error".to_string()));
         expected_metrics.insert("broken", error_value);
 
         let expected_file_analysis = TopAnalysis {
@@ -474,7 +466,6 @@ mod internal_analysis_unit_tests {
 
     // agreggate tests
     #[test]
-    #[ignore]
     fn internal_analyse_with_empty_root_and_fakemetric0() {
         // Given
         let files_to_analyze = vec![];
@@ -485,12 +476,14 @@ mod internal_analysis_unit_tests {
         // When
         let actual_root_analysis = do_internal_analysis(&PathBuf::from("empty_root"), &*fake_file_explorer, &metrics);
 
+
         // Then
         let expected_root_analysis = TopAnalysis {
             file_name: String::from("empty_root"),
-            metrics: btreemap! {"fake0" => None},
+            metrics: btreemap! {},
             folder_content: Some(BTreeMap::new()),
         };
+
         assert_eq!(expected_root_analysis, actual_root_analysis)
     }
 
