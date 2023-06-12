@@ -2,7 +2,6 @@ use crate::data_sources::file_explorer::{FileExplorer, IFileExplorer};
 use crate::metrics::line_count::LinesCountMetric;
 use crate::metrics::metric::{IMetric, IMetricValue, MetricResultType};
 use crate::metrics::social_complexity::SocialComplexityMetric;
-use maplit::{hashmap};
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
@@ -27,6 +26,7 @@ pub struct TopAnalysis {
 
 pub fn do_analysis(root: PathBuf) -> TopAnalysis {
     do_internal_analysis(
+        &root,
         &FileExplorer::new(&root),
         &vec![
             Box::new(LinesCountMetric::new()),
@@ -38,13 +38,14 @@ pub fn do_analysis(root: PathBuf) -> TopAnalysis {
 /* **************************************************************** */
 
 pub fn do_internal_analysis(
+    root: &PathBuf,
     file_explorer: &dyn IFileExplorer,
     metrics: &Vec<Box<dyn IMetric>>,
 ) -> TopAnalysis {
     let file_analyses: HashMap<PathBuf, FileAnalysis> =
         analyse_all_files(file_explorer.discover(), metrics);
     let final_analysis: TopAnalysis =
-        build_final_analysis_structure(file_explorer.get_root(), file_analyses);
+        build_final_analysis_structure(root, file_analyses);
     final_analysis
 }
 
@@ -81,7 +82,7 @@ fn get_file_metrics_value(
 
 // TODO: root metrics
 fn build_final_analysis_structure(
-    root: PathBuf,
+    root: &PathBuf,
     file_analyses: HashMap<PathBuf, FileAnalysis>,
 ) -> TopAnalysis {
     let folder_content = file_analyses
@@ -131,7 +132,7 @@ fn get_root_metrics(
 #[cfg(test)]
 mod analyse_all_files_test {
     use super::*;
-    use crate::analysis::unit_tests::{BrokenMetric, FakeMetric};
+    use crate::analysis::internal_analysis_unit_tests::{BrokenMetric, FakeMetric};
     use crate::data_sources::file_explorer::FakeFileExplorer;
     use crate::metrics::metric::MetricResultType::{Error, Score};
 
@@ -237,7 +238,7 @@ mod analyse_all_files_test {
 }
 
 #[cfg(test)]
-mod unit_tests {
+mod internal_analysis_unit_tests {
     use super::*;
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
     use crate::metrics::metric::MetricResultType;
@@ -333,7 +334,7 @@ mod unit_tests {
         let fake_file_explorer: Box<dyn IFileExplorer> = Box::new(FakeFileExplorer::new(vec![]));
 
         // When
-        let actual_result_analysis = do_internal_analysis(&*fake_file_explorer, &vec![]);
+        let actual_result_analysis = do_internal_analysis(&root, &*fake_file_explorer, &vec![]);
 
         // Then
         let expected_result_analysis = build_analysis_structure(
@@ -358,7 +359,7 @@ mod unit_tests {
         let metrics = vec![];
 
         // When
-        let actual_result_analysis = do_internal_analysis(&*fake_file_explorer, &metrics);
+        let actual_result_analysis = do_internal_analysis(&root, &*fake_file_explorer, &metrics);
 
         // Then
         let first_file_analysis = TopAnalysis {
@@ -396,7 +397,7 @@ mod unit_tests {
             vec![Box::new(FakeMetric::new(4)), Box::new(FakeMetric::new(10))];
 
         // When
-        let actual_root_analysis = do_internal_analysis(&*fake_file_explorer, &metrics);
+        let actual_root_analysis = do_internal_analysis(&root, &*fake_file_explorer, &metrics);
 
         // Then
         let mut expected_metrics = BTreeMap::new();
@@ -434,7 +435,7 @@ mod unit_tests {
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(BrokenMetric::new())];
 
         // When
-        let actual_root_analysis = do_internal_analysis(&*fake_file_explorer, &metrics);
+        let actual_root_analysis = do_internal_analysis(&root, &*fake_file_explorer, &metrics);
 
         // Then
         let mut expected_metrics = BTreeMap::new();
@@ -477,7 +478,7 @@ mod unit_tests {
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(LinesCountMetric::new())];
 
         // When
-        let actual_root_analysis = do_internal_analysis(&*fake_file_explorer, &metrics);
+        let actual_root_analysis = do_internal_analysis(&root, &*fake_file_explorer, &metrics);
 
         let mut expected_metrics = BTreeMap::new();
         expected_metrics.insert("lines_count", Some(Score(5)));
@@ -513,7 +514,7 @@ mod unit_tests {
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric::new(0))];
 
         // When
-        let actual_root_analysis = do_internal_analysis(&*fake_file_explorer, &metrics);
+        let actual_root_analysis = do_internal_analysis(&PathBuf::from("empty_root"), &*fake_file_explorer, &metrics);
 
         // Then
         let expected_root_analysis = TopAnalysis {
@@ -536,7 +537,7 @@ mod unit_tests {
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric::new(1))];
 
         // When
-        let actual_root_analysis = do_internal_analysis(&*fake_file_explorer, &metrics);
+        let actual_root_analysis = do_internal_analysis(&root, &*fake_file_explorer, &metrics);
 
         // Then
         let mut expected_metrics = BTreeMap::new();
@@ -574,7 +575,7 @@ mod unit_tests {
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric::new(1))];
 
         // When
-        let actual_root_analysis = do_internal_analysis(&*fake_file_explorer, &metrics);
+        let actual_root_analysis = do_internal_analysis(&root, &*fake_file_explorer, &metrics);
 
         // Then
         let mut expected_metrics = BTreeMap::new();
@@ -627,7 +628,7 @@ mod unit_tests {
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric::new(1))];
 
         // When
-        let actual_root_analysis = do_internal_analysis(&*fake_file_explorer, &metrics);
+        let actual_root_analysis = do_internal_analysis(&root, &*fake_file_explorer, &metrics);
 
         // Then
         let mut expected_metrics = BTreeMap::new();
