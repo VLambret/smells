@@ -2,7 +2,7 @@ use crate::data_sources::file_explorer::{FileExplorer, IFileExplorer};
 use crate::metrics::line_count::LinesCountMetric;
 use crate::metrics::metric::{IMetric, IMetricValue, MetricResultType};
 use crate::metrics::social_complexity::SocialComplexityMetric;
-use maplit::{btreemap, hashmap};
+use maplit::{hashmap};
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
@@ -84,30 +84,30 @@ fn build_final_analysis_structure(
     root: PathBuf,
     file_analyses: HashMap<PathBuf, FileAnalysis>,
 ) -> TopAnalysis {
-    let folder_content: BTreeMap<String, TopAnalysis> = file_analyses
-        .iter()
-        .map(|file_analysis| {
-            let file_top_analysis = TopAnalysis {
-                file_name: file_analysis
-                    .0
-                    .file_name()
-                    .unwrap()
-                    .to_string_lossy()
-                    .to_string(),
-                metrics: file_analysis
-                    .1
-                    .metrics
-                    .iter()
-                    .fold(BTreeMap::new(), |mut acc, metric| {
-                        let (key, score) = metric.get_score();
-                        acc.insert(Box::leak(Box::new(key)) as &'static str, Some(score));
-                        acc
-                    }),
+    let folder_content = file_analyses
+        .into_iter()
+        .map(|(file_path, file_analysis)| {
+            let file_name = file_path
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .to_string();
+            let metrics = file_analysis
+                .metrics
+                .iter()
+                .map(|metric| {
+                    let (key, score) = metric.get_score();
+                    (Box::leak(Box::new(key)) as &'static str, Some(score))
+                })
+                .collect();
+
+            (file_name.clone(), TopAnalysis {
+                file_name,
+                metrics,
                 folder_content: None,
-            };
-            (file_top_analysis.file_name.to_owned(), file_top_analysis)
+            })
         })
-        .collect();
+        .collect::<BTreeMap<_, _>>();
 
     TopAnalysis {
         file_name: root.file_name().unwrap().to_string_lossy().to_string(),
