@@ -26,8 +26,12 @@ struct SocialComplexityValue {
 }
 
 impl IMetricValue for SocialComplexityValue {
-    fn get_score(&self) -> (String, MetricResultType) {
-        (String::from("social_complexity"), Score(0))
+    fn get_key(&self) -> &'static str {
+        "social_complexity"
+    }
+
+    fn get_score(&self) -> MetricResultType {
+        Score(0)
     }
 }
 

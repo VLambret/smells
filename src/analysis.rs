@@ -5,6 +5,7 @@ use crate::metrics::social_complexity::SocialComplexityMetric;
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
+use maplit::{btreemap, hashmap};
 
 /* **************************************************************** */
 
@@ -97,8 +98,8 @@ fn build_final_analysis_structure(
                 .metrics
                 .iter()
                 .map(|metric| {
-                    let (key, score) = metric.get_score();
-                    (Box::leak(Box::new(key)) as &'static str, Some(score))
+                    //let (key, score) = metric.get_score();
+                    (metric.get_key(), Some(metric.get_score()))
                 })
                 .collect();
 
@@ -120,11 +121,18 @@ fn build_final_analysis_structure(
 fn get_root_metrics(
     analyses: BTreeMap<String, TopAnalysis>,
 ) -> BTreeMap<&'static str, Option<MetricResultType>> {
-    return if analyses.is_empty() {
-        BTreeMap::new()
+    //println!("{:?}", analyses);
+    if analyses.is_empty() {
+        let _key = analyses
+            .values()
+            .next()
+            .and_then(|analysis| analysis.metrics.keys().next())
+            .unwrap_or(&"");
+
+        btreemap!{}
     } else {
-        analyses.values().next().unwrap().metrics.clone()
-    };
+       analyses.values().next().unwrap().metrics.clone()
+    }
 }
 
 /* **************************************************************** */
@@ -178,10 +186,7 @@ mod analyse_all_files_test {
                 .first()
                 .unwrap()
                 .get_score(),
-            (
-                String::from("broken"),
                 Error(String::from("Analysis error"))
-            )
         );
     }
 
@@ -212,7 +217,7 @@ mod analyse_all_files_test {
                 .first()
                 .unwrap()
                 .get_score(),
-            (String::from("fake2"), Score(2))
+            (Score(2))
         );
     }
 
@@ -281,8 +286,12 @@ mod internal_analysis_unit_tests {
     }
 
     impl IMetricValue for FakeMetricValue {
-        fn get_score(&self) -> (String, MetricResultType) {
-            (String::from(self.metric_key), Score(self.value))
+        fn get_key(&self) -> &'static str {
+            self.metric_key
+        }
+
+        fn get_score(&self) -> MetricResultType {
+            Score(self.value)
         }
     }
 
@@ -307,11 +316,12 @@ mod internal_analysis_unit_tests {
     }
 
     impl IMetricValue for BrokenMetricValue {
-        fn get_score(&self) -> (String, MetricResultType) {
-            (
-                String::from("broken"),
-                Error(String::from("Analysis error")),
-            )
+        fn get_key(&self) -> &'static str {
+            "broken"
+        }
+
+        fn get_score(&self) -> MetricResultType {
+            Error(String::from("Analysis error"))
         }
     }
 
@@ -462,47 +472,6 @@ mod internal_analysis_unit_tests {
         assert_eq!(expected_root_analysis, actual_root_analysis);
     }
 
-    #[test]
-    #[ignore]
-    fn analyse_internal_with_one_5_lines_file() {
-        // Given
-        let root = PathBuf::from("tests")
-            .join("data")
-            .join("folder_with_multiple_files");
-        let files_to_analyze = vec![PathBuf::from("tests")
-            .join("data")
-            .join("folder_with_multiple_files")
-            .join("file5.txt")];
-        let fake_file_explorer: Box<dyn IFileExplorer> =
-            Box::new(FakeFileExplorer::new(files_to_analyze));
-        let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(LinesCountMetric::new())];
-
-        // When
-        let actual_root_analysis = do_internal_analysis(&root, &*fake_file_explorer, &metrics);
-
-        let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("lines_count", Some(Score(5)));
-
-        let expected_file_analysis = TopAnalysis {
-            file_name: "file5.txt".to_string(),
-            metrics: expected_metrics.clone(),
-            folder_content: None,
-        };
-
-        let mut expected_analysis_content = BTreeMap::new();
-        expected_analysis_content.insert(
-            expected_file_analysis.file_name.clone(),
-            expected_file_analysis,
-        );
-
-        let expected_root_analysis = TopAnalysis {
-            file_name: String::from("folder_with_multiple_files"),
-            metrics: expected_metrics,
-            folder_content: Some(expected_analysis_content),
-        };
-        assert_eq!(expected_root_analysis, actual_root_analysis);
-    }
-
     // agreggate tests
     #[test]
     #[ignore]
@@ -526,7 +495,6 @@ mod internal_analysis_unit_tests {
     }
 
     #[test]
-    #[ignore]
     fn internal_analyse_with_1_file_and_fakemetric1() {
         // Given
         let root_name = "root_with_1_file";

@@ -16,5 +16,6 @@ pub enum MetricResultType {
 }
 
 pub trait IMetricValue: Debug {
-    fn get_score(&self) -> (String, MetricResultType);
+    fn get_key(&self) -> &'static str;
+    fn get_score(&self) -> MetricResultType;
 }

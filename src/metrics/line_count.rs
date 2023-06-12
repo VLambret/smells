@@ -38,13 +38,15 @@ struct LinesCountValue {
 }
 
 impl IMetricValue for LinesCountValue {
-    fn get_score(&self) -> (String, MetricResultType) {
-        let score = match &self.line_count {
+    fn get_key(&self) -> &'static str{
+        "lines_count"
+    }
+
+    fn get_score(&self) -> MetricResultType {
+       match &self.line_count {
             Ok(value) => Score(*value),
             Err(error) => Error(error.clone()),
-        };
-
-        (String::from("lines_count"), score)
+        }
     }
 }
 
