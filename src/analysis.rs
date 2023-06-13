@@ -9,7 +9,6 @@ use maplit::btreemap;
 
 /* **************************************************************** */
 
-// garder cette structure et pas juste avoir une HashMap<Pathbuf, Metrics> ?
 #[derive(Debug)]
 struct FileAnalysis {
     file_path: PathBuf,
@@ -49,12 +48,11 @@ pub fn do_internal_analysis(
 fn analyse_all_files(
     files_to_analyse: Vec<PathBuf>,
     metrics: &[Box<dyn IMetric>],
-) -> HashMap<PathBuf, FileAnalysis> {
+) -> Vec<FileAnalysis> {
     files_to_analyse
         .iter()
         .map(|file| {
-            let file_analysis = analyse_single_file(file, metrics);
-            (file.to_owned(), file_analysis)
+            analyse_single_file(file, metrics)
         })
         .collect()
 }
@@ -78,10 +76,9 @@ fn get_file_metrics_value(
 }
 
 // TODO: root metrics
-// la on passe que les files analyses et pas la hierarchie de dossiers
 fn build_final_analysis_structure(
     root: &Path,
-    file_analyses: HashMap<PathBuf, FileAnalysis>, // TODO: vec![FileAnalysis]
+    file_analyses: Vec<FileAnalysis>
 ) -> TopAnalysis {
     let folder_content = build_folder_content(file_analyses);
 
@@ -92,11 +89,12 @@ fn build_final_analysis_structure(
     }
 }
 
-fn build_folder_content(file_analyses: HashMap<PathBuf, FileAnalysis>) -> BTreeMap<String, TopAnalysis> {
+fn build_folder_content(file_analyses: Vec<FileAnalysis>) -> BTreeMap<String, TopAnalysis> {
     file_analyses
         .into_iter()
-        .map(|(file_path, file_analysis)| {
-            let file_name = file_path
+        .map(|file_analysis| {
+            let file_name = file_analysis
+                .file_path
                 .file_name()
                 .unwrap()
                 .to_string_lossy()
@@ -166,13 +164,12 @@ mod analyse_all_files_test {
 
         // Then
         assert_eq!(
-            analyses.values().next().unwrap().file_path,
+            analyses.get(0).unwrap().file_path,
             PathBuf::from("root").join("file1")
         );
         assert_eq!(
             analyses
-                .values()
-                .next()
+                .get(0)
                 .unwrap()
                 .metrics
                 .first()
@@ -197,13 +194,12 @@ mod analyse_all_files_test {
 
         // Then
         assert_eq!(
-            analyses.values().next().unwrap().file_path,
+            analyses.get(0).unwrap().file_path,
             PathBuf::from("root").join("file1")
         );
         assert_eq!(
             analyses
-                .values()
-                .next()
+                .get(0)
                 .unwrap()
                 .metrics
                 .first()
