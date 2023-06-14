@@ -7,6 +7,7 @@ use serde::Serialize;
 use serde_json::to_string;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
+use crate::metrics::metric::MetricResultType::Score;
 
 /* **************************************************************** */
 
@@ -158,13 +159,44 @@ fn get_file_metrics_value(
 //     result;
 // }
 //
-// fn combine_top_analysis(top1, top2) {
-//     top3 {
-//         combined_filename = combine_filenames(top1.filename, top2.filename);// XXX: Error case: top1 and top2 does not have the same filename
-//         combined_folder_content = combine_folder_content(top1.folder_content, top2.folder_content);
-//         combined_metrics = combine_metrics(top1.metrics, top2.metrics);
-//     }
+fn combine_hierarchical_analysis(root_analysis: HierarchicalAnalysis, other_analysis: HierarchicalAnalysis) -> HierarchicalAnalysis{
+    HierarchicalAnalysis{
+        file_name: combine_filenames(root_analysis.file_name, other_analysis.file_name), // XXX: Error case: top1 and top2 does not have the same filename
+        metrics: combine_metrics(root_analysis.metrics, other_analysis.metrics),
+        folder_content: combine_folder_content(root_analysis.folder_content, other_analysis.folder_content),
+    }
+}
+
+fn combine_filenames(current_analysis_name: String, other: String) -> String {
+    current_analysis_name
+}
+
+// fn combine_metrics(metrics: Vec<Box<dyn IMetricValue>>, other_metrics: Vec<Box<dyn IMetricValue>>) -> Vec<Box<dyn IMetricValue>> {
+//     metrics.iter().map(|metric1| {
+//         let metric_key = metric1.get_key();
+//         other_metrics.iter().map(|metric2| {
+//             if metric_key == metric2.get_key(){
+//                 metric1.get_score() + metric2.get_score();
+//             }
+//         }).collect()
+//     }).collect()
 // }
+
+fn combine_metrics(metrics: Vec<Box<dyn IMetricValue>>, other_metrics: Vec<Box<dyn IMetricValue>>) -> Vec<Box<dyn IMetricValue>> {
+    let mut result_metrics: Vec<Box<dyn IMetricValue>> = vec![];
+    for metric1 in metrics{
+        for metric2 in other_metrics.clone(){
+            if metric1.get_key() == metric2.get_key(){
+                result_metrics.push(metric1.aggregate(metric2)).clone();
+            }
+        }
+    }
+    result_metrics
+}
+
+fn combine_folder_content(p0: Option<BTreeMap<String, HierarchicalAnalysis>>, p1: Option<BTreeMap<String, HierarchicalAnalysis>>) -> Option<BTreeMap<String, HierarchicalAnalysis>> {
+    todo!()
+}
 
 fn build_final_analysis_structure(
     root_top_analysis: TopAnalysis,
@@ -178,7 +210,7 @@ fn build_final_analysis_structure(
 
         // first_file_analysis root/dir1/file1
 
-        // let first_file_top_analysis = TopAnalysis::fromFileAnalysis(first_file_analysis);
+        //let first_file_top_analysis = TopAnalysis::fromFileAnalysis(first_file_analysis);
         //
         // // first_file_top_analysis root -> dir1 -> file1
         // let updated_top_analysis = combine_top_analysis(root_top_analysis, first_file_top_analysis);
@@ -361,7 +393,7 @@ mod analyse_all_files_test {
 mod internal_analysis_unit_tests {
     use super::*;
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
-    use crate::metrics::metric::MetricResultType;
+    use crate::metrics::metric::{AnalysisError, MetricResultType};
     use crate::metrics::metric::MetricResultType::{Error, Score};
     use maplit::btreemap;
     use std::fmt::Debug;
@@ -408,6 +440,14 @@ mod internal_analysis_unit_tests {
         fn get_score(&self) -> MetricResultType {
             Score(self.value)
         }
+
+        fn get_line_count(&self) -> &Result<u64, AnalysisError> {
+            todo!()
+        }
+
+        fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
+            todo!()
+        }
     }
 
     #[derive(Debug, Default, Clone)]
@@ -437,6 +477,14 @@ mod internal_analysis_unit_tests {
 
         fn get_score(&self) -> MetricResultType {
             Error(String::from("Analysis error"))
+        }
+
+        fn get_line_count(&self) -> &Result<u64, AnalysisError> {
+            todo!()
+        }
+
+        fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
+            todo!()
         }
     }
 

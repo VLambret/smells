@@ -1,5 +1,5 @@
 use crate::metrics::metric::MetricResultType::Score;
-use crate::metrics::metric::{IMetric, IMetricValue, IMetricValueClone, MetricResultType};
+use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, IMetricValueClone, MetricResultType};
 use git2::Repository;
 use std::fmt::Debug;
 use std::fs::read_dir;
@@ -32,6 +32,14 @@ impl IMetricValue for SocialComplexityValue {
 
     fn get_score(&self) -> MetricResultType {
         Score(0)
+    }
+
+    fn get_line_count(&self) -> &Result<u64, AnalysisError> {
+        todo!()
+    }
+
+    fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
+        todo!()
     }
 }
 

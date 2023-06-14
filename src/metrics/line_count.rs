@@ -48,6 +48,33 @@ impl IMetricValue for LinesCountValue {
             Err(error) => Error(error.clone()),
         }
     }
+
+    fn get_line_count(&self) -> &Result<u64, AnalysisError>{
+        &self.line_count
+    }
+
+    fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> { // other: Self
+        if self.line_count.is_err() && other.get_line_count().is_err() {
+            Box::new(LinesCountValue{
+                line_count: Err(String::from("Analysis error")),
+            })
+        }
+        else if self.line_count.is_err(){
+            Box::new(LinesCountValue{
+                line_count: other.get_line_count().clone(),
+            })
+        }
+        else if other.get_line_count().is_err(){
+            Box::new(LinesCountValue{
+                line_count: self.line_count.clone(),
+            })
+        }
+        else{
+            Box::new(LinesCountValue{
+                line_count: Ok(self.line_count.as_ref().unwrap() + other.get_line_count().as_ref().unwrap()),
+            })
+        }
+    }
 }
 
 #[cfg(test)]
