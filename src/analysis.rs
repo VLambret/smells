@@ -32,11 +32,10 @@ pub struct HierarchicalAnalysis {
 
 impl HierarchicalAnalysis {
     fn from_file_analysis(file_analysis: &FileAnalysis) -> HierarchicalAnalysis {
-        //println!("HOUHOUHOU1{:?}", file_analysis.file_path.clone());
         let top_parent = get_top_parent(&file_analysis.file_path);
-        if let Some(top_parent) = top_parent {
+        if let Some(top_parent_true) = top_parent {
             HierarchicalAnalysis {
-                file_name: top_parent.to_string_lossy().to_string(),
+                file_name: top_parent_true.to_string_lossy().to_string(),
                 metrics: file_analysis.metrics.clone(),
                 folder_content: build_file_analysis_folder_content_one_level_below(file_analysis),
             }
@@ -72,7 +71,11 @@ fn remove_top_parent(current_file: &PathBuf) -> PathBuf {
 fn get_top_parent(file: &PathBuf) -> Option<PathBuf> {
     let mut top_parent = file.clone();
     while let Some(parent) = top_parent.parent() {
-        top_parent = parent.to_path_buf();
+        if parent != Path::new("") {
+            top_parent = parent.to_path_buf();
+        } else {
+            break;
+        }
     }
     if top_parent == *file {
         None
