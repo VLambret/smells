@@ -107,6 +107,10 @@ fn build_final_analysis_structure(
             folder_content: None,
         };
 
+        if let Some(file_parent) = first_file_analysis.file_path.parent() {
+            if file_parent != Path::new(&root_top_analysis.file_name) {}
+        }
+
         let previous_root_content = root_top_analysis
             .folder_content
             .unwrap()
@@ -528,7 +532,6 @@ mod internal_analysis_unit_tests {
     }
 
     #[test]
-    #[ignore]
     fn analyse_internal_of_a_file_in_a_folder_with_fakemetric1() {
         // Given
         let root_name = "root_with_1_file_in_1_folder";
@@ -575,7 +578,6 @@ mod internal_analysis_unit_tests {
     }
 
     #[test]
-    #[ignore]
     fn analyse_internal_of_2_file_in_1_folder_in_1_subfolder_in_root_with_empty_metrics() {
         let root_name = "root_with_2_file_in_1_folder_in_1_subfolder";
         let root = PathBuf::from(root_name);
@@ -638,7 +640,6 @@ mod internal_analysis_unit_tests {
     }
 
     #[test]
-    #[ignore]
     fn analyse_internal_of_2_file_in_1_folder_in_root_with_fakemetric1_should_add_files_scores() {
         // Given
         /*        let fake_file_explorer = FakeFileExplorer('folder3/file1',
