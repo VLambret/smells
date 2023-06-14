@@ -5,11 +5,11 @@ use std::fmt::Debug;
 use std::fs::read_dir;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct SocialComplexityMetric {}
 
 impl SocialComplexityMetric {
-    pub fn new() -> Self {
+    pub fn new() -> SocialComplexityMetric {
         SocialComplexityMetric::default()
     }
 }

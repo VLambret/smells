@@ -15,7 +15,11 @@ pub enum MetricResultType {
     Error(AnalysisError),
 }
 
-pub trait IMetricValue: Debug {
+trait IMetricValueClone {
+    fn clone_box(&self) -> Box<dyn IMetricValue>;
+}
+
+pub trait IMetricValue: Debug + IMetricValueClone{
     fn get_key(&self) -> &'static str;
     fn get_score(&self) -> MetricResultType;
 }

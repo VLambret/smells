@@ -20,6 +20,37 @@ pub struct TopAnalysis {
     pub file_name: String,
     pub metrics: BTreeMap<&'static str, Option<MetricResultType>>,
     pub folder_content: Option<BTreeMap<String, TopAnalysis>>,
+    
+}#[derive(Debug)]
+pub struct HierarchicalAnalysis {
+    pub file_name: String,
+    pub metrics: Vec<Box<dyn IMetricValue>>,
+    pub folder_content: Option<BTreeMap<String, TopAnalysis>>,
+}
+
+impl HierarchicalAnalysis{
+    fn from_file_analysis(file_analysis: &FileAnalysis) -> Self {
+        let top_parent = file_analysis.get_top_parent();
+
+        HierarchicalAnalysis{
+            file_name: top_parent,
+            metrics: file_analysis.metrics.clone(),
+            folder_content: build_file_analysis_folder_content_one_level_below(file_analysis),
+        }
+    }
+}
+
+fn build_file_analysis_folder_content_one_level_below(file_analysis: &FileAnalysis) -> Option<BTreeMap<String, TopAnalysis>> {
+    todo!()
+}
+
+fn get_first_directory_name(path: &PathBuf) -> Option<String> {
+    if let Some(first_component) = path.components().nth(0) {
+        if let Some(first_dir) = first_component.as_os_str().to_str() {
+            return Some(first_dir.to_string());
+        }
+    }
+    None
 }
 
 /* **************************************************************** */
@@ -313,7 +344,7 @@ mod internal_analysis_unit_tests {
         }
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     struct FakeMetricValue {
         metric_key: &'static str,
         value: u64,
@@ -329,12 +360,12 @@ mod internal_analysis_unit_tests {
         }
     }
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, Clone)]
     pub struct BrokenMetric {
         pub metric_key: &'static str,
     }
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, Clone)]
     struct BrokenMetricValue {}
 
     impl IMetric for BrokenMetric {
