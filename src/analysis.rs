@@ -4,6 +4,7 @@ use crate::metrics::metric::{IMetric, IMetricValue, MetricResultType};
 use crate::metrics::social_complexity::SocialComplexityMetric;
 use maplit::btreemap;
 use serde::Serialize;
+use serde_json::to_string;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
@@ -20,37 +21,64 @@ pub struct TopAnalysis {
     pub file_name: String,
     pub metrics: BTreeMap<&'static str, Option<MetricResultType>>,
     pub folder_content: Option<BTreeMap<String, TopAnalysis>>,
-    
-}#[derive(Debug)]
+}
+
+#[derive(Debug)]
 pub struct HierarchicalAnalysis {
     pub file_name: String,
     pub metrics: Vec<Box<dyn IMetricValue>>,
-    pub folder_content: Option<BTreeMap<String, TopAnalysis>>,
+    pub folder_content: Option<BTreeMap<String, HierarchicalAnalysis>>,
 }
 
-impl HierarchicalAnalysis{
-    fn from_file_analysis(file_analysis: &FileAnalysis) -> Self {
-        let top_parent = file_analysis.get_top_parent();
-
-        HierarchicalAnalysis{
-            file_name: top_parent,
-            metrics: file_analysis.metrics.clone(),
-            folder_content: build_file_analysis_folder_content_one_level_below(file_analysis),
+impl HierarchicalAnalysis {
+    fn from_file_analysis(file_analysis: &FileAnalysis) -> HierarchicalAnalysis {
+        //println!("HOUHOUHOU1{:?}", file_analysis.file_path.clone());
+        let top_parent = get_top_parent(&file_analysis.file_path);
+        if let Some(top_parent) = top_parent {
+            HierarchicalAnalysis {
+                file_name: top_parent.to_string_lossy().to_string(),
+                metrics: file_analysis.metrics.clone(),
+                folder_content: build_file_analysis_folder_content_one_level_below(file_analysis),
+            }
+        } else {
+            HierarchicalAnalysis {
+                file_name: file_analysis.file_path.to_string_lossy().to_string(),
+                metrics: file_analysis.metrics.clone(),
+                folder_content: None,
+            }
         }
     }
 }
 
-fn build_file_analysis_folder_content_one_level_below(file_analysis: &FileAnalysis) -> Option<BTreeMap<String, TopAnalysis>> {
-    todo!()
+fn build_file_analysis_folder_content_one_level_below(
+    file_analysis: &FileAnalysis,
+) -> Option<BTreeMap<String, HierarchicalAnalysis>> {
+    let file_path_without_top_parent = remove_top_parent(&file_analysis.file_path);
+
+    let one_level_below_file_analysis = FileAnalysis {
+        file_path: file_path_without_top_parent.clone(),
+        metrics: file_analysis.metrics.clone(),
+    };
+    Some(
+        btreemap! {file_path_without_top_parent.to_string_lossy().to_string() => HierarchicalAnalysis::from_file_analysis(&one_level_below_file_analysis)},
+    )
 }
 
-fn get_first_directory_name(path: &PathBuf) -> Option<String> {
-    if let Some(first_component) = path.components().nth(0) {
-        if let Some(first_dir) = first_component.as_os_str().to_str() {
-            return Some(first_dir.to_string());
-        }
+fn remove_top_parent(current_file: &PathBuf) -> PathBuf {
+    let top_parent = get_top_parent(current_file).unwrap();
+    PathBuf::from(current_file.strip_prefix(top_parent).unwrap())
+}
+
+fn get_top_parent(file: &PathBuf) -> Option<PathBuf> {
+    let mut top_parent = file.clone();
+    while let Some(parent) = top_parent.parent() {
+        top_parent = parent.to_path_buf();
     }
-    None
+    if top_parent == *file {
+        None
+    } else {
+        Some(top_parent)
+    }
 }
 
 /* **************************************************************** */
@@ -155,7 +183,6 @@ fn build_final_analysis_structure(
 
         // Here live dragons
 
-
         let metrics: BTreeMap<&'static str, Option<MetricResultType>> = first_file_analysis
             .metrics
             .iter()
@@ -203,6 +230,26 @@ fn build_final_analysis_structure(
 }
 
 /* **************************************************************** */
+#[cfg(test)]
+mod analyse1_test {
+    use super::*;
+
+    #[test]
+    fn petit_test() {
+        // Given
+        let first_file_analysis = FileAnalysis {
+            file_path: PathBuf::from("root")
+                .join("dir1")
+                .join("dir2")
+                .join("file1"),
+            metrics: vec![],
+        };
+        // When
+        let first_file_hierarchical_analysis =
+            HierarchicalAnalysis::from_file_analysis(&first_file_analysis);
+        println!("{:?}", first_file_hierarchical_analysis);
+    }
+}
 
 #[cfg(test)]
 mod analyse_all_files_test {

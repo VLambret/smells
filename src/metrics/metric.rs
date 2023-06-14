@@ -15,26 +15,26 @@ pub enum MetricResultType {
     Error(AnalysisError),
 }
 
-pub trait IMetricValue: Debug + IMetricValueClone{
+pub trait IMetricValue: Debug + IMetricValueClone {
     fn get_key(&self) -> &'static str;
     fn get_score(&self) -> MetricResultType;
 }
 
-trait IMetricValueClone {
+pub trait IMetricValueClone {
     fn clone_box(&self) -> Box<dyn IMetricValue>;
 }
 
 impl<T> IMetricValueClone for T
-    where
-        T: IMetricValue + Clone,
+where
+    T: IMetricValue + Clone + 'static,
 {
     fn clone_box(&self) -> Box<dyn IMetricValue> {
         Box::new(self.clone())
     }
 }
 
-impl Clone for Box<dyn IMetricValue>{
-    fn clone(&self) -> Box<dyn IMetricValue>{
+impl Clone for Box<dyn IMetricValue> {
+    fn clone(&self) -> Box<dyn IMetricValue> {
         self.clone_box()
     }
 }

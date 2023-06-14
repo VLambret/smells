@@ -1,5 +1,5 @@
 use crate::metrics::metric::MetricResultType::Score;
-use crate::metrics::metric::{IMetric, IMetricValue, MetricResultType};
+use crate::metrics::metric::{IMetric, IMetricValue, IMetricValueClone, MetricResultType};
 use git2::Repository;
 use std::fmt::Debug;
 use std::fs::read_dir;
@@ -20,7 +20,7 @@ impl IMetric for SocialComplexityMetric {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct SocialComplexityValue {
     authors: Vec<String>,
 }

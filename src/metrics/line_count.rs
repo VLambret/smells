@@ -32,18 +32,18 @@ impl LinesCountMetric {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct LinesCountValue {
     line_count: Result<u64, AnalysisError>,
 }
 
 impl IMetricValue for LinesCountValue {
-    fn get_key(&self) -> &'static str{
+    fn get_key(&self) -> &'static str {
         "lines_count"
     }
 
     fn get_score(&self) -> MetricResultType {
-       match &self.line_count {
+        match &self.line_count {
             Ok(value) => Score(*value),
             Err(error) => Error(error.clone()),
         }
