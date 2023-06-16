@@ -33,8 +33,8 @@ impl LinesCountMetric {
 }
 
 #[derive(Debug, Clone)]
-struct LinesCountValue {
-    line_count: Result<u64, AnalysisError>,
+pub struct LinesCountValue {
+    pub(crate) line_count: Result<u64, AnalysisError>,
 }
 
 impl IMetricValue for LinesCountValue {
@@ -49,31 +49,34 @@ impl IMetricValue for LinesCountValue {
         }
     }
 
-    fn get_line_count(&self) -> &Result<u64, AnalysisError>{
-        &self.line_count
+    fn get_line_count_for_test(&self) -> Result<u64, AnalysisError> {
+        self.line_count.clone()
     }
 
-    fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> { // other: Self
-        if self.line_count.is_err() && other.get_line_count().is_err() {
-            Box::new(LinesCountValue{
+    fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
+        // other: Self
+        if self.line_count.is_err() && other.get_line_count_for_test().is_err() {
+            Box::new(LinesCountValue {
                 line_count: Err(String::from("Analysis error")),
             })
-        }
-        else if self.line_count.is_err(){
-            Box::new(LinesCountValue{
-                line_count: other.get_line_count().clone(),
+        } else if self.line_count.is_err() {
+            Box::new(LinesCountValue {
+                line_count: other.get_line_count_for_test().clone(),
             })
-        }
-        else if other.get_line_count().is_err(){
-            Box::new(LinesCountValue{
+        } else if other.get_line_count_for_test().is_err() {
+            Box::new(LinesCountValue {
                 line_count: self.line_count.clone(),
             })
-        }
-        else{
-            Box::new(LinesCountValue{
-                line_count: Ok(self.line_count.as_ref().unwrap() + other.get_line_count().as_ref().unwrap()),
+        } else {
+            Box::new(LinesCountValue {
+                line_count: Ok(self.line_count.as_ref().unwrap()
+                    + other.get_line_count_for_test().as_ref().unwrap()),
             })
         }
+    }
+
+    fn create_clone_with_value_zero(&self) -> Box<dyn IMetricValue> {
+        Box::new(LinesCountValue { line_count: Ok(0) })
     }
 }
 

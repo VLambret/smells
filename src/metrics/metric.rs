@@ -18,8 +18,9 @@ pub enum MetricResultType {
 pub trait IMetricValue: Debug + IMetricValueClone {
     fn get_key(&self) -> &'static str;
     fn get_score(&self) -> MetricResultType;
-    fn get_line_count(&self) -> &Result<u64, AnalysisError>;
+    fn get_line_count_for_test(&self) -> Result<u64, AnalysisError>;
     fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue>;
+    fn create_clone_with_value_zero(&self) -> Box<dyn IMetricValue>;
 }
 
 pub trait IMetricValueClone {
