@@ -3,6 +3,7 @@ use crate::metrics::metric::{
     AnalysisError, IMetric, IMetricValue, IMetricValueClone, MetricResultType,
 };
 use git2::Repository;
+use serde_json::Value::Null;
 use std::fmt::Debug;
 use std::fs::read_dir;
 use std::path::{Path, PathBuf};
@@ -18,13 +19,19 @@ impl SocialComplexityMetric {
 
 impl IMetric for SocialComplexityMetric {
     fn analyse(&self, _file_path: &Path) -> Box<dyn IMetricValue> {
-        Box::new(SocialComplexityValue { authors: vec![] })
+        Box::new(SocialComplexityValue {
+            authors: Some(vec![]),
+        })
+    }
+
+    fn initialized_to_null(&self) -> Box<dyn IMetricValue> {
+        Box::new(SocialComplexityValue { authors: None })
     }
 }
 
 #[derive(Debug, PartialEq, Clone)]
 struct SocialComplexityValue {
-    authors: Vec<String>,
+    authors: Option<Vec<String>>,
 }
 
 impl IMetricValue for SocialComplexityValue {
@@ -32,8 +39,11 @@ impl IMetricValue for SocialComplexityValue {
         "social_complexity"
     }
 
-    fn get_score(&self) -> MetricResultType {
-        Score(0)
+    fn get_score(&self) -> Option<MetricResultType> {
+        match &self.authors {
+            Some(_) => Some(Score(0)),
+            None => None,
+        }
     }
 
     fn get_line_count_for_test(&self) -> Result<u64, AnalysisError> {
@@ -41,11 +51,15 @@ impl IMetricValue for SocialComplexityValue {
     }
 
     fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
-        todo!()
+        Box::new(SocialComplexityValue {
+            authors: Some(vec![]),
+        })
     }
 
     fn create_clone_with_value_zero(&self) -> Box<dyn IMetricValue> {
-        Box::new(SocialComplexityValue { authors: vec![] })
+        Box::new(SocialComplexityValue {
+            authors: Some(vec![]),
+        })
     }
 }
 

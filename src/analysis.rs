@@ -20,7 +20,7 @@ struct FileAnalysis {
 #[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct TopAnalysis {
     pub file_name: String,
-    pub metrics: BTreeMap<&'static str, MetricResultType>,
+    pub metrics: BTreeMap<&'static str, Option<MetricResultType>>,
     pub folder_content: Option<BTreeMap<String, TopAnalysis>>,
 }
 
@@ -107,16 +107,65 @@ pub fn do_internal_analysis(
     metrics: &[Box<dyn IMetric>],
 ) -> TopAnalysis {
     let root_analysis = HierarchicalAnalysis {
-        file_name: root.to_string_lossy().to_string(),
+        file_name: root.file_name().unwrap().to_string_lossy().to_string(),
         metrics: vec![],
         folder_content: Some(btreemap! {}),
     };
     let updated_root_analysis = build_hierarchical_analysis_structure(
         root_analysis,
-        &analyse_all_files(file_explorer.discover(), metrics),
+        &replace_root_file(
+            &analyse_all_files(file_explorer.discover(), metrics),
+            PathBuf::from(root),
+        ),
     );
 
-    build_top_analysis_structure(updated_root_analysis)
+    if updated_root_analysis
+        .folder_content
+        .clone()
+        .unwrap()
+        .is_empty()
+    {
+        build_top_analysis_structure(set_root_metrics_to_null(updated_root_analysis, metrics))
+    } else {
+        build_top_analysis_structure(updated_root_analysis)
+    }
+}
+
+fn set_root_metrics_to_null(
+    empty_root: HierarchicalAnalysis,
+    metrics: &[Box<dyn IMetric>],
+) -> HierarchicalAnalysis {
+    let null_metrics = metrics
+        .iter()
+        .map(|metric| metric.initialized_to_null())
+        .collect();
+    HierarchicalAnalysis {
+        file_name: empty_root.file_name,
+        metrics: null_metrics,
+        folder_content: empty_root.folder_content,
+    }
+}
+
+fn replace_root_file(file_analyses: &Vec<FileAnalysis>, long_root: PathBuf) -> Vec<FileAnalysis> {
+    /* let file_path_without_root = String::from(file.to_string_lossy().to_string().strip_prefix(&root.to_string_lossy().to_string()).unwrap());
+    let file_path_with_root_filename = root_file_name + &*file_path_without_root;*/
+    file_analyses
+        .iter()
+        .map(|file_analysis| {
+            let file_path = file_analysis
+                .file_path
+                .to_string_lossy()
+                .to_string()
+                .to_owned();
+            let file_path_without_root = file_path
+                .strip_prefix(&long_root.to_string_lossy().to_string())
+                .unwrap();
+            FileAnalysis {
+                file_path: PathBuf::from(file_path_without_root),
+                metrics: file_analysis.metrics.clone(),
+            }
+        })
+        .collect()
 }
 
 fn build_hierarchical_analysis_structure(
@@ -311,7 +360,9 @@ mod analyse1_test {
                 .join("dir2")
                 .join("dir3")
                 .join("file1"),
-            metrics: vec![Box::new(LinesCountValue { line_count: Ok(5) })],
+            metrics: vec![Box::new(LinesCountValue {
+                line_count: Some(Ok(5)),
+            })],
         });
         let second_analysis = HierarchicalAnalysis::from_file_analysis(&FileAnalysis {
             file_path: PathBuf::from("root")
@@ -319,7 +370,9 @@ mod analyse1_test {
                 .join("dir2")
                 .join("dir3b")
                 .join("file2"),
-            metrics: vec![Box::new(LinesCountValue { line_count: Ok(3) })],
+            metrics: vec![Box::new(LinesCountValue {
+                line_count: Some(Ok(3)),
+            })],
         });
         println!(
             "{:?}",
@@ -375,7 +428,8 @@ mod analyse_all_files_test {
                 .metrics
                 .first()
                 .unwrap()
-                .get_score(),
+                .get_score()
+                .unwrap(),
             Error(String::from("Analysis error"))
         );
     }
@@ -405,7 +459,8 @@ mod analyse_all_files_test {
                 .metrics
                 .first()
                 .unwrap()
-                .get_score(),
+                .get_score()
+                .unwrap(),
             (Score(2))
         );
     }
@@ -463,7 +518,14 @@ mod internal_analysis_unit_tests {
         fn analyse(&self, _file_path: &Path) -> Box<dyn IMetricValue> {
             Box::new(FakeMetricValue {
                 metric_key: self.metric_key,
-                value: self.value,
+                value: Some(self.value),
+            })
+        }
+
+        fn initialized_to_null(&self) -> Box<dyn IMetricValue> {
+            Box::new(FakeMetricValue {
+                metric_key: self.metric_key,
+                value: None,
             })
         }
     }
@@ -471,7 +533,7 @@ mod internal_analysis_unit_tests {
     #[derive(Debug, Clone)]
     struct FakeMetricValue {
         metric_key: &'static str,
-        value: u64,
+        value: Option<u64>,
     }
 
     impl IMetricValue for FakeMetricValue {
@@ -479,25 +541,28 @@ mod internal_analysis_unit_tests {
             self.metric_key
         }
 
-        fn get_score(&self) -> MetricResultType {
-            Score(self.value)
+        fn get_score(&self) -> Option<MetricResultType> {
+            match &self.value {
+                Some(value) => Some(Score(*value)),
+                None => None,
+            }
         }
 
         fn get_line_count_for_test(&self) -> Result<u64, AnalysisError> {
-            Ok(self.value.to_owned())
+            Ok(self.value.to_owned().unwrap())
         }
 
         fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
             Box::new(FakeMetricValue {
                 metric_key: self.metric_key,
-                value: self.value + other.get_line_count_for_test().unwrap(),
+                value: Some(self.value.unwrap() + other.get_line_count_for_test().unwrap()),
             })
         }
 
         fn create_clone_with_value_zero(&self) -> Box<dyn IMetricValue> {
             Box::new(FakeMetricValue {
                 metric_key: self.metric_key,
-                value: 0,
+                value: Some(0),
             })
         }
     }
@@ -514,6 +579,10 @@ mod internal_analysis_unit_tests {
         fn analyse(&self, _file_path: &Path) -> Box<dyn IMetricValue> {
             Box::<BrokenMetricValue>::default()
         }
+
+        fn initialized_to_null(&self) -> Box<dyn IMetricValue> {
+            Box::<BrokenMetricValue>::default()
+        }
     }
 
     impl BrokenMetric {
@@ -527,8 +596,8 @@ mod internal_analysis_unit_tests {
             "broken"
         }
 
-        fn get_score(&self) -> MetricResultType {
-            Error(String::from("Analysis error"))
+        fn get_score(&self) -> Option<MetricResultType> {
+            Some(Error(String::from("Analysis error")))
         }
 
         fn get_line_count_for_test(&self) -> Result<u64, AnalysisError> {
@@ -546,7 +615,7 @@ mod internal_analysis_unit_tests {
 
     fn build_analysis_structure(
         root_name: String,
-        metrics: BTreeMap<&'static str, MetricResultType>,
+        metrics: BTreeMap<&'static str, Option<MetricResultType>>,
         content: BTreeMap<String, TopAnalysis>,
     ) -> TopAnalysis {
         TopAnalysis {
@@ -630,8 +699,8 @@ mod internal_analysis_unit_tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake4", Score(4));
-        expected_metrics.insert("fake10", Score(10));
+        expected_metrics.insert("fake4", Some(Score(4)));
+        expected_metrics.insert("fake10", Some(Score(10)));
 
         let expected_file_analysis = TopAnalysis {
             file_name: String::from("file1"),
@@ -669,7 +738,7 @@ mod internal_analysis_unit_tests {
         // Then
         let mut expected_metrics = BTreeMap::new();
         let error_value = Error("Analysis error".to_string());
-        expected_metrics.insert("broken", error_value);
+        expected_metrics.insert("broken", Some(error_value));
 
         let expected_file_analysis = TopAnalysis {
             file_name: String::from("file1"),
@@ -707,7 +776,7 @@ mod internal_analysis_unit_tests {
         // Then
         let expected_root_analysis = TopAnalysis {
             file_name: String::from("empty_root"),
-            metrics: btreemap! {},
+            metrics: btreemap! {"fake0" => None},
             folder_content: Some(BTreeMap::new()),
         };
 
@@ -729,7 +798,7 @@ mod internal_analysis_unit_tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake1", Score(1));
+        expected_metrics.insert("fake1", Some(Score(1)));
 
         let expected_file_analysis = TopAnalysis {
             file_name: String::from("file1"),
@@ -766,7 +835,7 @@ mod internal_analysis_unit_tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake1", Score(1));
+        expected_metrics.insert("fake1", Some(Score(1)));
 
         let expected_file_analysis = TopAnalysis {
             file_name: String::from("file1"),
@@ -880,7 +949,7 @@ mod internal_analysis_unit_tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake1", Score(1));
+        expected_metrics.insert("fake1", Some(Score(1)));
 
         let expected_file1_analysis = TopAnalysis {
             file_name: String::from("file1"),
@@ -894,7 +963,7 @@ mod internal_analysis_unit_tests {
         };
 
         let mut expected_folder_metrics = BTreeMap::new();
-        expected_folder_metrics.insert("fake1", Score(2));
+        expected_folder_metrics.insert("fake1", Some(Score(2)));
 
         let mut expected_folder1_analysis_content = BTreeMap::new();
         expected_folder1_analysis_content.insert(

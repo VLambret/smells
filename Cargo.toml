@@ -29,3 +29,8 @@ inventory = "0.3.6"
 name = "cucumber"
 path = "tests/cucumber/cucumber_test.rs"
 harness = false
+
+[profile.dev]
+debug = true
+debug-assertions = true
+debuginfo = 2
