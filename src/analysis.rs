@@ -270,27 +270,23 @@ fn combine_filenames(current_analysis_name: String, other: String) -> String {
     current_analysis_name
 }
 
-// TODO: refactor using mapping
 fn combine_metrics(
     metrics: Vec<Box<dyn IMetricValue>>,
     other_metrics: Vec<Box<dyn IMetricValue>>,
 ) -> Vec<Box<dyn IMetricValue>> {
-    let mut result_metrics: Vec<Box<dyn IMetricValue>> = vec![];
     let new_metrics = initialize_if_empty(metrics, &other_metrics);
-    for metric1 in new_metrics {
-        for metric2 in other_metrics.clone() {
-            if metric1.get_key() == metric2.get_key() {
-                result_metrics.push(metric1.aggregate(metric2));
-            }
-        }
-        /*let a = other_metrics.clone().into_iter().map(|metric2| {
-            if metric1.get_key() == metric2.get_key() {
-                metric1.aggregate(metric2);
-            }
-        }).collect()
-        result_metrics.join()*/
-    }
-    result_metrics
+    new_metrics
+        .iter()
+        .flat_map(|metric1| {
+            other_metrics.iter().filter_map(|metric2| {
+                if metric1.get_key() == metric2.get_key() {
+                    Some(metric1.aggregate(metric2.clone()))
+                } else {
+                    None
+                }
+            })
+        })
+        .collect()
 }
 
 fn initialize_if_empty(
