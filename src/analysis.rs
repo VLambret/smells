@@ -1,6 +1,5 @@
 use crate::data_sources::file_explorer::{FileExplorer, IFileExplorer};
 use crate::metrics::line_count::LinesCountMetric;
-use crate::metrics::metric::MetricResultType::Score;
 use crate::metrics::metric::{IMetric, IMetricValue, MetricResultType};
 use crate::metrics::social_complexity::SocialComplexityMetric;
 use maplit::btreemap;
@@ -31,13 +30,13 @@ pub struct HierarchicalAnalysis {
 }
 
 impl HierarchicalAnalysis {
-    fn from_file_analysis(file_analysis: &FileAnalysis) -> HierarchicalAnalysis {
+    fn new(file_analysis: &FileAnalysis) -> HierarchicalAnalysis {
         let top_parent = get_top_parent(&file_analysis.file_path);
-        if let Some(top_parent_true) = top_parent {
+        if let Some(some_top_parent) = top_parent {
             HierarchicalAnalysis {
-                file_name: top_parent_true.to_string_lossy().to_string(),
+                file_name: some_top_parent.to_string_lossy().to_string(),
                 metrics: file_analysis.metrics.clone(),
-                folder_content: build_file_analysis_folder_content_one_level_below(file_analysis),
+                folder_content: build_folder_content_one_level_below(file_analysis),
             }
         } else {
             HierarchicalAnalysis {
@@ -49,7 +48,7 @@ impl HierarchicalAnalysis {
     }
 }
 
-fn build_file_analysis_folder_content_one_level_below(
+fn build_folder_content_one_level_below(
     file_analysis: &FileAnalysis,
 ) -> Option<BTreeMap<String, HierarchicalAnalysis>> {
     let file_path_without_top_parent = remove_top_parent(&file_analysis.file_path);
@@ -60,7 +59,7 @@ fn build_file_analysis_folder_content_one_level_below(
         metrics: file_analysis.metrics.clone(),
     };
     Some(
-        btreemap! {current_directory.to_string_lossy().to_string() => HierarchicalAnalysis::from_file_analysis(&one_level_below_file_analysis)},
+        btreemap! {current_directory.to_string_lossy().to_string() => HierarchicalAnalysis::new(&one_level_below_file_analysis)},
     )
 }
 
@@ -112,7 +111,7 @@ pub fn do_internal_analysis(
     };
     let updated_root_analysis = build_hierarchical_analysis_structure(
         root_analysis,
-        &replace_root_file(
+        &remove_root_name_from_files_path(
             &analyse_all_files(file_explorer.discover(), metrics),
             PathBuf::from(root),
         ),
@@ -120,17 +119,16 @@ pub fn do_internal_analysis(
     build_top_analysis_structure(updated_root_analysis)
 }
 
-fn replace_root_file(file_analyses: &Vec<FileAnalysis>, long_root: PathBuf) -> Vec<FileAnalysis> {
+fn remove_root_name_from_files_path(
+    file_analyses: &[FileAnalysis],
+    root: PathBuf,
+) -> Vec<FileAnalysis> {
     file_analyses
         .iter()
         .map(|file_analysis| {
-            let file_path = file_analysis
-                .file_path
-                .to_string_lossy()
-                .to_string()
-                .to_owned();
+            let file_path = file_analysis.file_path.to_string_lossy().to_string();
             let file_path_without_root = file_path
-                .strip_prefix(&long_root.to_string_lossy().to_string())
+                .strip_prefix(&root.to_string_lossy().to_string())
                 .unwrap();
             FileAnalysis {
                 file_path: PathBuf::from(file_path_without_root),
@@ -147,10 +145,10 @@ fn build_hierarchical_analysis_structure(
     if file_analyses.is_empty() {
         root_analysis
     } else {
-        let first_file_analysis = file_analyses.first().unwrap();
-        let first_file_top_analysis = HierarchicalAnalysis::from_file_analysis(first_file_analysis);
+        let current_file_analysis = file_analyses.first().unwrap();
+        let current_file_top_analysis = HierarchicalAnalysis::new(current_file_analysis);
         let updated_root_analysis =
-            combine_hierarchical_analysis(root_analysis, first_file_top_analysis);
+            combine_hierarchical_analysis(root_analysis, current_file_top_analysis);
         build_hierarchical_analysis_structure(updated_root_analysis, &file_analyses[1..])
     }
 }
@@ -163,15 +161,16 @@ fn build_top_analysis_structure(hierarchical_analysis: HierarchicalAnalysis) -> 
         .collect();
 
     let folder_content: Option<BTreeMap<String, TopAnalysis>> =
-        match hierarchical_analysis.folder_content {
-            None => None,
-            Some(content_entries) => Some(
-                content_entries
-                    .into_iter()
-                    .map(|entry| (entry.0, build_top_analysis_structure(entry.1)))
-                    .collect(),
-            ),
-        };
+        hierarchical_analysis.folder_content.map(|content_entries| {
+            content_entries
+                .into_iter()
+                .map(|content_entry| {
+                    let analysis_key = content_entry.0;
+                    let analysis = content_entry.1;
+                    (analysis_key, build_top_analysis_structure(analysis))
+                })
+                .collect()
+        });
 
     TopAnalysis {
         file_name: hierarchical_analysis.file_name,
@@ -209,6 +208,7 @@ fn get_file_metrics_value(
 }
 
 // TODO: refactor
+// TODO: finish refacto
 fn combine_folder_content(
     root_content_entries: Option<BTreeMap<String, HierarchicalAnalysis>>,
     other_content_entries: Option<BTreeMap<String, HierarchicalAnalysis>>,
@@ -220,7 +220,7 @@ fn combine_folder_content(
             .unwrap()
             .contains_key(&root_content_entry.0)
         {
-            let var = combine_hierarchical_analysis(
+            let updated_current_analysis = combine_hierarchical_analysis(
                 root_content_entry.1.to_owned(),
                 other_content_entries
                     .clone()
@@ -229,9 +229,10 @@ fn combine_folder_content(
                     .unwrap()
                     .clone(),
             );
-            updated_content.push(var);
+            updated_content.push(updated_current_analysis);
         } else {
-            updated_content.push(root_content_entry.1.clone());
+            let current_analysis = root_content_entry.1.clone();
+            updated_content.push(current_analysis);
         }
     }
 
@@ -320,14 +321,13 @@ mod analyse1_test {
             metrics: vec![],
         };
         // When
-        let first_file_hierarchical_analysis =
-            HierarchicalAnalysis::from_file_analysis(&first_file_analysis);
+        let first_file_hierarchical_analysis = HierarchicalAnalysis::new(&first_file_analysis);
         println!("{:?}", first_file_hierarchical_analysis);
     }
 
     #[test]
     fn combine_hierarchical_analysis_test() {
-        let first_analysis = HierarchicalAnalysis::from_file_analysis(&FileAnalysis {
+        let first_analysis = HierarchicalAnalysis::new(&FileAnalysis {
             file_path: PathBuf::from("root")
                 .join("dir1")
                 .join("dir2")
@@ -335,7 +335,7 @@ mod analyse1_test {
                 .join("file1"),
             metrics: vec![Box::new(LinesCountValue { line_count: Ok(5) })],
         });
-        let second_analysis = HierarchicalAnalysis::from_file_analysis(&FileAnalysis {
+        let second_analysis = HierarchicalAnalysis::new(&FileAnalysis {
             file_path: PathBuf::from("root")
                 .join("dir1")
                 .join("dir2")
