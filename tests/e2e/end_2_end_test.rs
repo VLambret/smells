@@ -200,10 +200,7 @@ mod end_2_end {
         //then
         let expected_stdout = r#"{
             "folder_with_one_empty_folder":{
-                "metrics": {
-                    "lines_count": null,
-                    "social_complexity": null
-                },
+                "metrics": {},
                 "folder_content_analyses":[]
             }
         }"#;

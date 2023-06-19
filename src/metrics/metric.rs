@@ -6,7 +6,6 @@ pub type AnalysisError = String;
 
 pub trait IMetric: Debug {
     fn analyse(&self, file_path: &Path) -> Box<dyn IMetricValue>;
-    fn initialized_to_null(&self) -> Box<dyn IMetricValue>;
 }
 
 // Ou Result<MST, String> ?
@@ -30,7 +29,7 @@ impl Serialize for MetricResultType {
 
 pub trait IMetricValue: Debug + IMetricValueClone {
     fn get_key(&self) -> &'static str;
-    fn get_score(&self) -> Option<MetricResultType>;
+    fn get_score(&self) -> MetricResultType;
     fn get_line_count_for_test(&self) -> Result<u64, AnalysisError>;
     fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue>;
     fn create_clone_with_value_zero(&self) -> Box<dyn IMetricValue>;
