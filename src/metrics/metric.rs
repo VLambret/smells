@@ -9,7 +9,7 @@ pub trait IMetric: Debug {
     fn analyse(&self, file_path: &Path) -> Box<dyn IMetricValue>;
 }
 
-// TODO: Ou Result<MST, String> ?
+//TODO: change to a simple type, or will there be other types of MetricScoreType ?
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MetricScoreType {
     Score(u64),

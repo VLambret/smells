@@ -37,36 +37,16 @@ impl Serialize for MetricScoreOrError {
 fn build_json_folder_analysis(folder: &TopAnalysis) -> Value {
     let folder_content_json = {
         if let Some(content) = &folder.folder_content {
-            content
-                .values()
-                .map(|analysis| convert_analysis_to_json(analysis))
-                .collect()
+            content.values().map(convert_analysis_to_json).collect()
         } else {
-            Vec::new()
+            vec![]
         }
     };
-
-    let folder_metrics: BTreeMap<_, _> = folder
-        .metrics
-        .clone()
-        .into_iter()
-        .map(|metric| {
-            let (metric_key, metric_score_result) = metric;
-            if let Ok(metric_score) = metric_score_result {
-                (metric_key, MetricScoreOrError::Score(metric_score))
-            } else {
-                (
-                    metric_key,
-                    MetricScoreOrError::Error(String::from("Analysis error")),
-                )
-            }
-        })
-        .collect();
 
     json!(
         {
             folder.file_name.to_owned():{
-            "metrics": folder_metrics,
+            "metrics": build_analysis_metrics_for_json(folder),
             "folder_content_analyses": folder_content_json
              }
         }
@@ -74,7 +54,17 @@ fn build_json_folder_analysis(folder: &TopAnalysis) -> Value {
 }
 
 fn build_json_file_analysis(file: &TopAnalysis) -> Value {
-    let file_metrics: BTreeMap<_, _> = file
+    json!(
+        {
+            &file.file_name :{
+            "metrics": build_analysis_metrics_for_json(file)
+            }
+        }
+    )
+}
+
+fn build_analysis_metrics_for_json(folder: &TopAnalysis) -> BTreeMap<&str, MetricScoreOrError> {
+    folder
         .metrics
         .clone()
         .into_iter()
@@ -89,15 +79,7 @@ fn build_json_file_analysis(file: &TopAnalysis) -> Value {
                 )
             }
         })
-        .collect();
-
-    json!(
-        {
-            &file.file_name :{
-            "metrics": file_metrics
-            }
-        }
-    )
+        .collect()
 }
 
 fn format_json_output(json_output: &String) -> String {
