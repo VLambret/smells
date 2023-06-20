@@ -32,8 +32,8 @@ impl IMetricValue for SocialComplexityValue {
         "social_complexity"
     }
 
-    fn get_score(&self) -> MetricScoreType {
-        Score(0)
+    fn get_score(&self) -> Result<MetricScoreType, AnalysisError> {
+        Ok(Score(0))
     }
 
     fn get_value(&self) -> Result<MetricValueType, AnalysisError> {

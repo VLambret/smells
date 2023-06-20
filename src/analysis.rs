@@ -1,9 +1,9 @@
 use crate::data_sources::file_explorer::{FileExplorer, IFileExplorer};
 use crate::metrics::line_count::LinesCountMetric;
-use crate::metrics::metric::{IMetric, IMetricValue, MetricScoreType};
+use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreType};
 use crate::metrics::social_complexity::SocialComplexityMetric;
 use maplit::btreemap;
-use serde::Serialize;
+use serde::Serializer;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
@@ -15,10 +15,10 @@ struct FileAnalysis {
     metrics: Vec<Box<dyn IMetricValue>>,
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct TopAnalysis {
     pub file_name: String,
-    pub metrics: BTreeMap<&'static str, MetricScoreType>,
+    pub metrics: BTreeMap<&'static str, Result<MetricScoreType, AnalysisError>>,
     pub folder_content: Option<BTreeMap<String, TopAnalysis>>,
 }
 
@@ -259,7 +259,6 @@ fn combine_hierarchical_analysis(
     }
 }
 
-// TODO: return a Result<String, Error>
 fn combine_filenames(current_analysis_name: String, _other: String) -> String {
     current_analysis_name
 }
@@ -349,7 +348,7 @@ mod analyse_all_files_test {
     use super::*;
     use crate::analysis::internal_analysis_unit_tests::{BrokenMetric, FakeMetric};
     use crate::data_sources::file_explorer::FakeFileExplorer;
-    use crate::metrics::metric::MetricScoreType::{Error, Score};
+    use crate::metrics::metric::MetricScoreType::Score;
 
     #[test]
     fn analysis_with_0_file_should_return_empty_hashmap() {
@@ -392,7 +391,7 @@ mod analyse_all_files_test {
                 .first()
                 .unwrap()
                 .get_score(),
-            Error(String::from("Analysis error"))
+            Err(String::from("Analysis error"))
         );
     }
 
@@ -422,7 +421,7 @@ mod analyse_all_files_test {
                 .first()
                 .unwrap()
                 .get_score(),
-            (Score(2))
+            Ok(Score(2))
         );
     }
 
@@ -451,7 +450,7 @@ mod analyse_all_files_test {
 mod internal_analysis_unit_tests {
     use super::*;
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
-    use crate::metrics::metric::MetricScoreType::{Error, Score};
+    use crate::metrics::metric::MetricScoreType::Score;
     use crate::metrics::metric::{AnalysisError, MetricScoreType, MetricValueType};
     use maplit::btreemap;
     use std::fmt::Debug;
@@ -495,8 +494,8 @@ mod internal_analysis_unit_tests {
             self.metric_key
         }
 
-        fn get_score(&self) -> MetricScoreType {
-            Score(self.value)
+        fn get_score(&self) -> Result<MetricScoreType, AnalysisError> {
+            Ok(Score(self.value))
         }
 
         fn get_value(&self) -> Result<MetricValueType, AnalysisError> {
@@ -548,8 +547,8 @@ mod internal_analysis_unit_tests {
             "broken"
         }
 
-        fn get_score(&self) -> MetricScoreType {
-            Error(String::from("Analysis error"))
+        fn get_score(&self) -> Result<MetricScoreType, AnalysisError> {
+            Err(String::from("Analysis error"))
         }
 
         fn get_value(&self) -> Result<MetricValueType, AnalysisError> {
@@ -567,7 +566,7 @@ mod internal_analysis_unit_tests {
 
     fn build_analysis_structure(
         root_name: String,
-        metrics: BTreeMap<&'static str, MetricScoreType>,
+        metrics: BTreeMap<&'static str, Result<MetricScoreType, AnalysisError>>,
         content: BTreeMap<String, TopAnalysis>,
     ) -> TopAnalysis {
         TopAnalysis {
@@ -651,8 +650,8 @@ mod internal_analysis_unit_tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake4", Score(4));
-        expected_metrics.insert("fake10", Score(10));
+        expected_metrics.insert("fake4", Ok(Score(4)));
+        expected_metrics.insert("fake10", Ok(Score(10)));
 
         let expected_file_analysis = TopAnalysis {
             file_name: String::from("file1"),
@@ -689,7 +688,7 @@ mod internal_analysis_unit_tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        let error_value = Error("Analysis error".to_string());
+        let error_value = Err("Analysis error".to_string());
         expected_metrics.insert("broken", error_value);
 
         let expected_file_analysis = TopAnalysis {
@@ -750,7 +749,7 @@ mod internal_analysis_unit_tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake1", Score(1));
+        expected_metrics.insert("fake1", Ok(Score(1)));
 
         let expected_file_analysis = TopAnalysis {
             file_name: String::from("file1"),
@@ -787,7 +786,7 @@ mod internal_analysis_unit_tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake1", Score(1));
+        expected_metrics.insert("fake1", Ok(Score(1)));
 
         let expected_file_analysis = TopAnalysis {
             file_name: String::from("file1"),
@@ -901,7 +900,7 @@ mod internal_analysis_unit_tests {
 
         // Then
         let mut expected_metrics = BTreeMap::new();
-        expected_metrics.insert("fake1", Score(1));
+        expected_metrics.insert("fake1", Ok(Score(1)));
 
         let expected_file1_analysis = TopAnalysis {
             file_name: String::from("file1"),
@@ -915,7 +914,7 @@ mod internal_analysis_unit_tests {
         };
 
         let mut expected_folder_metrics = BTreeMap::new();
-        expected_folder_metrics.insert("fake1", Score(2));
+        expected_folder_metrics.insert("fake1", Ok(Score(2)));
 
         let mut expected_folder1_analysis_content = BTreeMap::new();
         expected_folder1_analysis_content.insert(

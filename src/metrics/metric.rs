@@ -13,19 +13,6 @@ pub trait IMetric: Debug {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MetricScoreType {
     Score(u64),
-    Error(AnalysisError),
-}
-
-impl Serialize for MetricScoreType {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            Self::Score(value) => serializer.serialize_u64(*value),
-            Self::Error(error) => serializer.serialize_str(error),
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -60,7 +47,7 @@ impl Add for MetricValueType {
 
 pub trait IMetricValue: Debug + IMetricValueClone {
     fn get_key(&self) -> &'static str;
-    fn get_score(&self) -> MetricScoreType;
+    fn get_score(&self) -> Result<MetricScoreType, AnalysisError>;
     fn get_value(&self) -> Result<MetricValueType, AnalysisError>;
     fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue>;
     fn create_clone_with_value_zero(&self) -> Box<dyn IMetricValue>;

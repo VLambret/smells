@@ -1,5 +1,8 @@
 use crate::analysis::TopAnalysis;
+use crate::metrics::metric::{AnalysisError, MetricScoreType};
+use serde::{Serialize, Serializer};
 use serde_json::{json, Value};
+use std::collections::BTreeMap;
 
 // print analysis result json
 pub fn convert_analysis_to_formatted_json(analysis: TopAnalysis) -> String {
@@ -14,18 +17,56 @@ pub fn convert_analysis_to_json(analysis: &TopAnalysis) -> Value {
     }
 }
 
-fn build_json_folder_analysis(folder: &TopAnalysis) -> Value {
-    let mut folder_content_json = Vec::new();
-    if let Some(content) = &folder.folder_content {
-        for analysis in content.values() {
-            let json_item = convert_analysis_to_json(analysis);
-            folder_content_json.push(json_item);
+enum MetricScoreOrError {
+    Score(MetricScoreType),
+    Error(AnalysisError),
+}
+
+impl Serialize for MetricScoreOrError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            Self::Score(MetricScoreType::Score(value)) => serializer.serialize_u64(*value),
+            Self::Error(error) => serializer.serialize_str(error),
         }
     }
+}
+
+fn build_json_folder_analysis(folder: &TopAnalysis) -> Value {
+    let folder_content_json = {
+        if let Some(content) = &folder.folder_content {
+            content
+                .values()
+                .map(|analysis| convert_analysis_to_json(analysis))
+                .collect()
+        } else {
+            Vec::new()
+        }
+    };
+
+    let folder_metrics: BTreeMap<_, _> = folder
+        .metrics
+        .clone()
+        .into_iter()
+        .map(|metric| {
+            let (metric_key, metric_score_result) = metric;
+            if let Ok(metric_score) = metric_score_result {
+                (metric_key, MetricScoreOrError::Score(metric_score))
+            } else {
+                (
+                    metric_key,
+                    MetricScoreOrError::Error(String::from("Analysis error")),
+                )
+            }
+        })
+        .collect();
+
     json!(
         {
             folder.file_name.to_owned():{
-            "metrics": folder.metrics,
+            "metrics": folder_metrics,
             "folder_content_analyses": folder_content_json
              }
         }
@@ -33,10 +74,27 @@ fn build_json_folder_analysis(folder: &TopAnalysis) -> Value {
 }
 
 fn build_json_file_analysis(file: &TopAnalysis) -> Value {
+    let file_metrics: BTreeMap<_, _> = file
+        .metrics
+        .clone()
+        .into_iter()
+        .map(|metric| {
+            let (metric_key, metric_score_result) = metric;
+            if let Ok(metric_score) = metric_score_result {
+                (metric_key, MetricScoreOrError::Score(metric_score))
+            } else {
+                (
+                    metric_key,
+                    MetricScoreOrError::Error(String::from("Analysis error")),
+                )
+            }
+        })
+        .collect();
+
     json!(
         {
             &file.file_name :{
-            "metrics": file.metrics
+            "metrics": file_metrics
             }
         }
     )

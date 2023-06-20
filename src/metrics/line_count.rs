@@ -1,7 +1,8 @@
-use crate::metrics::metric::MetricScoreType::{Error, Score};
+use crate::metrics::metric::MetricScoreType::Score;
 use crate::metrics::metric::{
     AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType,
 };
+use serde::{Serialize, Serializer};
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::Read;
@@ -44,10 +45,10 @@ impl IMetricValue for LinesCountValue {
         "lines_count"
     }
 
-    fn get_score(&self) -> MetricScoreType {
+    fn get_score(&self) -> Result<MetricScoreType, AnalysisError> {
         match &self.line_count {
-            Ok(value) => Score(*value),
-            Err(error) => Error(error.clone()),
+            Ok(value) => Ok(Score(*value)),
+            Err(_) => Err(String::from("Analysis error")),
         }
     }
 
