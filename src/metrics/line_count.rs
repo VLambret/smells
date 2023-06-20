@@ -1,5 +1,7 @@
-use crate::metrics::metric::MetricResultType::{Error, Score};
-use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricResultType};
+use crate::metrics::metric::MetricScoreType::{Error, Score};
+use crate::metrics::metric::{
+    AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType,
+};
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::Read;
@@ -42,35 +44,47 @@ impl IMetricValue for LinesCountValue {
         "lines_count"
     }
 
-    fn get_score(&self) -> MetricResultType {
+    fn get_score(&self) -> MetricScoreType {
         match &self.line_count {
             Ok(value) => Score(*value),
             Err(error) => Error(error.clone()),
         }
     }
 
-    fn get_line_count_for_test(&self) -> Result<u64, AnalysisError> {
-        self.line_count.clone()
+    fn get_value(&self) -> Result<MetricValueType, AnalysisError> {
+        match &self.line_count {
+            Ok(line_count_value) => Ok(MetricValueType::Number(*line_count_value)),
+            Err(line_count_error) => Err(line_count_error.clone()),
+        }
     }
 
     fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
         // other: Self
-        if self.line_count.is_err() && other.get_line_count_for_test().is_err() {
+        if self.line_count.is_err() && other.get_value().is_err() {
             Box::new(LinesCountValue {
                 line_count: Err(String::from("Analysis error")),
             })
         } else if self.line_count.is_err() {
+            let other_line_count_value = other.get_value();
+            let line_count = match other_line_count_value {
+                Ok(MetricValueType::Number(count)) => count,
+                _ => 0,
+            };
             Box::new(LinesCountValue {
-                line_count: other.get_line_count_for_test().clone(),
+                line_count: Ok(line_count),
             })
-        } else if other.get_line_count_for_test().is_err() {
+        } else if other.get_value().is_err() {
             Box::new(LinesCountValue {
                 line_count: self.line_count.clone(),
             })
         } else {
+            let other_line_count_value = other.get_value();
+            let line_count = match other_line_count_value {
+                Ok(MetricValueType::Number(count)) => count,
+                _ => 0,
+            };
             Box::new(LinesCountValue {
-                line_count: Ok(self.line_count.as_ref().unwrap()
-                    + other.get_line_count_for_test().as_ref().unwrap()),
+                line_count: Ok(self.line_count.as_ref().unwrap() + line_count),
             })
         }
     }

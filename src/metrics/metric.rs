@@ -8,14 +8,14 @@ pub trait IMetric: Debug {
     fn analyse(&self, file_path: &Path) -> Box<dyn IMetricValue>;
 }
 
-// Ou Result<MST, String> ?
+// TODO: Ou Result<MST, String> ?
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MetricResultType {
+pub enum MetricScoreType {
     Score(u64),
     Error(AnalysisError),
 }
 
-impl Serialize for MetricResultType {
+impl Serialize for MetricScoreType {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -27,11 +27,16 @@ impl Serialize for MetricResultType {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MetricValueType {
+    Number(u64),
+    Authors(Vec<String>),
+}
+
 pub trait IMetricValue: Debug + IMetricValueClone {
     fn get_key(&self) -> &'static str;
-    fn get_score(&self) -> MetricResultType;
-    //TODO: check ça
-    fn get_line_count_for_test(&self) -> Result<u64, AnalysisError>;
+    fn get_score(&self) -> MetricScoreType;
+    fn get_value(&self) -> Result<MetricValueType, AnalysisError>;
     fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue>;
     fn create_clone_with_value_zero(&self) -> Box<dyn IMetricValue>;
 }

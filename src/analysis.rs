@@ -1,6 +1,6 @@
 use crate::data_sources::file_explorer::{FileExplorer, IFileExplorer};
 use crate::metrics::line_count::LinesCountMetric;
-use crate::metrics::metric::{IMetric, IMetricValue, MetricResultType};
+use crate::metrics::metric::{IMetric, IMetricValue, MetricScoreType};
 use crate::metrics::social_complexity::SocialComplexityMetric;
 use maplit::btreemap;
 use serde::Serialize;
@@ -18,7 +18,7 @@ struct FileAnalysis {
 #[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct TopAnalysis {
     pub file_name: String,
-    pub metrics: BTreeMap<&'static str, MetricResultType>,
+    pub metrics: BTreeMap<&'static str, MetricScoreType>,
     pub folder_content: Option<BTreeMap<String, TopAnalysis>>,
 }
 
@@ -349,7 +349,7 @@ mod analyse_all_files_test {
     use super::*;
     use crate::analysis::internal_analysis_unit_tests::{BrokenMetric, FakeMetric};
     use crate::data_sources::file_explorer::FakeFileExplorer;
-    use crate::metrics::metric::MetricResultType::{Error, Score};
+    use crate::metrics::metric::MetricScoreType::{Error, Score};
 
     #[test]
     fn analysis_with_0_file_should_return_empty_hashmap() {
@@ -451,8 +451,8 @@ mod analyse_all_files_test {
 mod internal_analysis_unit_tests {
     use super::*;
     use crate::data_sources::file_explorer::{FakeFileExplorer, IFileExplorer};
-    use crate::metrics::metric::MetricResultType::{Error, Score};
-    use crate::metrics::metric::{AnalysisError, MetricResultType};
+    use crate::metrics::metric::MetricScoreType::{Error, Score};
+    use crate::metrics::metric::{AnalysisError, MetricScoreType, MetricValueType};
     use maplit::btreemap;
     use std::fmt::Debug;
     use std::path::Path;
@@ -495,18 +495,23 @@ mod internal_analysis_unit_tests {
             self.metric_key
         }
 
-        fn get_score(&self) -> MetricResultType {
+        fn get_score(&self) -> MetricScoreType {
             Score(self.value)
         }
 
-        fn get_line_count_for_test(&self) -> Result<u64, AnalysisError> {
-            Ok(self.value.to_owned())
+        fn get_value(&self) -> Result<MetricValueType, AnalysisError> {
+            Ok(MetricValueType::Number(self.value.to_owned()))
         }
 
         fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
+            let line_count_value = other.get_value().clone();
+            let line_count = match line_count_value {
+                Ok(MetricValueType::Number(count)) => count,
+                _ => 0,
+            };
             Box::new(FakeMetricValue {
                 metric_key: self.metric_key,
-                value: self.value + other.get_line_count_for_test().unwrap(),
+                value: self.value + line_count,
             })
         }
 
@@ -543,12 +548,12 @@ mod internal_analysis_unit_tests {
             "broken"
         }
 
-        fn get_score(&self) -> MetricResultType {
+        fn get_score(&self) -> MetricScoreType {
             Error(String::from("Analysis error"))
         }
 
-        fn get_line_count_for_test(&self) -> Result<u64, AnalysisError> {
-            todo!()
+        fn get_value(&self) -> Result<MetricValueType, AnalysisError> {
+            Err(String::from("Analysis error"))
         }
 
         fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
@@ -562,7 +567,7 @@ mod internal_analysis_unit_tests {
 
     fn build_analysis_structure(
         root_name: String,
-        metrics: BTreeMap<&'static str, MetricResultType>,
+        metrics: BTreeMap<&'static str, MetricScoreType>,
         content: BTreeMap<String, TopAnalysis>,
     ) -> TopAnalysis {
         TopAnalysis {
