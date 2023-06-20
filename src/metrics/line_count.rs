@@ -59,34 +59,30 @@ impl IMetricValue for LinesCountValue {
     }
 
     fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
-        // other: Self
-        if self.line_count.is_err() && other.get_value().is_err() {
-            Box::new(LinesCountValue {
-                line_count: Err(String::from("Analysis error")),
-            })
-        } else if self.line_count.is_err() {
-            let other_line_count_value = other.get_value();
-            let line_count = match other_line_count_value {
-                Ok(MetricValueType::Number(count)) => count,
-                _ => 0,
-            };
-            Box::new(LinesCountValue {
-                line_count: Ok(line_count),
-            })
-        } else if other.get_value().is_err() {
-            Box::new(LinesCountValue {
-                line_count: self.line_count.clone(),
-            })
-        } else {
-            let other_line_count_value = other.get_value();
-            let line_count = match other_line_count_value {
-                Ok(MetricValueType::Number(count)) => count,
-                _ => 0,
-            };
-            Box::new(LinesCountValue {
-                line_count: Ok(self.line_count.as_ref().unwrap() + line_count),
-            })
-        }
+        let line_count_value: Result<u64, AnalysisError> = {
+            match (self.line_count.as_ref(), other.get_value().as_ref()) {
+                (Err(_), Err(_)) => Err(String::from("Analysis error")),
+                (Err(_), _) => match other.get_value() {
+                    Ok(MetricValueType::Number(value)) => Ok(value),
+                    _ => Ok(0),
+                },
+                (_, Err(_)) => match self.get_value() {
+                    Ok(MetricValueType::Number(value)) => Ok(value),
+                    _ => Ok(0),
+                },
+                _ => {
+                    let self_line_count = self.get_value().unwrap();
+                    let other_line_count = other.get_value().unwrap();
+                    match self_line_count + other_line_count {
+                        MetricValueType::Number(value) => Ok(value),
+                        _ => Ok(0),
+                    }
+                }
+            }
+        };
+        Box::new(LinesCountValue {
+            line_count: line_count_value,
+        })
     }
 
     fn create_clone_with_value_zero(&self) -> Box<dyn IMetricValue> {

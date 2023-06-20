@@ -1,5 +1,6 @@
 use serde::{Serialize, Serializer};
 use std::fmt::Debug;
+use std::ops::Add;
 use std::path::Path;
 
 pub type AnalysisError = String;
@@ -31,6 +32,30 @@ impl Serialize for MetricScoreType {
 pub enum MetricValueType {
     Number(u64),
     Authors(Vec<String>),
+}
+
+impl Add for MetricValueType {
+    type Output = MetricValueType;
+
+    fn add(self, other: MetricValueType) -> MetricValueType {
+        match (self, other) {
+            (MetricValueType::Number(n1), MetricValueType::Number(n2)) => {
+                MetricValueType::Number(n1 + n2)
+            }
+            (MetricValueType::Authors(mut authors1), MetricValueType::Authors(authors2)) => {
+                authors1.extend(authors2);
+                MetricValueType::Authors(authors1)
+            }
+            (MetricValueType::Number(n), MetricValueType::Authors(mut authors)) => {
+                authors.push(n.to_string());
+                MetricValueType::Authors(authors)
+            }
+            (MetricValueType::Authors(mut authors), MetricValueType::Number(n)) => {
+                authors.insert(0, n.to_string());
+                MetricValueType::Authors(authors)
+            }
+        }
+    }
 }
 
 pub trait IMetricValue: Debug + IMetricValueClone {
