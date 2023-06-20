@@ -1,4 +1,4 @@
-use crate::analysis::TopAnalysis;
+use crate::analysis_module::analysis::TopAnalysis;
 use crate::metrics::metric::{AnalysisError, MetricScoreType};
 use serde::{Serialize, Serializer};
 use serde_json::{json, Value};

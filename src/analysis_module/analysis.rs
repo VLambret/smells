@@ -1,9 +1,6 @@
 use crate::data_sources::file_explorer::{FileExplorer, IFileExplorer};
-use crate::metrics::line_count::LinesCountMetric;
 use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreType};
-use crate::metrics::social_complexity::SocialComplexityMetric;
 use maplit::btreemap;
-use serde::Serializer;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
@@ -74,19 +71,6 @@ fn get_top_parent(file: &Path) -> Option<PathBuf> {
         .take_while(|&parent| parent != Path::new(""))
         .last()
         .map(PathBuf::from)
-}
-
-/* **************************************************************** */
-
-pub fn do_analysis(root: PathBuf) -> TopAnalysis {
-    do_internal_analysis(
-        &root,
-        &FileExplorer::new(&root),
-        &[
-            Box::new(LinesCountMetric::new()),
-            Box::new(SocialComplexityMetric::new()),
-        ],
-    )
 }
 
 /* **************************************************************** */
@@ -349,7 +333,7 @@ mod analyse1_test {
 #[cfg(test)]
 mod analyse_all_files_test {
     use super::*;
-    use crate::analysis::internal_analysis_unit_tests::{BrokenMetric, FakeMetric};
+    use crate::analysis_module::analysis::internal_analysis_unit_tests::{BrokenMetric, FakeMetric};
     use crate::data_sources::file_explorer::FakeFileExplorer;
     use crate::metrics::metric::MetricScoreType::Score;
 

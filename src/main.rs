@@ -1,10 +1,10 @@
-use crate::analysis::do_analysis;
+use crate::analysis_module::public_analysis::do_analysis;
 use crate::formatters::json::convert_analysis_to_formatted_json;
 use crate::viewers::cli::print_formatted_json_output;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
-mod analysis;
+mod analysis_module;
 mod data_sources;
 mod formatters;
 mod metrics;
