@@ -68,20 +68,12 @@ fn remove_top_parent(current_file: &PathBuf) -> PathBuf {
     PathBuf::from(current_file.strip_prefix(top_parent).unwrap())
 }
 
-fn get_top_parent(file: &PathBuf) -> Option<PathBuf> {
-    let mut top_parent = file.clone();
-    while let Some(parent) = top_parent.parent() {
-        if parent != Path::new("") {
-            top_parent = parent.to_path_buf();
-        } else {
-            break;
-        }
-    }
-    if top_parent == *file {
-        None
-    } else {
-        Some(top_parent)
-    }
+fn get_top_parent(file: &Path) -> Option<PathBuf> {
+    file.ancestors()
+        .skip(1)
+        .take_while(|&parent| parent != Path::new(""))
+        .last()
+        .map(PathBuf::from)
 }
 
 /* **************************************************************** */
