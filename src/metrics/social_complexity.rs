@@ -1,9 +1,6 @@
 use crate::metrics::metric::MetricResultType::Score;
-use crate::metrics::metric::{
-    AnalysisError, IMetric, IMetricValue, IMetricValueClone, MetricResultType,
-};
+use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricResultType};
 use git2::Repository;
-use serde_json::Value::Null;
 use std::fmt::Debug;
 use std::fs::read_dir;
 use std::path::{Path, PathBuf};
@@ -41,7 +38,7 @@ impl IMetricValue for SocialComplexityValue {
         todo!()
     }
 
-    fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
+    fn aggregate(&self, _other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
         Box::new(SocialComplexityValue { authors: vec![] })
     }
 

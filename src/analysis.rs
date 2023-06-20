@@ -157,8 +157,7 @@ fn build_top_analysis_structure(hierarchical_analysis: HierarchicalAnalysis) -> 
             content_entries
                 .into_iter()
                 .map(|content_entry| {
-                    let analysis_key = content_entry.0;
-                    let analysis = content_entry.1;
+                    let (analysis_key, analysis) = content_entry;
                     (analysis_key, build_top_analysis_structure(analysis))
                 })
                 .collect()
@@ -200,41 +199,42 @@ fn get_file_metrics_value(
 }
 
 // TODO: refactor
-// TODO: finish refacto
 fn combine_folder_content(
     root_content_entries: Option<BTreeMap<String, HierarchicalAnalysis>>,
     other_content_entries: Option<BTreeMap<String, HierarchicalAnalysis>>,
 ) -> Option<BTreeMap<String, HierarchicalAnalysis>> {
     let mut updated_content: Vec<HierarchicalAnalysis> = vec![];
     for root_content_entry in root_content_entries.clone().unwrap() {
+        let (root_content_entry_key, root_content_entry_analysis) = root_content_entry;
         if other_content_entries
             .clone()
             .unwrap()
-            .contains_key(&root_content_entry.0)
+            .contains_key(&root_content_entry_key)
         {
             let updated_current_analysis = combine_hierarchical_analysis(
-                root_content_entry.1.to_owned(),
+                root_content_entry_analysis.to_owned(),
                 other_content_entries
                     .clone()
                     .unwrap()
-                    .get(&root_content_entry.0)
+                    .get(&root_content_entry_key)
                     .unwrap()
                     .clone(),
             );
             updated_content.push(updated_current_analysis);
         } else {
-            let current_analysis = root_content_entry.1.clone();
+            let current_analysis = root_content_entry_analysis.clone();
             updated_content.push(current_analysis);
         }
     }
 
     for other_content_entry in other_content_entries.unwrap() {
+        let (other_content_entry_key, other_content_entry_analysis) = other_content_entry;
         if !root_content_entries
             .clone()
             .unwrap()
-            .contains_key(&other_content_entry.0)
+            .contains_key(&other_content_entry_key)
         {
-            updated_content.push(other_content_entry.1);
+            updated_content.push(other_content_entry_analysis);
         }
     }
 
@@ -250,7 +250,7 @@ fn combine_hierarchical_analysis(
     other_analysis: HierarchicalAnalysis,
 ) -> HierarchicalAnalysis {
     HierarchicalAnalysis {
-        file_name: combine_filenames(root_analysis.file_name, other_analysis.file_name), // XXX: Error case: top1 and top2 does not have the same filename
+        file_name: combine_filenames(root_analysis.file_name, other_analysis.file_name),
         metrics: combine_metrics(root_analysis.metrics, other_analysis.metrics),
         folder_content: combine_folder_content(
             root_analysis.folder_content,
@@ -259,21 +259,23 @@ fn combine_hierarchical_analysis(
     }
 }
 
-fn combine_filenames(current_analysis_name: String, other: String) -> String {
+// TODO: return a Result<String, Error>
+fn combine_filenames(current_analysis_name: String, _other: String) -> String {
     current_analysis_name
 }
 
 fn combine_metrics(
-    metrics: Vec<Box<dyn IMetricValue>>,
+    current_metrics: Vec<Box<dyn IMetricValue>>,
     other_metrics: Vec<Box<dyn IMetricValue>>,
 ) -> Vec<Box<dyn IMetricValue>> {
-    let new_metrics = initialize_if_empty(metrics, &other_metrics);
-    new_metrics
+    let initialized_current_metrics =
+        initialize_with_value_zero_if_empty(current_metrics, &other_metrics);
+    initialized_current_metrics
         .iter()
-        .flat_map(|metric1| {
-            other_metrics.iter().filter_map(|metric2| {
-                if metric1.get_key() == metric2.get_key() {
-                    Some(metric1.aggregate(metric2.clone()))
+        .flat_map(|current_metric| {
+            other_metrics.iter().filter_map(|other_metric| {
+                if current_metric.get_key() == other_metric.get_key() {
+                    Some(current_metric.aggregate(other_metric.clone()))
                 } else {
                     None
                 }
@@ -282,17 +284,17 @@ fn combine_metrics(
         .collect()
 }
 
-fn initialize_if_empty(
-    metrics: Vec<Box<dyn IMetricValue>>,
-    other_metrics: &Vec<Box<dyn IMetricValue>>,
+fn initialize_with_value_zero_if_empty(
+    current_metrics: Vec<Box<dyn IMetricValue>>,
+    other_metrics: &[Box<dyn IMetricValue>],
 ) -> Vec<Box<dyn IMetricValue>> {
-    if !metrics.is_empty() {
-        metrics
-    } else {
+    if current_metrics.is_empty() {
         other_metrics
             .iter()
             .map(|other_metric| other_metric.create_clone_with_value_zero())
             .collect()
+    } else {
+        current_metrics
     }
 }
 
