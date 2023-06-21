@@ -1,5 +1,3 @@
-//use std::path::PathBuf;
-
 use crate::analysis::do_analysis;
 use crate::formatters::json::convert_analysis_to_formatted_json;
 use crate::viewers::cli::print_formatted_json_output;
@@ -14,14 +12,20 @@ mod viewers;
 
 #[derive(Debug, StructOpt)]
 pub struct CmdArgs {
-    #[structopt(default_value = ".")]
-    pub path: PathBuf,
+    #[structopt(parse(try_from_str = get_folder_to_analyse))]
+    pub folder_to_analyse: PathBuf,
+}
+
+fn get_folder_to_analyse(input: &str) -> Result<PathBuf, String> {
+        match PathBuf::from(input).canonicalize(){
+        Ok(folder) => Ok(folder),
+        Err(error)  => Err(error.to_string())
+    }
 }
 
 fn main() {
-    let analysed_folder = CmdArgs::from_args().path;
-    //let analysed_folder2: PathBuf = PathBuf::from("tests").join("data").join("empty_folder");
-    let analysis = do_analysis(analysed_folder);
+    let folder_to_analyse = CmdArgs::from_args().folder_to_analyse;
+    let analysis = do_analysis(folder_to_analyse);
     let formatted_json_output = convert_analysis_to_formatted_json(analysis);
     print_formatted_json_output(formatted_json_output);
 }

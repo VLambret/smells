@@ -187,6 +187,50 @@ mod end_2_end {
     }
 
     #[test]
+    fn smells_accepts_folder_ending_with_slash() -> Result<(), Box<dyn std::error::Error>> {
+        // given
+        let cmd_call = "smells";
+        let args = "tests/data/folder_with_multiple_files/";
+
+        // when
+        let mut cmd = Command::cargo_bin(cmd_call)?;
+        cmd.args(&[args]);
+
+        //then
+        let expected_stdout = r#"{
+            "folder_with_multiple_files":{
+                "metrics": {
+                    "lines_count": 6,
+                    "social_complexity": 0
+                },
+                "folder_content_analyses":[
+                    {
+                    "file1.txt": {
+                        "metrics": {
+                            "lines_count": 1,
+                            "social_complexity": 0
+                        }
+                    }
+                    },
+                    {
+                    "file5.txt": {
+                        "metrics": {
+                            "lines_count": 5,
+                            "social_complexity": 0
+                        }
+                    }
+                    }
+                ]
+            }
+        }"#;
+
+        let expected_stdout_json = string_to_json(expected_stdout);
+        let actual_stdout_json = stdout_to_json(&mut cmd);
+        assert_eq!(expected_stdout_json, actual_stdout_json);
+        Ok(())
+    }
+
+    #[test]
     fn smells_can_analyses_folder_with_one_empty_folder() -> Result<(), Box<dyn std::error::Error>>
     {
         // given
