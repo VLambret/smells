@@ -263,12 +263,20 @@ fn combine_filenames(current_analysis_name: String, _other: String) -> String {
     current_analysis_name
 }
 
+//TODO: combine_metrics shall be commutable and generic
 fn combine_metrics(
     current_metrics: Vec<Box<dyn IMetricValue>>,
     other_metrics: Vec<Box<dyn IMetricValue>>,
 ) -> Vec<Box<dyn IMetricValue>> {
-    let initialized_current_metrics =
-        initialize_with_value_zero_if_empty(current_metrics, &other_metrics);
+    let initialized_current_metrics = {
+        if current_metrics.is_empty() {
+            initialize_with_value_zero(&other_metrics)
+        }
+        else{
+            current_metrics
+        }
+    };
+
     initialized_current_metrics
         .iter()
         .flat_map(|current_metric| {
@@ -283,18 +291,13 @@ fn combine_metrics(
         .collect()
 }
 
-fn initialize_with_value_zero_if_empty(
-    current_metrics: Vec<Box<dyn IMetricValue>>,
+fn initialize_with_value_zero(
     other_metrics: &[Box<dyn IMetricValue>],
 ) -> Vec<Box<dyn IMetricValue>> {
-    if current_metrics.is_empty() {
-        other_metrics
-            .iter()
-            .map(|other_metric| other_metric.create_clone_with_value_zero())
-            .collect()
-    } else {
-        current_metrics
-    }
+    other_metrics
+        .iter()
+        .map(|other_metric| other_metric.create_clone_with_value_zero())
+        .collect()
 }
 
 /* **************************************************************** */
