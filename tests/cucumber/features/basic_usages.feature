@@ -14,6 +14,7 @@ Feature: Smells basic usages
     And standard output is empty
     And standard error contains "USAGE:"
 
+
   Scenario: Smells called with non existing folder
     Given arguments are "non_existing_folder"
     When smells is called

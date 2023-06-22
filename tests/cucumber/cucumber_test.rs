@@ -46,9 +46,10 @@ mod basic_usage_test {
         w.files = vec![];
     }
 
-    #[given(expr = "arguments are \"non_existing_folder\"")]
-    fn arguments_exist(w: &mut SmellsBasicWorld) {
-        w.files = vec![String::from("non_existing_folder")];
+    #[given(regex = "arguments are \"(.+)\"")]
+    fn arguments_exist(w: &mut SmellsBasicWorld, file: String) {
+        let split_file_argument = file.split_whitespace();
+        w.files = split_file_argument.map(String::from).collect();
     }
 
     #[when(expr = "smells is called")]
