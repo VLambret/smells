@@ -112,21 +112,21 @@ pub fn do_internal_analysis(
     build_top_analysis_structure(updated_root_analysis)
 }
 
+// TODO: rename method + clarify what it does
 fn remove_root_name_from_files_path(
     file_analyses: &[FileAnalysis],
     root: PathBuf,
 ) -> Vec<FileAnalysis> {
     file_analyses
         .iter()
-        .map(|file_analysis| {
+        .filter_map(|file_analysis| {
             let file_path = file_analysis.file_path.to_string_lossy().to_string();
-            let file_path_without_root = file_path
+            file_path
                 .strip_prefix(&root.to_string_lossy().to_string())
-                .unwrap();
-            FileAnalysis {
-                file_path: PathBuf::from(file_path_without_root),
-                metrics: file_analysis.metrics.clone(),
-            }
+                .map(|file_path_without_root| FileAnalysis {
+                    file_path: PathBuf::from(file_path_without_root),
+                    metrics: file_analysis.metrics.clone(),
+                })
         })
         .collect()
 }
