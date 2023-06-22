@@ -4,9 +4,11 @@ use serde::{Serialize, Serializer};
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
 
-// print analysis result json
 pub fn convert_analysis_to_formatted_json(analysis: TopAnalysis) -> String {
-    format_json_output(&serde_json::to_string(&convert_analysis_to_json(&analysis)).unwrap())
+    format_json_output(
+        &serde_json::to_string(&convert_analysis_to_json(&analysis))
+            .unwrap_or(String::from("Error during analysis conversion to json")),
+    )
 }
 
 pub fn convert_analysis_to_json(analysis: &TopAnalysis) -> Value {

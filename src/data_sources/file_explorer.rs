@@ -1,5 +1,5 @@
 use std::fmt::Debug;
-use std::fs::read_dir;
+use std::fs::{read_dir, ReadDir};
 use std::path::{Path, PathBuf};
 
 pub trait IFileExplorer: Debug {
@@ -29,17 +29,20 @@ impl FileExplorer {
     }
     fn discover_inner(root: &PathBuf) -> Vec<PathBuf> {
         let mut files = vec![];
-        for file in read_dir(root).unwrap() {
-            let file = file.unwrap().path();
-            if file.is_file() {
-                files.push(file);
-            } else {
-                files.extend(Self::discover_inner(&file));
+        if let Ok(root_dir) = read_dir(root) {
+            for file in root_dir.flatten() {
+                let file = file.path();
+                if file.is_file() {
+                    files.push(file);
+                } else {
+                    files.extend(Self::discover_inner(&file));
+                }
             }
         }
         files
     }
 }
+
 impl Iterator for FileExplorer {
     type Item = PathBuf;
     fn next(&mut self) -> Option<PathBuf> {
