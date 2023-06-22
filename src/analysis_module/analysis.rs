@@ -48,21 +48,34 @@ impl HierarchicalAnalysis {
 fn build_folder_content_one_level_below(
     file_analysis: &FileAnalysis,
 ) -> Option<BTreeMap<String, HierarchicalAnalysis>> {
-    let file_path_without_top_parent = remove_top_parent(&file_analysis.file_path);
-    let current_directory = get_top_parent(&file_path_without_top_parent)
-        .unwrap_or(PathBuf::from(file_analysis.file_path.file_name().unwrap()));
-    let one_level_below_file_analysis = FileAnalysis {
-        file_path: file_path_without_top_parent,
-        metrics: file_analysis.metrics.clone(),
-    };
-    Some(
-        btreemap! {current_directory.to_string_lossy().to_string() => HierarchicalAnalysis::new(&one_level_below_file_analysis)},
-    )
+    if let Some(file_path_without_top_parent) = remove_top_parent(&file_analysis.file_path) {
+        let one_level_below_file_analysis = FileAnalysis {
+            file_path: file_path_without_top_parent.clone(),
+            metrics: file_analysis.metrics.clone(),
+        };
+        if let Some(current_directory) = get_top_parent(&file_path_without_top_parent) {
+            Some(
+                btreemap! {current_directory.to_string_lossy().to_string() => HierarchicalAnalysis::new(&one_level_below_file_analysis)},
+            )
+        } else {
+            file_analysis.file_path.file_name()
+            .map(|file_name| btreemap! {file_name.to_string_lossy().to_string() => HierarchicalAnalysis::new(&one_level_below_file_analysis)})
+        }
+    } else {
+        None
+    }
 }
 
-fn remove_top_parent(current_file: &Path) -> PathBuf {
-    let top_parent = get_top_parent(current_file).unwrap();
-    PathBuf::from(current_file.strip_prefix(top_parent).unwrap())
+fn remove_top_parent(current_file: &Path) -> Option<PathBuf> {
+    if let Some(top_parent) = get_top_parent(current_file) {
+        if let Ok(file_without_top_parent) = current_file.strip_prefix(top_parent) {
+            Some(PathBuf::from(file_without_top_parent))
+        } else {
+            None
+        }
+    } else {
+        None
+    }
 }
 
 fn get_top_parent(file: &Path) -> Option<PathBuf> {
