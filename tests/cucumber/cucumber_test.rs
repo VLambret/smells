@@ -1,15 +1,69 @@
 use crate::analysis_unit_test::AnalysisWorld;
+use crate::basic_usage_test::SmellsBasicWorld;
 use crate::end_2_end_test::SmellsWorld;
 use cucumber::World;
 
 fn main() {
     // Run the cucumber test
-    futures::executor::block_on(SmellsWorld::run(
+    /*futures::executor::block_on(SmellsWorld::run(
         "tests/cucumber/features/end_to_end.feature",
     ));
     futures::executor::block_on(AnalysisWorld::run(
         "tests/cucumber/features/analysis_ut.feature",
+    ));*/
+    futures::executor::block_on(SmellsBasicWorld::run(
+        "tests/cucumber/features/basic_usages.feature",
     ));
+}
+
+/*************************************************************************************************************************/
+
+#[cfg(test)]
+mod basic_usage_test {
+    use assert_cmd::Command;
+    use cucumber::{given, then, when, World};
+    use predicates::prelude::predicate;
+    use std::process::exit;
+
+    #[derive(Debug, World)]
+    pub struct SmellsBasicWorld {
+        files: Vec<String>,
+        cmd: Command,
+    }
+
+    impl Default for SmellsBasicWorld {
+        fn default() -> Self {
+            SmellsBasicWorld {
+                files: vec![],
+                cmd: Command::cargo_bin("smells").expect("Failed to create Command"),
+            }
+        }
+    }
+
+    #[given(expr = "no program argument is provided")]
+    fn no_argument_is_provided(w: &mut SmellsBasicWorld) {
+        w.files = vec![];
+    }
+
+    #[when(expr = "smells is called")]
+    fn smells_called(w: &mut SmellsBasicWorld) {
+        w.cmd.args(&w.files);
+    }
+
+    #[then("exit code is not 0")]
+    fn exit_code_is_not_zero(w: &mut SmellsBasicWorld) {
+        w.cmd.assert().code(1);
+    }
+
+    #[then("standard output is empty")]
+    fn stdout_is_empty(w: &mut SmellsBasicWorld) {
+        w.cmd.assert().stdout(predicate::str::is_empty());
+    }
+
+    #[then("standard error contains \"USAGE:\"")]
+    fn stderr_contains_usage(w: &mut SmellsBasicWorld) {
+        w.cmd.assert().stderr(predicate::str::contains("USAGE:"));
+    }
 }
 
 #[cfg(test)]
@@ -72,7 +126,7 @@ mod analysis_unit_test {
     use cucumber::gherkin::Step;
     use cucumber::{given, then, when, World};
     use serde_json::Value;
-    use smells::analysis::{do_internal_analysis, TopAnalysis};
+    use smells::analysis_module::analysis::TopAnalysis;
     use smells::data_sources::file_explorer::{FakeFileExplorer, FileExplorer, IFileExplorer};
     use smells::metrics::metric::IMetric;
     use std::fmt::Debug;

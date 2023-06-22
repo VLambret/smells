@@ -1,7 +1,7 @@
 Feature: Smells basic usages
 
   Scenario: Smells without arguments
-    Given No program argument is provided
+    Given no program argument is provided
     When smells is called
     Then exit code is not 0
     And standard output is empty
