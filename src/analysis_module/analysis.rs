@@ -255,8 +255,7 @@ fn combine_metrics(
     let initialized_current_metrics = {
         if current_metrics.is_empty() {
             initialize_with_value_zero(&other_metrics)
-        }
-        else{
+        } else {
             current_metrics
         }
     };
@@ -333,7 +332,9 @@ mod analyse1_test {
 #[cfg(test)]
 mod analyse_all_files_test {
     use super::*;
-    use crate::analysis_module::analysis::internal_analysis_unit_tests::{BrokenMetric, FakeMetric};
+    use crate::analysis_module::analysis::internal_analysis_unit_tests::{
+        BrokenMetric, FakeMetric,
+    };
     use crate::data_sources::file_explorer::FakeFileExplorer;
     use crate::metrics::metric::MetricScoreType::Score;
 

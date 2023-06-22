@@ -22,6 +22,7 @@ fn main() {
 mod basic_usage_test {
     use assert_cmd::Command;
     use cucumber::{given, then, when, World};
+    use predicates::boolean::PredicateBooleanExt;
     use predicates::prelude::predicate;
     use std::process::exit;
 
@@ -45,14 +46,19 @@ mod basic_usage_test {
         w.files = vec![];
     }
 
+    #[given(expr = "arguments are \"non_existing_folder\"")]
+    fn arguments_exist(w: &mut SmellsBasicWorld) {
+        w.files = vec![String::from("non_existing_folder")];
+    }
+
     #[when(expr = "smells is called")]
     fn smells_called(w: &mut SmellsBasicWorld) {
         w.cmd.args(&w.files);
     }
 
-    #[then("exit code is not 0")]
-    fn exit_code_is_not_zero(w: &mut SmellsBasicWorld) {
-        w.cmd.assert().code(1);
+    #[then(regex = r"exit code is (.+)")]
+    fn exit_code_is_a_number(w: &mut SmellsBasicWorld, code_number: i32) {
+        w.cmd.assert().code(code_number);
     }
 
     #[then("standard output is empty")]
@@ -60,9 +66,18 @@ mod basic_usage_test {
         w.cmd.assert().stdout(predicate::str::is_empty());
     }
 
-    #[then("standard error contains \"USAGE:\"")]
-    fn stderr_contains_usage(w: &mut SmellsBasicWorld) {
-        w.cmd.assert().stderr(predicate::str::contains("USAGE:"));
+    //TODO: find an elegant way to handle fr/en
+    #[then(regex = "standard error contains \"(.+)\"")]
+    fn stderr_contains_usage(w: &mut SmellsBasicWorld, message: String) {
+        let french_message = String::from("Le fichier spécifié est introuvable.");
+
+        if message == "No such file or directory" {
+            w.cmd.assert().stderr(
+                predicate::str::contains(message).or(predicate::str::contains(french_message)),
+            );
+        } else {
+            w.cmd.assert().stderr(predicate::str::contains(message));
+        }
     }
 }
 

@@ -17,9 +17,9 @@ pub struct CmdArgs {
 }
 
 fn get_folder_to_analyse(input: &str) -> Result<PathBuf, String> {
-        match PathBuf::from(input).canonicalize(){
+    match PathBuf::from(input).canonicalize() {
         Ok(folder) => Ok(folder),
-        Err(error)  => Err(error.to_string())
+        Err(error) => Err(error.to_string()),
     }
 }
 
