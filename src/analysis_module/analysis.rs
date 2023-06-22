@@ -94,7 +94,11 @@ pub fn do_internal_analysis(
     metrics: &[Box<dyn IMetric>],
 ) -> TopAnalysis {
     let root_analysis = HierarchicalAnalysis {
-        file_name: root.file_name().unwrap().to_string_lossy().to_string(),
+        file_name: root
+            .file_name()
+            .unwrap_or(PathBuf::from("").as_ref())
+            .to_string_lossy()
+            .to_string(),
         metrics: vec![],
         folder_content: Some(btreemap! {}),
     };
@@ -131,14 +135,13 @@ fn build_hierarchical_analysis_structure(
     root_analysis: HierarchicalAnalysis,
     file_analyses: &[FileAnalysis],
 ) -> HierarchicalAnalysis {
-    if file_analyses.is_empty() {
-        root_analysis
-    } else {
-        let current_file_analysis = file_analyses.first().unwrap();
+    if let Some(current_file_analysis) = file_analyses.first() {
         let current_file_top_analysis = HierarchicalAnalysis::new(current_file_analysis);
         let updated_root_analysis =
             combine_hierarchical_analysis(root_analysis, current_file_top_analysis);
         build_hierarchical_analysis_structure(updated_root_analysis, &file_analyses[1..])
+    } else {
+        root_analysis
     }
 }
 
@@ -201,34 +204,35 @@ fn combine_folder_content(
     other_content_entries: Option<BTreeMap<String, HierarchicalAnalysis>>,
 ) -> Option<BTreeMap<String, HierarchicalAnalysis>> {
     let mut updated_content: Vec<HierarchicalAnalysis> = vec![];
-    for root_content_entry in root_content_entries.clone().unwrap() {
+    for root_content_entry in root_content_entries.clone().unwrap_or(btreemap! {}) {
         let (root_content_entry_key, root_content_entry_analysis) = root_content_entry;
         if other_content_entries
             .clone()
-            .unwrap()
+            .unwrap_or(btreemap! {})
             .contains_key(&root_content_entry_key)
         {
-            let updated_current_analysis = combine_hierarchical_analysis(
-                root_content_entry_analysis.to_owned(),
-                other_content_entries
-                    .clone()
-                    .unwrap()
-                    .get(&root_content_entry_key)
-                    .unwrap()
-                    .clone(),
-            );
-            updated_content.push(updated_current_analysis);
+            if let Some(other_analysis) = other_content_entries
+                .clone()
+                .unwrap_or(btreemap! {})
+                .get(&root_content_entry_key)
+            {
+                let updated_current_analysis = combine_hierarchical_analysis(
+                    root_content_entry_analysis.to_owned(),
+                    other_analysis.to_owned(),
+                );
+                updated_content.push(updated_current_analysis);
+            }
         } else {
             let current_analysis = root_content_entry_analysis.clone();
             updated_content.push(current_analysis);
         }
     }
 
-    for other_content_entry in other_content_entries.unwrap() {
+    for other_content_entry in other_content_entries.unwrap_or(btreemap! {}) {
         let (other_content_entry_key, other_content_entry_analysis) = other_content_entry;
         if !root_content_entries
             .clone()
-            .unwrap()
+            .unwrap_or(btreemap! {})
             .contains_key(&other_content_entry_key)
         {
             updated_content.push(other_content_entry_analysis);
