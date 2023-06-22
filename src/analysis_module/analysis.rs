@@ -1,4 +1,4 @@
-use crate::data_sources::file_explorer::{FileExplorer, IFileExplorer};
+use crate::data_sources::file_explorer::IFileExplorer;
 use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreType};
 use maplit::btreemap;
 use std::collections::BTreeMap;
@@ -60,7 +60,7 @@ fn build_folder_content_one_level_below(
     )
 }
 
-fn remove_top_parent(current_file: &PathBuf) -> PathBuf {
+fn remove_top_parent(current_file: &Path) -> PathBuf {
     let top_parent = get_top_parent(current_file).unwrap();
     PathBuf::from(current_file.strip_prefix(top_parent).unwrap())
 }
@@ -341,7 +341,7 @@ mod analyse_all_files_test {
     #[test]
     fn analysis_with_0_file_should_return_empty_hashmap() {
         // Given
-        let fake_file_explorer: Box<dyn IFileExplorer> = Box::new(FakeFileExplorer::new(vec![]));
+        let fake_file_explorer: Box<dyn IFileExplorer> = Box::new(FakeFileExplorer::_new(vec![]));
 
         //when
         let analyses = analyse_all_files(
@@ -358,7 +358,7 @@ mod analyse_all_files_test {
         // Given
         let files_to_analyze = vec![PathBuf::from("root").join("file1")];
         let fake_file_explorer: Box<dyn IFileExplorer> =
-            Box::new(FakeFileExplorer::new(files_to_analyze));
+            Box::new(FakeFileExplorer::_new(files_to_analyze));
 
         // When
         let analyses = analyse_all_files(
@@ -388,7 +388,7 @@ mod analyse_all_files_test {
         // Given
         let files_to_analyze = vec![PathBuf::from("root").join("file1")];
         let fake_file_explorer: Box<dyn IFileExplorer> =
-            Box::new(FakeFileExplorer::new(files_to_analyze));
+            Box::new(FakeFileExplorer::_new(files_to_analyze));
 
         // When
         let analyses = analyse_all_files(
@@ -421,7 +421,7 @@ mod analyse_all_files_test {
             PathBuf::from("root").join("file2"),
         ];
         let fake_file_explorer: Box<dyn IFileExplorer> =
-            Box::new(FakeFileExplorer::new(files_to_analyze));
+            Box::new(FakeFileExplorer::_new(files_to_analyze));
 
         // When
         let analyses = analyse_all_files(
@@ -543,7 +543,7 @@ mod internal_analysis_unit_tests {
             Err(String::from("Analysis error"))
         }
 
-        fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
+        fn aggregate(&self, _other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
             Box::new(BrokenMetricValue {})
         }
 
@@ -568,7 +568,7 @@ mod internal_analysis_unit_tests {
     fn analyse_internal_with_empty_root_and_empty_metrics() {
         // Given
         let root = PathBuf::from("root");
-        let fake_file_explorer: Box<dyn IFileExplorer> = Box::new(FakeFileExplorer::new(vec![]));
+        let fake_file_explorer: Box<dyn IFileExplorer> = Box::new(FakeFileExplorer::_new(vec![]));
 
         // When
         let actual_result_analysis = do_internal_analysis(&root, &*fake_file_explorer, &[]);
@@ -592,7 +592,7 @@ mod internal_analysis_unit_tests {
             PathBuf::from(&root).join("file2"),
         ];
         let fake_file_explorer: Box<dyn IFileExplorer> =
-            Box::new(FakeFileExplorer::new(files_to_analyze));
+            Box::new(FakeFileExplorer::_new(files_to_analyze));
         let metrics = vec![];
 
         // When
@@ -629,7 +629,7 @@ mod internal_analysis_unit_tests {
         let root = PathBuf::from(root_name);
         let files_to_analyze = vec![PathBuf::from(&root).join("file1")];
         let fake_file_explorer: Box<dyn IFileExplorer> =
-            Box::new(FakeFileExplorer::new(files_to_analyze));
+            Box::new(FakeFileExplorer::_new(files_to_analyze));
         let metrics: Vec<Box<dyn IMetric>> =
             vec![Box::new(FakeMetric::new(4)), Box::new(FakeMetric::new(10))];
 
@@ -668,7 +668,7 @@ mod internal_analysis_unit_tests {
         let root = PathBuf::from(root_name);
         let files_to_analyze = vec![PathBuf::from(&root).join("file1")];
         let fake_file_explorer: Box<dyn IFileExplorer> =
-            Box::new(FakeFileExplorer::new(files_to_analyze));
+            Box::new(FakeFileExplorer::_new(files_to_analyze));
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(BrokenMetric::new())];
 
         // When
@@ -705,7 +705,7 @@ mod internal_analysis_unit_tests {
         // Given
         let files_to_analyze = vec![];
         let fake_file_explorer: Box<dyn IFileExplorer> =
-            Box::new(FakeFileExplorer::new(files_to_analyze));
+            Box::new(FakeFileExplorer::_new(files_to_analyze));
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric::new(0))];
 
         // When
@@ -729,7 +729,7 @@ mod internal_analysis_unit_tests {
         let root = PathBuf::from(root_name);
         let files_to_analyze = vec![PathBuf::from(&root).join("file1")];
         let fake_file_explorer: Box<dyn IFileExplorer> =
-            Box::new(FakeFileExplorer::new(files_to_analyze));
+            Box::new(FakeFileExplorer::_new(files_to_analyze));
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric::new(1))];
 
         // When
@@ -766,7 +766,7 @@ mod internal_analysis_unit_tests {
         let root = PathBuf::from(root_name);
         let files_to_analyze = vec![PathBuf::from(root_name).join("folder1").join("file1")];
         let fake_file_explorer: Box<dyn IFileExplorer> =
-            Box::new(FakeFileExplorer::new(files_to_analyze));
+            Box::new(FakeFileExplorer::_new(files_to_analyze));
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric::new(1))];
 
         // When
@@ -820,7 +820,7 @@ mod internal_analysis_unit_tests {
                 .join("file2"),
         ];
         let fake_file_explorer: Box<dyn IFileExplorer> =
-            Box::new(FakeFileExplorer::new(files_to_analyze));
+            Box::new(FakeFileExplorer::_new(files_to_analyze));
 
         // When
         let actual_root_analysis = do_internal_analysis(&root, &*fake_file_explorer, &vec![]);
@@ -880,7 +880,7 @@ mod internal_analysis_unit_tests {
             PathBuf::from(root_name).join("folder1").join("file2"),
         ];
         let fake_file_explorer: Box<dyn IFileExplorer> =
-            Box::new(FakeFileExplorer::new(files_to_analyze));
+            Box::new(FakeFileExplorer::_new(files_to_analyze));
         let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric::new(1))];
 
         // When

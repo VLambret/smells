@@ -2,7 +2,7 @@ use crate::metrics::metric::MetricScoreType::Score;
 use crate::metrics::metric::{
     AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType,
 };
-use serde::{Serialize, Serializer};
+
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::Read;

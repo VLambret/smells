@@ -52,7 +52,7 @@ pub struct FakeFileExplorer {
     files_to_analyze: Vec<PathBuf>,
 }
 impl FakeFileExplorer {
-    pub fn new(files_to_analyze: Vec<PathBuf>) -> Self {
+    pub fn _new(files_to_analyze: Vec<PathBuf>) -> Self {
         FakeFileExplorer { files_to_analyze }
     }
 }
@@ -185,7 +185,7 @@ pub mod file_explorer_tests {
         // Given
         let files_to_analyze = vec![];
         // When
-        let fake_explorer1 = FakeFileExplorer::new(files_to_analyze);
+        let fake_explorer1 = FakeFileExplorer::_new(files_to_analyze);
         // Then
         let expected_files_to_analyze: Vec<PathBuf> = vec![];
         assert_eq!(fake_explorer1.discover(), expected_files_to_analyze)
@@ -196,7 +196,7 @@ pub mod file_explorer_tests {
         let files_to_analyze = vec![PathBuf::from("test_file")];
         // When
         let expected_files_to_analyze: Vec<PathBuf> = vec![PathBuf::from("test_file")];
-        let fake_explorer1 = FakeFileExplorer::new(files_to_analyze);
+        let fake_explorer1 = FakeFileExplorer::_new(files_to_analyze);
         // Then
         assert_eq!(fake_explorer1.discover(), expected_files_to_analyze)
     }
@@ -207,7 +207,7 @@ pub mod file_explorer_tests {
         // When
         let expected_files_to_analyze: Vec<PathBuf> =
             vec![PathBuf::from("test_file1"), PathBuf::from("test_file2")];
-        let fake_explorer1 = FakeFileExplorer::new(files_to_analyze);
+        let fake_explorer1 = FakeFileExplorer::_new(files_to_analyze);
         // Then
         assert_eq!(fake_explorer1.discover(), expected_files_to_analyze);
     }
