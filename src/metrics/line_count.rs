@@ -3,6 +3,7 @@ use crate::metrics::metric::{
     AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType,
 };
 
+use crate::metrics::metric::MetricValueType::Number;
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::Read;
@@ -54,7 +55,7 @@ impl IMetricValue for LinesCountValue {
 
     fn get_value(&self) -> Result<MetricValueType, AnalysisError> {
         match &self.line_count {
-            Ok(line_count_value) => Ok(MetricValueType::Number(*line_count_value)),
+            Ok(line_count_value) => Ok(Number(*line_count_value)),
             Err(line_count_error) => Err(line_count_error.clone()),
         }
     }
@@ -64,18 +65,18 @@ impl IMetricValue for LinesCountValue {
             match (self.line_count.as_ref(), other.get_value().as_ref()) {
                 (Err(_), Err(_)) => Err(String::from("Analysis error")),
                 (Err(_), _) => match other.get_value() {
-                    Ok(MetricValueType::Number(value)) => Ok(value),
+                    Ok(Number(value)) => Ok(value),
                     _ => Ok(0),
                 },
                 (_, Err(_)) => match self.get_value() {
-                    Ok(MetricValueType::Number(value)) => Ok(value),
+                    Ok(Number(value)) => Ok(value),
                     _ => Ok(0),
                 },
                 _ => {
-                    let self_line_count = self.get_value().unwrap();
-                    let other_line_count = other.get_value().unwrap();
+                    let self_line_count = self.get_value().unwrap_or(Number(0));
+                    let other_line_count = other.get_value().unwrap_or(Number(0));
                     match self_line_count + other_line_count {
-                        MetricValueType::Number(value) => Ok(value),
+                        Number(value) => Ok(value),
                         _ => Ok(0),
                     }
                 }
