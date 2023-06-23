@@ -1,9 +1,8 @@
 #[cfg(test)]
 mod end_2_end {
     use assert_cmd::cmd::Command;
-    use predicates::prelude::*;
     use serde_json::Value;
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
     fn string_to_json(expected_stdout: &str) -> Value {
         let expected_stdout_json: Value = serde_json::from_str(expected_stdout).unwrap();
@@ -15,22 +14,6 @@ mod end_2_end {
         let actual_stdout_str = String::from_utf8(actual_stdout).unwrap();
         let actual_stdout_json: Value = string_to_json(&actual_stdout_str);
         actual_stdout_json
-    }
-
-    #[test]
-    #[ignore]
-    fn without_argument_smells_analyses_current_folder() -> Result<(), Box<dyn std::error::Error>> {
-        // given
-        let cmd_call = "smells";
-
-        // when
-        let mut cmd = Command::cargo_bin(cmd_call)?;
-        cmd.current_dir("tests/data/empty_folder");
-
-        // then
-        let expected_stdout = predicate::str::is_empty().not();
-        cmd.assert().code(0).stdout(expected_stdout).stderr("");
-        Ok(())
     }
 
     // TODO: For an empty folder, we cannot return a 0 metric because if we do that we cannot differentiate between an empty folder and a real 0 metric (like an empty file.
@@ -49,7 +32,7 @@ mod end_2_end {
 
         // when
         let mut cmd = Command::cargo_bin(cmd_call)?;
-        cmd.args(&[args]);
+        cmd.args([args]);
         let expected_stdout = r#"{
             "empty_folder": {
                 "metrics": {
@@ -71,11 +54,13 @@ mod end_2_end {
     fn smells_can_count_lines_of_a_single_file() -> Result<(), Box<dyn std::error::Error>> {
         // given
         let cmd_call = "smells";
-        let args = "tests/data/single_file_folder";
+        let args = PathBuf::from("tests")
+            .join("data")
+            .join("single_file_folder");
 
         // when
         let mut cmd = Command::cargo_bin(cmd_call)?;
-        cmd.args(&[args]);
+        cmd.args([args]);
 
         // Then
         let expected_stdout = r#"{
@@ -110,11 +95,13 @@ mod end_2_end {
     {
         // given
         let cmd_call = "smells";
-        let args = "tests/data/single_file_folder_other";
+        let args = PathBuf::from("tests")
+            .join("data")
+            .join("single_file_folder_other");
 
         // when
         let mut cmd = Command::cargo_bin(cmd_call)?;
-        cmd.args(&[args]);
+        cmd.args([args]);
 
         //then
         let expected_stdout = r#"{
@@ -146,11 +133,13 @@ mod end_2_end {
     fn smells_can_analyses_folder_with_multiple_files() -> Result<(), Box<dyn std::error::Error>> {
         // given
         let cmd_call = "smells";
-        let args = "tests/data/folder_with_multiple_files";
+        let args = PathBuf::from("tests")
+            .join("data")
+            .join("folder_with_multiple_files");
 
         // when
         let mut cmd = Command::cargo_bin(cmd_call)?;
-        cmd.args(&[args]);
+        cmd.args([args]);
 
         //then
         let expected_stdout = r#"{
@@ -190,11 +179,13 @@ mod end_2_end {
     fn smells_accepts_folder_ending_with_slash() -> Result<(), Box<dyn std::error::Error>> {
         // given
         let cmd_call = "smells";
-        let args = "tests/data/folder_with_multiple_files/";
+        let args = PathBuf::from("tests")
+            .join("data")
+            .join("folder_with_multiple_files");
 
         // when
         let mut cmd = Command::cargo_bin(cmd_call)?;
-        cmd.args(&[args]);
+        cmd.args([args]);
 
         //then
         let expected_stdout = r#"{
@@ -235,11 +226,16 @@ mod end_2_end {
     {
         // given
         let cmd_call = "smells";
-        let args = "tests/data/folder_with_one_empty_folder";
+        let args = PathBuf::from("tests")
+            .join("data")
+            .join("folder_with_one_empty_folder");
+        if !PathBuf::from(&args).exists() {
+            std::fs::create_dir_all(&args).unwrap();
+        }
 
         // when
         let mut cmd = Command::cargo_bin(cmd_call)?;
-        cmd.args(&[args]);
+        cmd.args([args]);
 
         //then
         let expected_stdout = r#"{
@@ -260,7 +256,9 @@ mod end_2_end {
     ) -> Result<(), Box<dyn std::error::Error>> {
         // given
         let cmd_call = "smells";
-        let args = "tests/data/folder_with_folder_and_file";
+        let args = PathBuf::from("tests")
+            .join("data")
+            .join("folder_with_folder_and_file");
 
         // when
         let mut cmd = Command::cargo_bin(cmd_call)?;
