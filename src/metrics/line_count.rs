@@ -86,10 +86,6 @@ impl IMetricValue for LinesCountValue {
             line_count: line_count_value,
         })
     }
-
-    fn create_clone_with_value_zero(&self) -> Box<dyn IMetricValue> {
-        Box::new(LinesCountValue { line_count: Ok(0) })
-    }
 }
 
 #[cfg(test)]

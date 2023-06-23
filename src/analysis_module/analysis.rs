@@ -269,34 +269,30 @@ fn combine_metrics(
     current_metrics: Vec<Box<dyn IMetricValue>>,
     other_metrics: Vec<Box<dyn IMetricValue>>,
 ) -> Vec<Box<dyn IMetricValue>> {
-    let initialized_current_metrics = {
-        if current_metrics.is_empty() {
-            initialize_with_value_zero(&other_metrics)
-        } else {
-            current_metrics
-        }
-    };
-
-    initialized_current_metrics
+    let metrics_from_current: Vec<_> = current_metrics
         .iter()
-        .flat_map(|current_metric| {
-            other_metrics.iter().filter_map(|other_metric| {
-                if current_metric.get_key() == other_metric.get_key() {
-                    Some(current_metric.aggregate(other_metric.clone()))
-                } else {
-                    None
-                }
-            })
+        .filter_map(|current_metric| {
+            other_metrics
+                .iter()
+                .find(|other_metric| current_metric.get_key() == other_metric.get_key())
+                .map(|other_metric| current_metric.aggregate(other_metric.clone()))
+                .or_else(|| Some(current_metric.clone()))
         })
-        .collect()
-}
+        .collect();
 
-fn initialize_with_value_zero(
-    other_metrics: &[Box<dyn IMetricValue>],
-) -> Vec<Box<dyn IMetricValue>> {
-    other_metrics
+    let metrics_from_other: Vec<_> = other_metrics
         .iter()
-        .map(|other_metric| other_metric.create_clone_with_value_zero())
+        .filter(|other_metric| {
+            !current_metrics
+                .iter()
+                .any(|current_metric| current_metric.get_key() == other_metric.get_key())
+        })
+        .cloned()
+        .collect();
+
+    metrics_from_current
+        .into_iter()
+        .chain(metrics_from_other.into_iter())
         .collect()
 }
 
@@ -518,13 +514,6 @@ mod internal_analysis_unit_tests {
                 value: self.value + line_count,
             })
         }
-
-        fn create_clone_with_value_zero(&self) -> Box<dyn IMetricValue> {
-            Box::new(FakeMetricValue {
-                metric_key: self.metric_key,
-                value: 0,
-            })
-        }
     }
 
     #[derive(Debug, Default, Clone)]
@@ -561,10 +550,6 @@ mod internal_analysis_unit_tests {
         }
 
         fn aggregate(&self, _other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
-            Box::new(BrokenMetricValue {})
-        }
-
-        fn create_clone_with_value_zero(&self) -> Box<dyn IMetricValue> {
             Box::new(BrokenMetricValue {})
         }
     }

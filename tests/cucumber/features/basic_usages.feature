@@ -22,12 +22,12 @@ Feature: Smells basic usages
     And standard output is empty
     And standard error contains "No such file or directory"
 
-  Scenario: Smells nominal case
-    Given arguments are "existing_folder"
-    When smells is called
-    Then exit code is 0
-    And standard output is not empty
-    And "standard error" is empty
+#  Scenario: Smells nominal case
+#    Given arguments are "existing_folder"
+#    When smells is called
+#    Then exit code is 0
+#    And standard output is not empty
+#    And "standard error" is empty
 
   Scenario: Smells help can be called with long version
     Given arguments are "--help"

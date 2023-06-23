@@ -49,7 +49,6 @@ pub trait IMetricValue: Debug + IMetricValueClone {
     fn get_score(&self) -> Result<MetricScoreType, AnalysisError>;
     fn get_value(&self) -> Result<MetricValueType, AnalysisError>;
     fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue>;
-    fn create_clone_with_value_zero(&self) -> Box<dyn IMetricValue>;
 }
 
 pub trait IMetricValueClone {

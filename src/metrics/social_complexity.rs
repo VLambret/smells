@@ -43,10 +43,6 @@ impl IMetricValue for SocialComplexityValue {
     fn aggregate(&self, _other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
         Box::new(SocialComplexityValue { authors: vec![] })
     }
-
-    fn create_clone_with_value_zero(&self) -> Box<dyn IMetricValue> {
-        Box::new(SocialComplexityValue { authors: vec![] })
-    }
 }
 
 // TODO: handle unwrap() + link to social_complexity + on va open le repo dans social_complexity
