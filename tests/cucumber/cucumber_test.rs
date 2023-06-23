@@ -15,6 +15,7 @@ mod basic_usage_test {
     use cucumber::{given, then, when, World};
     use predicates::boolean::PredicateBooleanExt;
     use predicates::prelude::predicate;
+    use std::path::PathBuf;
 
     #[derive(Debug, World)]
     pub struct SmellsBasicWorld {
@@ -38,8 +39,17 @@ mod basic_usage_test {
 
     #[given(regex = "arguments are \"(.+)\"")]
     fn arguments_exist(w: &mut SmellsBasicWorld, file: String) {
-        let split_file_argument = file.split_whitespace();
-        w.files = split_file_argument.map(String::from).collect();
+        if file == "existing_folder" {
+            w.files = vec![PathBuf::from("tests")
+                .join("data")
+                .join("single_file_folder")
+                .join("file0.txt")
+                .to_string_lossy()
+                .to_string()];
+        } else {
+            let split_file_argument = file.split_whitespace();
+            w.files = split_file_argument.map(String::from).collect();
+        }
     }
 
     #[when(expr = "smells is called")]
@@ -52,16 +62,19 @@ mod basic_usage_test {
         w.cmd.assert().code(code_number);
     }
 
-    #[then("standard output is empty")]
-    fn stdout_is_empty(w: &mut SmellsBasicWorld) {
-        w.cmd.assert().stdout(predicate::str::is_empty());
+    #[then(regex = "standard output is \"(.+)\"")]
+    fn stdout_is_empty(w: &mut SmellsBasicWorld, empty: String) {
+        if empty == "empty" {
+            w.cmd.assert().stdout(predicate::str::is_empty());
+        } else {
+            w.cmd.assert().stdout(predicate::str::is_empty().not());
+        }
     }
 
-    //TODO: find an elegant way to handle fr/en
+    //TODO: find a way to handle fr/en
     #[then(regex = "standard error contains \"(.+)\"")]
     fn stderr_contains_usage(w: &mut SmellsBasicWorld, message: String) {
         let french_message = String::from("Le fichier spécifié est introuvable.");
-
         if message == "No such file or directory" {
             w.cmd.assert().stderr(
                 predicate::str::contains(message).or(predicate::str::contains(french_message)),
@@ -69,6 +82,11 @@ mod basic_usage_test {
         } else {
             w.cmd.assert().stderr(predicate::str::contains(message));
         }
+    }
+
+    #[then("standard error is empty")]
+    fn stderr_is_empty(w: &mut SmellsBasicWorld) {
+        w.cmd.assert().stderr(predicate::str::is_empty());
     }
 }
 

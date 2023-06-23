@@ -104,7 +104,7 @@ pub fn do_internal_analysis(
     };
     let updated_root_analysis = build_hierarchical_analysis_structure(
         root_analysis,
-        &keep_only_root_file_name_in_file_analyses(
+        &keep_only_last_root_directory_in_analyses_file_names(
             &analyse_all_files(file_explorer.discover(), metrics),
             root.to_path_buf(),
         ),
@@ -112,7 +112,7 @@ pub fn do_internal_analysis(
     build_top_analysis_structure(updated_root_analysis)
 }
 
-fn keep_only_root_file_name_in_file_analyses(
+fn keep_only_last_root_directory_in_analyses_file_names(
     file_analyses: &[FileAnalysis],
     root: PathBuf,
 ) -> Vec<FileAnalysis> {
