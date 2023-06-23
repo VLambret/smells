@@ -71,9 +71,14 @@ mod basic_usage_test {
         }
     }
 
+    #[then(regex = "standard output contains \"(.+)\"")]
+    fn stdout_contains_message(w: &mut SmellsBasicWorld, message: String) {
+        w.cmd.assert().stdout(predicate::str::contains(message));
+    }
+
     //TODO: find a way to handle fr/en
     #[then(regex = "standard error contains \"(.+)\"")]
-    fn stderr_contains_usage(w: &mut SmellsBasicWorld, message: String) {
+    fn stderr_contains_message(w: &mut SmellsBasicWorld, message: String) {
         let french_message = String::from("Le fichier spécifié est introuvable.");
         if message == "No such file or directory" {
             w.cmd.assert().stderr(
