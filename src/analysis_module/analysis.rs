@@ -104,16 +104,15 @@ pub fn do_internal_analysis(
     };
     let updated_root_analysis = build_hierarchical_analysis_structure(
         root_analysis,
-        &remove_root_name_from_files_path(
+        &keep_only_root_file_name_in_file_analyses(
             &analyse_all_files(file_explorer.discover(), metrics),
-            PathBuf::from(root),
+            root.to_path_buf(),
         ),
     );
     build_top_analysis_structure(updated_root_analysis)
 }
 
-// TODO: rename method + clarify what it does
-fn remove_root_name_from_files_path(
+fn keep_only_root_file_name_in_file_analyses(
     file_analyses: &[FileAnalysis],
     root: PathBuf,
 ) -> Vec<FileAnalysis> {
@@ -123,9 +122,18 @@ fn remove_root_name_from_files_path(
             let file_path = file_analysis.file_path.to_string_lossy().to_string();
             file_path
                 .strip_prefix(&root.to_string_lossy().to_string())
-                .map(|file_path_without_root| FileAnalysis {
-                    file_path: PathBuf::from(file_path_without_root),
-                    metrics: file_analysis.metrics.clone(),
+                .map(|file_path_without_root| {
+                    let root_filename = root
+                        .file_name()
+                        .unwrap_or("".as_ref())
+                        .to_string_lossy()
+                        .to_string();
+                    let file_name_with_root_file_name =
+                        PathBuf::from(root_filename + file_path_without_root);
+                    FileAnalysis {
+                        file_path: file_name_with_root_file_name,
+                        metrics: file_analysis.metrics.clone(),
+                    }
                 })
         })
         .collect()
@@ -931,5 +939,35 @@ mod internal_analysis_unit_tests {
             folder_content: Some(expected_root_analysis_content),
         };
         assert_eq!(expected_root_analysis, actual_root_analysis)
+    }
+
+    #[test]
+    fn analyse_with_a_composed_root_should_only_use_root_filename() {
+        let root = PathBuf::from("user")
+            .join("dir")
+            .join("root_with_1_file_in_1_folder");
+        let file_to_analyze = vec![root.join("folder1").join("file1")];
+        let fake_file_explorer: Box<dyn IFileExplorer> =
+            Box::new(FakeFileExplorer::_new(file_to_analyze));
+        let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric::new(1))];
+
+        // When
+        let actual_root_analysis = do_internal_analysis(&root, &*fake_file_explorer, &metrics);
+
+        // Then
+        assert_eq!(
+            root.file_name().unwrap(),
+            PathBuf::from(actual_root_analysis.file_name)
+        );
+        assert_eq!(
+            "folder1",
+            actual_root_analysis
+                .folder_content
+                .unwrap()
+                .get_key_value("folder1")
+                .unwrap()
+                .1
+                .file_name
+        );
     }
 }
