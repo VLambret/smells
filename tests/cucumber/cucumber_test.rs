@@ -1,16 +1,7 @@
-use crate::analysis_unit_test::AnalysisWorld;
 use crate::basic_usage_test::SmellsBasicWorld;
-use crate::end_2_end_test::SmellsWorld;
 use cucumber::World;
 
 fn main() {
-    // Run the cucumber test
-    /*futures::executor::block_on(SmellsWorld::run(
-        "tests/cucumber/features/end_to_end.feature",
-    ));
-    futures::executor::block_on(AnalysisWorld::run(
-        "tests/cucumber/features/analysis_ut.feature",
-    ));*/
     futures::executor::block_on(SmellsBasicWorld::run(
         "tests/cucumber/features/basic_usages.feature",
     ));
@@ -24,7 +15,6 @@ mod basic_usage_test {
     use cucumber::{given, then, when, World};
     use predicates::boolean::PredicateBooleanExt;
     use predicates::prelude::predicate;
-    use std::process::exit;
 
     #[derive(Debug, World)]
     pub struct SmellsBasicWorld {
@@ -117,7 +107,7 @@ mod end_2_end_test {
         convert_string_to_json(&actual_stdout_str)
     }
 
-    /*#[given(regex = r"a path (.+)")]
+    #[given(regex = r"a path (.+)")]
     fn a_folder_with_an_empty_file(smells: &mut SmellsWorld, path: String) {
         smells.file = path;
     }
@@ -132,12 +122,12 @@ mod end_2_end_test {
         let expected_stdout_json = convert_string_to_json(&step.docstring.clone().unwrap());
         let actual_stdout_json = convert_stdout_to_json(&mut smells.cmd);
         assert_eq!(expected_stdout_json, actual_stdout_json);
-    }*/
+    }
 }
 
 /*************************************************************************************************************************/
 
-#[cfg(test)]
+/*#[cfg(test)]
 mod analysis_unit_test {
     use cucumber::gherkin::Step;
     use cucumber::{given, then, when, World};
@@ -202,4 +192,4 @@ mod analysis_unit_test {
             serde_json::from_str(&step.docstring.clone().unwrap()).unwrap();
         assert_eq!(expected_result_analysis, actual_result_analysis);
     }*/
-}
+}*/

@@ -1,5 +1,5 @@
 use std::fmt::Debug;
-use std::fs::{read_dir, ReadDir};
+use std::fs::read_dir;
 use std::path::{Path, PathBuf};
 
 pub trait IFileExplorer: Debug {

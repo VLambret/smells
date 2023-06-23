@@ -264,7 +264,6 @@ fn combine_filenames(current_analysis_name: String, _other: String) -> String {
     current_analysis_name
 }
 
-//TODO: combine_metrics shall be commutable and generic
 fn combine_metrics(
     current_metrics: Vec<Box<dyn IMetricValue>>,
     other_metrics: Vec<Box<dyn IMetricValue>>,
