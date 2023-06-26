@@ -206,12 +206,11 @@ fn get_file_metrics_value(
         .collect()
 }
 
-// TODO: refactor
 fn combine_folder_content(
     root_content_entries: Option<BTreeMap<String, HierarchicalAnalysis>>,
     other_content_entries: Option<BTreeMap<String, HierarchicalAnalysis>>,
 ) -> Option<BTreeMap<String, HierarchicalAnalysis>> {
-    let a: Vec<_> = root_content_entries
+    let updated_folder_content: BTreeMap<_, _> = root_content_entries
         .clone()
         .unwrap_or_else(|| btreemap! {})
         .iter()
@@ -235,30 +234,31 @@ fn combine_folder_content(
                 Some(root_content_entry_analysis.clone())
             }
         })
-        .collect();
-
-    let b: Vec<_> = other_content_entries
-        .unwrap_or_else(|| btreemap! {})
-        .iter()
-        .filter_map(|(other_content_entry_key, other_content_entry_analysis)| {
-            if !root_content_entries
-                .as_ref()
-                .unwrap_or(&btreemap! {})
-                .contains_key(other_content_entry_key)
-            {
-                Some(other_content_entry_analysis.clone())
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    let c: Vec<_> = a.into_iter().chain(b.into_iter()).collect();
-
-    let updated_folder_content: BTreeMap<_, _> = c
+        .collect::<Vec<_>>()
+        .into_iter()
+        .chain(
+            other_content_entries
+                .unwrap_or_else(|| btreemap! {})
+                .iter()
+                .filter_map(|(other_content_entry_key, other_content_entry_analysis)| {
+                    if !root_content_entries
+                        .as_ref()
+                        .unwrap_or(&btreemap! {})
+                        .contains_key(other_content_entry_key)
+                    {
+                        Some(other_content_entry_analysis.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>()
+                .into_iter(),
+        )
+        .collect::<Vec<_>>()
         .iter()
         .map(|analysis| (analysis.file_name.clone(), analysis.clone()))
         .collect();
+
     Some(updated_folder_content)
 }
 
