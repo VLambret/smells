@@ -37,6 +37,7 @@ mod basic_usage_test {
         w.files = vec![];
     }
 
+    //TODO: use existing_folder
     #[given(regex = "arguments are \"(.+)\"")]
     fn arguments_exist(w: &mut SmellsBasicWorld, file: String) {
         if file == "existing_folder" {
