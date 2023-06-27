@@ -40,7 +40,7 @@ mod basic_usage_test {
     //TODO: use existing_folder
     #[given(regex = "arguments are \"(.+)\"")]
     fn arguments_exist(w: &mut SmellsBasicWorld, file: String) {
-        if file == "existing_folder" {
+        /*if file == "existing_folder" {
             w.files = vec![PathBuf::from("tests")
                 .join("data")
                 .join("single_file_folder")
@@ -48,9 +48,10 @@ mod basic_usage_test {
                 .to_string_lossy()
                 .to_string()];
         } else {
-            let split_file_argument = file.split_whitespace();
-            w.files = split_file_argument.map(String::from).collect();
-        }
+
+        }*/
+        let split_file_argument = file.split_whitespace();
+        w.files = split_file_argument.map(String::from).collect();
     }
 
     #[when(expr = "smells is called")]

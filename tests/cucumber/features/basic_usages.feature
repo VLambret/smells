@@ -22,7 +22,7 @@ Feature: Smells basic usages
     And standard error contains "No such file or directory"
 
   Scenario: Smells nominal case
-    Given arguments are "existing_folder"
+    Given arguments are "tests/data/existing_folder"
     When smells is called
     Then exit code is 0
     And standard output is "not empty"
