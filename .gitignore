@@ -11,3 +11,4 @@ tests\\data\\git_repositories
 # backlog
 *.dot
 backlog.png
+fake_*
