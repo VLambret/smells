@@ -5,6 +5,7 @@ set -u
 NUMBER_OF_FILES_BY_FOLDER=$1
 DEPTH=$2
 LINE_COUNT=$3
+FOLDER_NAME=$4
 
 if [ -z "$NUMBER_OF_FILES_BY_FOLDER" ]
 then
@@ -18,24 +19,30 @@ then
   exit 42
 fi
 
-FOLDER_NAME="${NUMBER_OF_FILES_BY_FOLDER}f_by_fld_and${DEPTH}deep"
+if [ -z "$FOLDER_NAME" ]
+then
+  echo "usage: $0 <folder_name>" >&2
+  exit 42
+fi
 
-rm -rf "perf_fake_file_system/$FOLDER_NAME"
-mkdir -p "perf_fake_file_system/$FOLDER_NAME"
-# shellcheck disable=SC2164
-cd "perf_fake_file_system/$FOLDER_NAME"
+if [ -d "$FOLDER_NAME" ]
+then
+  exit 0
+fi
+
+rm -f "$FOLDER_NAME"
+mkdir -p "$FOLDER_NAME"
+cd "$FOLDER_NAME" || exit 43
 for h in $(seq 1 "$DEPTH")
 do
   mkdir -p "$FOLDER_NAME${h}"
-  # shellcheck disable=SC2164
-  cd "$FOLDER_NAME${h}"
-  # shellcheck disable=SC2086
+  cd "$FOLDER_NAME${h}" || exit 43
   for i in $(seq 1 $NUMBER_OF_FILES_BY_FOLDER)
   do
       for j in $(seq 1 "$LINE_COUNT")
       do
-        echo "line : $j" >> "fake_file${i}"
-      done
+        echo "line : $j"
+      done > "fake_file${i}"
     done
 done
 

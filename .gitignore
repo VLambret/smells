@@ -12,3 +12,7 @@ tests\\data\\git_repositories
 *.dot
 backlog.png
 fake_*
+
+# perf file
+*.time
+tests/data/generated*

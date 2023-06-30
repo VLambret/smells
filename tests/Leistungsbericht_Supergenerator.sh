@@ -2,15 +2,21 @@
 
 set -u
 
+RESULT_FOLDER="data/generated_results"
+mkdir -p $RESULT_FOLDER
 
 function run_analyses() {
       NUMBER_OF_FILES_BY_FOLDER_VAR=$1
       DEPTH_VAR=$2
       LINE_COUNT_OF_FILE_VAR=$3
-      TESTED_PARAMETER_VAR=$4
-      OUTPUT_FILE=$5
+      CASE_NAME=$5
+      FAKE_FOLDER="data/generated/$CASE_NAME"
+      EXECUTION_ID=$(date +%s.%3N)
+      RESULT_FILE="${RESULT_FOLDER}/${CASE_NAME}.${EXECUTION_ID}.time"
 
-      ./Leistungsberichtsgenerator.sh "${NUMBER_OF_FILES_BY_FOLDER_VAR}" "${DEPTH_VAR}" "${LINE_COUNT_OF_FILE_VAR}" "${TESTED_PARAMETER_VAR}" "${NUMBER_OF_ANALYSES}" "${OUTPUT_FILE}"
+  ./create_fake_project.sh "${NUMBER_OF_FILES_BY_FOLDER_VAR}" "${DEPTH_VAR}" "${LINE_COUNT_OF_FILE_VAR}" "${FAKE_FOLDER}"
+  (/bin/time -f %e ../target/debug/smells.exe "$FAKE_FOLDER") 2> "$RESULT_FILE"
+
 }
 
 # Flat file system
