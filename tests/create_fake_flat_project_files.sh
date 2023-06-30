@@ -18,7 +18,7 @@ then
   exit 42
 fi
 
-FOLDER_NAME="fake_project_with_${NUMBER_OF_FILES_BY_FOLDER}_files_by_folder_and_${DEPTH}_folders_deep"
+FOLDER_NAME="${NUMBER_OF_FILES_BY_FOLDER}f_by_fld_and${DEPTH}deep"
 
 rm -rf "perf_fake_file_system/$FOLDER_NAME"
 mkdir -p "perf_fake_file_system/$FOLDER_NAME"
