@@ -2,43 +2,26 @@
 
 set -u
 
-NUMBER_OF_ANALYSES=$1
 
-# First Analysis
+function run_analyses() {
+      NUMBER_OF_FILES_BY_FOLDER_VAR=$1
+      DEPTH_VAR=$2
+      LINE_COUNT_OF_FILE_VAR=$3
+      TESTED_PARAMETER_VAR=$4
+      OUTPUT_FILE=$5
 
-NUMBER_OF_FILES_BY_FOLDER_1=$2
-DEPTH_1=$3
-LINE_COUNT_OF_FILE_1=$4
-TESTED_PARAMETER_1=$5
+      ./Leistungsberichtsgenerator.sh "${NUMBER_OF_FILES_BY_FOLDER_VAR}" "${DEPTH_VAR}" "${LINE_COUNT_OF_FILE_VAR}" "${TESTED_PARAMETER_VAR}" "${NUMBER_OF_ANALYSES}" "${OUTPUT_FILE}"
+}
 
-# Second Analysis
-
-NUMBER_OF_FILES_BY_FOLDER_2=$6
-DEPTH_2=$7
-LINE_COUNT_OF_FILE_2=$8
-TESTED_PARAMETER_2=$9
-
-# Third Analysis
-
-NUMBER_OF_FILES_BY_FOLDER_3=${10}
-DEPTH_3=${11}
-LINE_COUNT_OF_FILE_3=${12}
-TESTED_PARAMETER_3=${13}
-
-# Fourth Analysis
-
-NUMBER_OF_FILES_BY_FOLDER_4=${14}
-DEPTH_4=${15}
-LINE_COUNT_OF_FILE_4=${16}
-TESTED_PARAMETER_4=${17}
-
-for i in $(seq 1 "${NUMBER_OF_ANALYSES}")
+# Flat file system
+for FILE_NUMBER in 100 1000 5000 100000
 do
-  NUMBER_OF_FILES_BY_FOLDER_VAR="NUMBER_OF_FILES_BY_FOLDER_${i}"
-  DEPTH_VAR="DEPTH_${i}"
-  LINE_COUNT_OF_FILE_VAR="LINE_COUNT_OF_FILE_${i}"
-  TESTED_PARAMETER_VAR="TESTED_PARAMETER_${i}"
-
-  ./Leistungsberichtsgenerator.sh "${!NUMBER_OF_FILES_BY_FOLDER_VAR}" "${!DEPTH_VAR}" "${!LINE_COUNT_OF_FILE_VAR}" "${!TESTED_PARAMETER_VAR}" "${i}"
+  run_analyses $FILE_NUMBER 1 1 1 "flat_file_system.$FILE_NUMBER"
+  run_analyses $FILE_NUMBER 1 500 1 "flat_medium_file_system.$FILE_NUMBER"
 done
 
+
+for DEPTH in 50
+do
+  run_analyses 100 $DEPTH 500 2 "linear_depth.$DEPTH"
+done
