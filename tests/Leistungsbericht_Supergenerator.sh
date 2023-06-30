@@ -23,6 +23,7 @@ function run_analyses() {
 for FILE_NUMBER in 100 1000 5000 100000
 do
   run_analyses $FILE_NUMBER 1 1 1 "flat_file_system.$FILE_NUMBER"
+  exit
   run_analyses $FILE_NUMBER 1 500 1 "flat_medium_file_system.$FILE_NUMBER"
 done
 
