@@ -1,22 +1,17 @@
 use std::env;
 use std::fs;
-use std::io::{self, BufRead, BufReader};
+use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
 
 fn create_files_in_directory(path: &Path, total_files: usize, width: usize, depth: usize, num_lines: usize) -> io::Result<()> {
     if depth == 0 {
         return Ok(());
     }
-
     fs::create_dir_all(path)?;
 
     for i in 0..width {
-        let dir_path = path.join(format!("dir{}", i));
-        create_files_in_directory(&dir_path, total_files, width, depth - 1, num_lines)?;
-
         for j in 0..(total_files / width) {
-            let file_path = dir_path.join(format!("file{}.txt", j));
-
+            let file_path = path.join(format!("file{}.txt", j));
             let file = fs::File::create(&file_path)?;
             let mut writer = io::BufWriter::new(file);
 
@@ -24,6 +19,8 @@ fn create_files_in_directory(path: &Path, total_files: usize, width: usize, dept
                 writer.write_all(b"This is a line.\n")?;
             }
         }
+        let dir_path = path.join(format!("dir{}", i));
+        create_files_in_directory(&dir_path, total_files, width, depth - 1, num_lines)?;
     }
 
     Ok(())
