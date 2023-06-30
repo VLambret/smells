@@ -30,20 +30,29 @@ then
   exit 0
 fi
 
+FAKE_FILE=".tmp_$LINE_COUNT"
+
+function generate_lines()
+{
+      for j in $(seq 1 "$LINE_COUNT")
+      do
+        echo "line : $j"
+      done > "fake_file${i}"
+}
+
+generate_lines > $FAKE_FILE
+
 rm -f "$FOLDER_NAME"
 mkdir -p "$FOLDER_NAME"
 cd "$FOLDER_NAME" || exit 43
 for h in $(seq 1 "$DEPTH")
 do
-  mkdir -p "$FOLDER_NAME${h}"
-  cd "$FOLDER_NAME${h}" || exit 43
-  for i in $(seq 1 $NUMBER_OF_FILES_BY_FOLDER)
-  do
-      for j in $(seq 1 "$LINE_COUNT")
-      do
-        echo "line : $j"
-      done > "fake_file${i}"
-    done
+	mkdir -p "$FOLDER_NAME${h}"
+	cd "$FOLDER_NAME${h}" || exit 43
+	for i in $(seq 1 $NUMBER_OF_FILES_BY_FOLDER)
+	do
+		cp "$FAKE_FILE"  "fake_file${i}"
+	done
 done
 
 
