@@ -143,14 +143,15 @@ fn build_hierarchical_analysis_structure(
     root_analysis: HierarchicalAnalysis,
     file_analyses: &[FileAnalysis],
 ) -> HierarchicalAnalysis {
-    if let Some(current_file_analysis) = file_analyses.first() {
+    let mut updated_root_analysis = root_analysis;
+
+    for current_file_analysis in file_analyses {
         let current_file_top_analysis = HierarchicalAnalysis::new(current_file_analysis);
-        let updated_root_analysis =
-            combine_hierarchical_analysis(root_analysis, current_file_top_analysis);
-        build_hierarchical_analysis_structure(updated_root_analysis, &file_analyses[1..])
-    } else {
-        root_analysis
+        updated_root_analysis =
+            combine_hierarchical_analysis(updated_root_analysis, current_file_top_analysis);
     }
+
+    updated_root_analysis
 }
 
 fn build_top_analysis_structure(hierarchical_analysis: HierarchicalAnalysis) -> TopAnalysis {
@@ -210,55 +211,45 @@ fn combine_folder_content(
     root_content_entries: Option<BTreeMap<String, HierarchicalAnalysis>>,
     other_content_entries: Option<BTreeMap<String, HierarchicalAnalysis>>,
 ) -> Option<BTreeMap<String, HierarchicalAnalysis>> {
-    let updated_folder_content: BTreeMap<_, _> = root_content_entries
-        .clone()
-        .unwrap_or_else(|| btreemap! {})
-        .iter()
-        .filter_map(|(root_content_entry_key, root_content_entry_analysis)| {
-            if other_content_entries
-                .as_ref()
-                .unwrap_or(&btreemap! {})
-                .contains_key(root_content_entry_key)
+    let mut updated_content: Vec<HierarchicalAnalysis> = vec![];
+    for root_content_entry in root_content_entries.clone().unwrap_or(btreemap! {}) {
+        let (root_content_entry_key, root_content_entry_analysis) = root_content_entry;
+        if other_content_entries
+            .clone()
+            .unwrap_or(btreemap! {})
+            .contains_key(&root_content_entry_key)
+        {
+            if let Some(other_analysis) = other_content_entries
+                .clone()
+                .unwrap_or(btreemap! {})
+                .get(&root_content_entry_key)
             {
-                other_content_entries
-                    .as_ref()
-                    .unwrap_or(&btreemap! {})
-                    .get(root_content_entry_key)
-                    .map(|other_analysis| {
-                        combine_hierarchical_analysis(
-                            root_content_entry_analysis.to_owned(),
-                            other_analysis.to_owned(),
-                        )
-                    })
-            } else {
-                Some(root_content_entry_analysis.clone())
+                let updated_current_analysis = combine_hierarchical_analysis(
+                    root_content_entry_analysis.to_owned(),
+                    other_analysis.to_owned(),
+                );
+                updated_content.push(updated_current_analysis);
             }
-        })
-        .collect::<Vec<_>>()
-        .into_iter()
-        .chain(
-            other_content_entries
-                .unwrap_or_else(|| btreemap! {})
-                .iter()
-                .filter_map(|(other_content_entry_key, other_content_entry_analysis)| {
-                    if !root_content_entries
-                        .as_ref()
-                        .unwrap_or(&btreemap! {})
-                        .contains_key(other_content_entry_key)
-                    {
-                        Some(other_content_entry_analysis.clone())
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>()
-                .into_iter(),
-        )
-        .collect::<Vec<_>>()
+        } else {
+            let current_analysis = root_content_entry_analysis.clone();
+            updated_content.push(current_analysis);
+        }
+    }
+
+    for other_content_entry in other_content_entries.unwrap_or(btreemap! {}) {
+        let (other_content_entry_key, other_content_entry_analysis) = other_content_entry;
+        if !root_content_entries
+            .clone()
+            .unwrap_or(btreemap! {})
+            .contains_key(&other_content_entry_key)
+        {
+            updated_content.push(other_content_entry_analysis);
+        }
+    }
+    let updated_folder_content: BTreeMap<_, _> = updated_content
         .iter()
         .map(|analysis| (analysis.file_name.clone(), analysis.clone()))
         .collect();
-
     Some(updated_folder_content)
 }
 

@@ -24,7 +24,6 @@ cucumber = "0.19.1"
 futures = "0.3"
 inventory = "0.3.6"
 
-
 [[test]]
 name = "cucumber"
 path = "tests/cucumber/cucumber_test.rs"
@@ -34,3 +33,6 @@ harness = false
 debug = true
 debug-assertions = true
 debuginfo = 2
+
+[profile.release]
+debug = true
