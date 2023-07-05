@@ -1,3 +1,9 @@
+ifeq ($(OS),Windows_NT)
+	DOCKER = winpty docker
+else
+	DOCKER = docker
+endif
+
 .PHONY: build test
 
 all: build test
@@ -28,12 +34,17 @@ backlog.dot: backlog.py
 
 IMAGE_NAME := smells-test:latest
 CONTAINER_NAME := smells_container1
+SMELLS_DIR := $(shell realpath .)
+CARGO_CACHE := $(shell realpath ~/.cargo)
 
-DOCKER_RUN := winpty docker run -t -i -v C:\Users\Lucas\git\smells:/app --rm \
+DOCKER_RUN := $(DOCKER) run -t -i --rm \
+	-v $(SMELLS_DIR):/smells \
+	-v $(CARGO_CACHE):/usr/local/cargo/ \
 	--name $(CONTAINER_NAME) $(IMAGE_NAME)
+	
 
 docker_build_image: ## Build an image from a Dockerfile
-	winpty docker build -t $(IMAGE_NAME) .
+	$(DOCKER) build -t $(IMAGE_NAME) .
 
 docker_tests: ## Create the container
 	 $(DOCKER_RUN) cargo test
@@ -42,4 +53,5 @@ docker_shell: ## Run a shell in the container
 	 $(DOCKER_RUN) bash
 
 docker_stop_rm: ## Stop and remove the specified container
-	winpty docker stop $(CONTAINER_NAME) && docker rm $(CONTAINER_NAME)
+	$(DOCKER) stop $(CONTAINER_NAME) 
+	$(DOCKER) rm $(CONTAINER_NAME)
