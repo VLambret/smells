@@ -34,12 +34,12 @@ backlog.dot: backlog.py
 
 IMAGE_NAME := smells-test:latest
 CONTAINER_NAME := smells_container1
-SMELLS_DIR := $(shell realpath .)
-CARGO_CACHE := $(shell realpath ~/.cargo)
+SMELLS_DIR := $(shell cygpath -w $(shell realpath .))
+CARGO_CACHE := $(shell cygpath -w $(shell realpath ~/.cargo/registry))
 
 DOCKER_RUN := $(DOCKER) run -t -i --rm \
 	-v $(SMELLS_DIR):/smells \
-	-v $(CARGO_CACHE):/usr/local/cargo/ \
+	-v cargocache:/usr/local/cargo/registry \
 	--name $(CONTAINER_NAME) $(IMAGE_NAME)
 	
 
