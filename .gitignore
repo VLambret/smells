@@ -16,3 +16,4 @@ fake_*
 # perf file
 *.time
 tests/data/generated*
+fs_generator/root_directory*
