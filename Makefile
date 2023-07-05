@@ -1,7 +1,7 @@
 ifeq ($(OS),Windows_NT)
-	DOCKER = winpty docker
+	EXEC_CMD = winpty powershell -command
 else
-	DOCKER = docker
+	EXEC_CMD = sh -c
 endif
 
 .PHONY: build test
@@ -33,25 +33,21 @@ backlog.dot: backlog.py
 ################################################################################*
 
 IMAGE_NAME := smells-test:latest
-CONTAINER_NAME := smells_container1
 SMELLS_DIR := $(shell cygpath -w $(shell realpath .))
-CARGO_CACHE := $(shell cygpath -w $(shell realpath ~/.cargo/registry))
 
-DOCKER_RUN := $(DOCKER) run -t -i --rm \
+DOCKER_RUN := docker run -t -i --rm \
 	-v $(SMELLS_DIR):/smells \
-	-v cargocache:/usr/local/cargo/registry \
-	--name $(CONTAINER_NAME) $(IMAGE_NAME)
-	
+	-v cargo_cache:/usr/local/cargo/registry \
+	$(IMAGE_NAME)
 
-docker_build_image: ## Build an image from a Dockerfile
-	$(DOCKER) build -t $(IMAGE_NAME) .
+d_build_image: 
+	docker build -t $(IMAGE_NAME) .
 
-docker_tests: ## Create the container
-	 $(DOCKER_RUN) cargo test
+d_build: 
+	 $(EXEC_CMD) "$(DOCKER_RUN) make build"
 
-docker_shell: ## Run a shell in the container
+d_test: 
+	 $(EXEC_CMD) "$(DOCKER_RUN) make test"
+
+d_shell:
 	 $(DOCKER_RUN) bash
-
-docker_stop_rm: ## Stop and remove the specified container
-	$(DOCKER) stop $(CONTAINER_NAME) 
-	$(DOCKER) rm $(CONTAINER_NAME)
