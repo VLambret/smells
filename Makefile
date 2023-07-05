@@ -32,16 +32,14 @@ backlog.dot: backlog.py
 # DOCKER
 ################################################################################*
 
-IMAGE_NAME := smells-test:latest
+IMAGE_NAME := rust:1.69-bookworm
 SMELLS_DIR := $(shell cygpath -w $(shell realpath .))
 
 DOCKER_RUN := docker run -t -i --rm \
 	-v $(SMELLS_DIR):/smells \
 	-v cargo_cache:/usr/local/cargo/registry \
+	--workdir=/smells \
 	$(IMAGE_NAME)
-
-d_build_image: 
-	docker build -t $(IMAGE_NAME) .
 
 d_build: 
 	 $(EXEC_CMD) "$(DOCKER_RUN) make build"
