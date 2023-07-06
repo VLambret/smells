@@ -6,6 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - name: Print hello 
+      - name: Print current repo 
         run: |
-          cat ~/hello_to_delete.txt
+          # cat ~/hello_to_delete.txt
+          echo ls .
