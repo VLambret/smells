@@ -15,6 +15,7 @@ mod basic_usage_test {
     use cucumber::{given, then, when, World};
     use predicates::boolean::PredicateBooleanExt;
     use predicates::prelude::predicate;
+    use std::fs::{create_dir, create_dir_all};
     use std::path::PathBuf;
 
     #[derive(Debug, World)]
@@ -37,19 +38,12 @@ mod basic_usage_test {
         w.files = vec![];
     }
 
-    //TODO: use existing_folder
     #[given(regex = "arguments are \"(.+)\"")]
     fn arguments_exist(w: &mut SmellsBasicWorld, file: String) {
-        /*if file == "existing_folder" {
-            w.files = vec![PathBuf::from("tests")
-                .join("data")
-                .join("single_file_folder")
-                .join("file0.txt")
-                .to_string_lossy()
-                .to_string()];
-        } else {
-
-        }*/
+        let existing_folder = PathBuf::from("tests").join("data").join("existing_folder");
+        if !existing_folder.exists() {
+            create_dir_all(existing_folder).unwrap();
+        }
         let split_file_argument = file.split_whitespace();
         w.files = split_file_argument.map(String::from).collect();
     }
