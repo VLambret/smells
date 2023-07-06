@@ -11,4 +11,5 @@ jobs:
 
       - name: Run Docker container and build
         run: |
+          export SMELLS_DIR=$(realpath .)
           make d_build
