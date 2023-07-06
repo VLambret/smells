@@ -78,10 +78,13 @@ impl Iterator for FakeFileExplorer {
 #[cfg(test)]
 pub mod file_explorer_tests {
     use crate::data_sources::file_explorer::{FakeFileExplorer, FileExplorer, IFileExplorer};
-    use std::collections::HashSet;
+    use futures::StreamExt;
+    use maplit::btreemap;
+    use std::collections::{BTreeMap, HashSet};
     use std::fs;
     use std::fs::File;
     use std::path::PathBuf;
+
     fn assert_contains_same_items(actual_files: Vec<PathBuf>, expected_files: Vec<PathBuf>) {
         let left: HashSet<&PathBuf> = HashSet::from_iter(expected_files.iter());
         let right: HashSet<&PathBuf> = HashSet::from_iter(actual_files.iter());
@@ -179,8 +182,13 @@ pub mod file_explorer_tests {
         fs::create_dir(&dir21).unwrap();
         File::create(&file1).unwrap();
         File::create(&file2).unwrap(); // When
-        let actual_files = FileExplorer::new(&root).discover(); // Then
-        let expected_files: Vec<PathBuf> = vec![file1, file2];
+        let files = FileExplorer::new(&root).discover();
+        let actual_files: BTreeMap<_, _> = files
+            .iter()
+            .map(|file| (file.to_string_lossy().to_string(), file))
+            .collect(); // Then
+        let expected_files = btreemap! {file1.to_string_lossy().to_string() => &file1,
+        file2.to_string_lossy().to_string() => &file2};
         assert_eq!(actual_files, expected_files);
     }
     #[test]
