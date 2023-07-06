@@ -35,7 +35,7 @@ backlog.dot: backlog.py
 IMAGE_NAME := rust:1.69-bookworm
 SMELLS_DIR := $(shell realpath .)
 
-DOCKER_RUN := docker run -t -i --rm \
+DOCKER_RUN := docker run --rm \
 	-v $(SMELLS_DIR):/smells \
 	-v cargo_cache:/usr/local/cargo/registry \
 	--workdir=/smells \
