@@ -2,10 +2,18 @@ name: GitHub Actions Demo
 run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
 on: [push]
 jobs:
-  Explore-GitHub-Actions:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: checkout repo
-        uses: actions/checkout@v3
-      - name: create container and display Hello in it
-        run: make d_shell | echo Hello
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Docker
+        uses: docker/setup-docker@v1
+
+      - name: Run Docker container
+        run: |
+          container_name=$(make d_build | grep "Container name:" | awk '{print $3}')
+          docker exec $container_name bash -c 'Hello ! Container name: $container_name'
+          docker stop $container_name
