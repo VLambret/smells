@@ -9,7 +9,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Run Docker container and build
+      - name: Run Docker container and test
         run: |
           export SMELLS_DIR=$(realpath .)
-          make d_build
+          make d_test
