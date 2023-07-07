@@ -1,15 +1,35 @@
-name: Notifier
+name: Tests and Notifier
 on: [push]
 jobs:
 
-  messageSlack:
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-notify:
     runs-on: ubuntu-latest
+
     steps:
-    - name: Notification Slack
-      uses: rtCamp/action-slack-notify@v2
-      env:
-        SLACK_CHANNEL: smells_ci
-        SLACK_TITLE: Hello!
-        SLACK_USERNAME: BotCI
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-        SLACK_MESSAGE: "It's working !"
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Get commit message
+        id: commit
+        run: echo "::set-output name=commit_message::$(git log --format=%B -n 1 ${{ github.sha }})"
+
+      - name: Run Docker container and test
+        run: |
+          test_result=$(make d_test)
+
+      - name: Notification Slack
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_CHANNEL: smells_ci
+          SLACK_TITLE: Test Result
+          SLACK_USERNAME: BotCI
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_MESSAGE: |
+            Test results: $test_result
+            Commit: ${{ steps.commit.outputs.commit_message }}
