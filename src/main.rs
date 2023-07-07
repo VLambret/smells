@@ -1,14 +1,8 @@
-use crate::analysis_module::public_analysis::do_analysis;
-use crate::formatters::json::convert_analysis_to_formatted_json;
-use crate::viewers::cli::print_formatted_json_output;
+use smells::analysis_module::public_analysis::do_analysis;
+use smells::formatters::json::convert_analysis_to_formatted_json;
+use smells::viewers::cli::print_formatted_json_output;
 use std::path::PathBuf;
 use structopt::StructOpt;
-
-mod analysis_module;
-mod data_sources;
-mod formatters;
-mod metrics;
-mod viewers;
 
 #[derive(Debug, StructOpt)]
 pub struct CmdArgs {
