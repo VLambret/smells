@@ -26,7 +26,6 @@ jobs:
         if: always()
         with:
           status: ${{ job.status }}
-          notification_title: "Tests result for commit ${{ steps.commit.outputs.commit_message }} by ${{ steps.author.outputs.commit_author }}"
-          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> "
+          notification_title: "Tests result for commit "${{ steps.commit.outputs.commit_message }}" pushed by ${{ steps.author.outputs.commit_author }}"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
