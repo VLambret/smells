@@ -1,4 +1,4 @@
-name: Tests and Notifier
+name: Tests
 on: [push]
 
 jobs:
@@ -13,6 +13,10 @@ jobs:
         id: commit
         run: echo "::set-output name=commit_message::$(git log --format=%B -n 1 ${{ github.sha }})"
 
+      - name: Get commit author
+        id: author
+        run: echo "::set-output name=commit_author::$(git log --format=%an -n 1 ${{ github.sha }})"
+
       - name: Run Docker container and test
         run: |
           make d_test
@@ -22,6 +26,7 @@ jobs:
         if: always()
         with:
           status: ${{ job.status }}
-          notification_title: "Tests result for ${{ steps.commit.outputs.commit_message }}"
+          notification_title: "Tests result for commit "${{ steps.commit.outputs.commit_message }}" by ${{ steps.author.outputs.commit_author }}"
+          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> "
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
