@@ -23,7 +23,6 @@ jobs:
   
       - name: Notification Slack
         uses: ravsamhq/notify-slack-action@v2
-        if: always()
         with:
           status: ${{ job.status }}
           notification_title: "Tests result for commit "${{ steps.commit.outputs.commit_message }}" by ${{ steps.author.outputs.commit_author }}"
