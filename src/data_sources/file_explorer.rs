@@ -78,11 +78,9 @@ impl Iterator for FakeFileExplorer {
 #[cfg(test)]
 pub mod file_explorer_tests {
     use crate::data_sources::file_explorer::{FakeFileExplorer, FileExplorer, IFileExplorer};
-    use futures::StreamExt;
     use maplit::btreemap;
     use std::collections::{BTreeMap, HashSet};
-    use std::fs;
-    use std::fs::File;
+    use std::fs::{create_dir, create_dir_all, File, remove_dir_all};
     use std::path::PathBuf;
 
     fn assert_contains_same_items(actual_files: Vec<PathBuf>, expected_files: Vec<PathBuf>) {
@@ -98,9 +96,9 @@ pub mod file_explorer_tests {
             .join("file_explorer")
             .join("empty_root");
         if root.exists() {
-            fs::remove_dir_all(&root).unwrap();
+            remove_dir_all(&root).unwrap();
         }
-        fs::create_dir_all(&root).unwrap(); // When
+        create_dir_all(&root).unwrap(); // When
         let actual_files = FileExplorer::new(&root).discover(); // Then
         let expected_files: Vec<PathBuf> = vec![];
         assert_eq!(actual_files, expected_files);
@@ -112,13 +110,18 @@ pub mod file_explorer_tests {
             .join("data")
             .join("file_explorer")
             .join("root_with_1_file");
-        if root.exists() {
-            fs::remove_dir_all(&root).unwrap();
+        if !root.exists() {
+            create_dir_all(&root).unwrap();
         }
-        fs::create_dir_all(&root).unwrap();
         let file1 = root.join("file1.txt");
-        File::create(&file1).unwrap(); // When
-        let actual_files = FileExplorer::new(&root).discover(); // Then
+        if !file1.exists(){
+            File::create(&file1).unwrap();
+        }
+
+        // When
+        let actual_files = FileExplorer::new(&root).discover();
+
+        // Then
         let expected_files: Vec<PathBuf> = vec![file1];
         assert_eq!(actual_files, expected_files);
     }
@@ -129,15 +132,25 @@ pub mod file_explorer_tests {
             .join("data")
             .join("file_explorer")
             .join("root_with_2_files");
-        if root.exists() {
-            fs::remove_dir_all(&root).unwrap();
+        if !root.exists() {
+            create_dir_all(&root).unwrap();
         }
-        fs::create_dir_all(&root).unwrap();
+
         let file1 = root.join("file1.txt");
         let file2 = root.join("file2.txt");
-        File::create(&file1).unwrap();
-        File::create(&file2).unwrap(); // When
-        let actual_files = FileExplorer::new(&root).discover(); // Then
+
+        if !file1.exists(){
+            File::create(&file1).unwrap();
+        }
+
+        if !file2.exists(){
+            File::create(&file2).unwrap();
+        }
+
+        // When
+        let actual_files = FileExplorer::new(&root).discover();
+
+        // Then
         let expected_files: Vec<PathBuf> = vec![file1, file2];
         assert_contains_same_items(actual_files, expected_files);
     }
@@ -149,15 +162,23 @@ pub mod file_explorer_tests {
             .join("data")
             .join("file_explorer")
             .join("root_with_1_folder_and_1_file");
-        if root.exists() {
-            fs::remove_dir_all(&root).unwrap();
+        if !root.exists() {
+            create_dir_all(&root).unwrap();
         }
-        fs::create_dir_all(&root).unwrap();
         let subfolder = root.join("subfolder");
         let file1 = subfolder.join("file1.txt");
-        fs::create_dir(&subfolder).unwrap();
-        File::create(&file1).unwrap(); // When
-        let actual_files = FileExplorer::new(&root).discover(); // Then
+        if !subfolder.exists(){
+            create_dir(&subfolder).unwrap();
+        }
+
+        if !file1.exists(){
+            File::create(&file1).unwrap();
+        }
+
+        // When
+        let actual_files = FileExplorer::new(&root).discover();
+
+        // Then
         let expected_files: Vec<PathBuf> = vec![file1];
         assert_eq!(actual_files, expected_files);
     }
@@ -168,25 +189,39 @@ pub mod file_explorer_tests {
             .join("data")
             .join("file_explorer")
             .join("folder_with_tree");
-        if root.exists() {
-            fs::remove_dir_all(&root).unwrap();
+
+        if !root.exists() {
+            create_dir_all(&root).unwrap();
         }
-        fs::create_dir_all(&root).unwrap();
+
         let dir1 = root.join("dir1");
         let file1 = dir1.join("file1.txt");
         let dir2 = root.join("dir2");
         let dir21 = dir2.join("dir21");
         let file2 = dir21.join("file2.txt");
-        fs::create_dir(&dir1).unwrap();
-        fs::create_dir(&dir2).unwrap();
-        fs::create_dir(&dir21).unwrap();
-        File::create(&file1).unwrap();
-        File::create(&file2).unwrap(); // When
+
+        if !dir1.exists() {
+            create_dir(&dir1).unwrap();
+        }
+        if !dir21.exists() {
+            create_dir_all(&dir21).unwrap();
+        }
+
+        if !file1.exists() {
+            File::create(&file1).unwrap();
+        }
+        if !file2.exists() {
+            File::create(&file2).unwrap();
+        }
+
+        // When
         let files = FileExplorer::new(&root).discover();
         let actual_files: BTreeMap<_, _> = files
             .iter()
             .map(|file| (file.to_string_lossy().to_string(), file))
-            .collect(); // Then
+            .collect();
+
+        // Then
         let expected_files = btreemap! {file1.to_string_lossy().to_string() => &file1,
         file2.to_string_lossy().to_string() => &file2};
         assert_eq!(actual_files, expected_files);

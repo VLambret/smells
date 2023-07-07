@@ -86,11 +86,9 @@ mod tests {
     use git2::Repository;
     use git2::{Commit, Signature, Tree};
     use rstest::rstest;
-    use std::fs::{remove_dir_all, File};
+    use std::fs::{remove_dir_all, File, create_dir_all};
     use std::io::Write;
-    fn _get_git_repositories_path() -> PathBuf {
-        PathBuf::from("tests").join("data").join("git_repositories")
-    }
+
     #[rstest(expected_social_complexity, case(0), case(1), case(2), case(10))]
     fn file_social_complexity(expected_social_complexity: u32) {
         let repo_name = format!("repo_with_{}_authors", expected_social_complexity);
@@ -101,8 +99,10 @@ mod tests {
         }
         let committed_file_path = repo.path().join(multi_author_file);
         let actual_social_complexity = _get_file_social_complexity(&repo, &committed_file_path);
-        assert_eq!(actual_social_complexity, expected_social_complexity);
-    } // TODO: ca marche pas = erreur sur le StripPrefix
+        assert_eq!(expected_social_complexity, actual_social_complexity);
+    }
+
+    // TODO: ca marche pas = erreur sur le StripPrefix
     #[rstest(path_to_repo, expected_authors, case("git_repo_test", 1))]
     #[ignore]
     fn smells_get_numbers_of_authors_of_files_of_a_repo(
@@ -129,7 +129,7 @@ mod tests {
             commit_line_change_authored_by(&repo, file, &author);
         }
         //assert_eq!(get_number_of_authors_of_repo_dir(repo.path()), predicate::str::contains("1"));
-        assert_eq!(_get_number_of_authors_of_repo_dir(&repo, root_path), 1);
+        assert_eq!(1, _get_number_of_authors_of_repo_dir(&repo, root_path));
     }
     fn commit_line_change_authored_by(repo: &Repository, file: &str, author: &Signature) {
         update_file(repo, file);
@@ -143,12 +143,12 @@ mod tests {
         // TODO : Repository::init doesn't work on Windows, it automatically add ./ to the path
         let repo = std::env::current_dir()
             .unwrap()
-            .join(PathBuf::from(r"tests\data\git_repositories").join(repo_name));
+            .join(PathBuf::from("tests").join("data").join("git_repositories").join(repo_name));
         if repo.exists() {
             remove_dir_all(&repo).unwrap();
         }
+        create_dir_all(&repo).unwrap();
         //TODO: handle unwrap()
-        std::fs::create_dir_all(&repo).unwrap();
         Repository::init(repo).unwrap()
     }
     fn create_file(repo: &Repository, file: &str) {
@@ -199,6 +199,6 @@ mod tests {
             tree,
             parents,
         )
-        .unwrap();
+            .unwrap();
     }
 }
