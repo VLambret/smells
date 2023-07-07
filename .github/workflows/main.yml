@@ -2,7 +2,7 @@ name: Tests and Notifier
 on: [push]
 
 jobs:
-  build-and-notify:
+  test-and-notify:
     runs-on: ubuntu-latest
 
     steps:
@@ -14,11 +14,10 @@ jobs:
         run: echo "::set-output name=commit_message::$(git log --format=%B -n 1 ${{ github.sha }})"
 
       - name: Run Docker container and test
-        env:
-          TEST_RESULT: ""
+        id: test
         run: |
-          TEST_RESULT=$(make d_test)
-          echo "::set-env name=TEST_RESULT::$TEST_RESULT"
+          test_result=$(make d_test)
+          echo "::set-output name=test_result::$test_result"
 
       - name: Notification Slack
         uses: rtCamp/action-slack-notify@v2
@@ -27,6 +26,7 @@ jobs:
           SLACK_TITLE: Test Result
           SLACK_USERNAME: BotCI
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_MESSAGE: |
-            Test results: $TEST_RESULT
+        with:
+          slack_message: |
+            Test results: ${{ steps.test.outputs.test_result }}
             Commit: ${{ steps.commit.outputs.commit_message }}
