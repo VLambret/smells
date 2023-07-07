@@ -1,11 +1,5 @@
 name: Tests and Notifier
 on: [push]
-jobs:
-
-on:
-  push:
-    branches:
-      - main
 
 jobs:
   build-and-notify:
