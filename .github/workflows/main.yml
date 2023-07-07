@@ -16,9 +16,9 @@ jobs:
       - name: Run Docker container and test
         env:
           TEST_RESULT: ""
-      run: |
-        TEST_RESULT=$(make d_test)
-        echo "::set-env name=TEST_RESULT::$TEST_RESULT"
+        run: |
+          TEST_RESULT=$(make d_test)
+          echo "::set-env name=TEST_RESULT::$TEST_RESULT"
 
       - name: Notification Slack
         uses: rtCamp/action-slack-notify@v2
