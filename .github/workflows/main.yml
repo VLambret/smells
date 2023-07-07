@@ -14,8 +14,11 @@ jobs:
         run: echo "::set-output name=commit_message::$(git log --format=%B -n 1 ${{ github.sha }})"
 
       - name: Run Docker container and test
-        run: |
-          test_result=$(make d_test)
+        env:
+          TEST_RESULT: ""
+      run: |
+        TEST_RESULT=$(make d_test)
+        echo "::set-env name=TEST_RESULT::$TEST_RESULT"
 
       - name: Notification Slack
         uses: rtCamp/action-slack-notify@v2
@@ -25,5 +28,5 @@ jobs:
           SLACK_USERNAME: BotCI
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_MESSAGE: |
-            Test results: $test_result
+            Test results: $TEST_RESULT
             Commit: ${{ steps.commit.outputs.commit_message }}
