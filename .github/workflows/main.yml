@@ -19,9 +19,9 @@ jobs:
   
       - name: Notification Slack
         uses: ravsamhq/notify-slack-action@v2
-          if: always()
-          with:
-            status: ${{ job.status }}
-            notification_title: "Tests result for ${{ steps.commit.outputs.commit_message }}"
-          env:
-            SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: always()
+        with:
+          status: ${{ job.status }}
+          notification_title: "Tests result for ${{ steps.commit.outputs.commit_message }}"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
