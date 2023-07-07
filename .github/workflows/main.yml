@@ -20,13 +20,14 @@ jobs:
           echo "::set-output name=test_result::$test_result"
 
       - name: Notification Slack
-        uses: rtCamp/action-slack-notify@v2
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: |
+            Test results: ${{ steps.test.outputs.test_result }}
+            Commit: ${{ steps.commit.outputs.commit_message }}
         env:
           SLACK_CHANNEL: smells_ci
           SLACK_TITLE: Test Result
           SLACK_USERNAME: BotCI
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-        with:
-          slack_message: |
-            Test results: ${{ steps.test.outputs.test_result }}
-            Commit: ${{ steps.commit.outputs.commit_message }}
