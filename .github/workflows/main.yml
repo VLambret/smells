@@ -1,14 +1,15 @@
-name: GitHub Actions Demo
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+name: Notifier
 on: [push]
 jobs:
-  build:
+
+  messageSlack:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Run Docker container and test
-        run: |
-          make d_test
+    - name: Notification Slack
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_CHANNEL: smells_ci
+        SLACK_TITLE: Hello!
+        SLACK_USERNAME: BotCI
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_MESSAGE: "It's working !"
