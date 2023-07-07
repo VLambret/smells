@@ -14,12 +14,11 @@ jobs:
         run: echo "::set-output name=commit_message::$(git log --format=%B -n 1 ${{ github.sha }})"
 
       - name: Run Docker container and test
-        id: test
         run: |
           make d_test
   
       - name: Notification Slack
-        - uses: ravsamhq/notify-slack-action@v2
+        uses: ravsamhq/notify-slack-action@v2
           if: always()
           with:
             status: ${{ job.status }}
