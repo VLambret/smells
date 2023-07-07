@@ -27,5 +27,7 @@ jobs:
         with:
           status: ${{ job.status }}
           notification_title: "Tests result for commit '${{ steps.commit.outputs.commit_message }}' pushed by ${{ steps.author.outputs.commit_author }}"
+          footer:
+            description: ""
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
