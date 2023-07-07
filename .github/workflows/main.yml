@@ -25,8 +25,8 @@ jobs:
         uses: ravsamhq/notify-slack-action@v2
         if: always()
         with:
-        	status: ${{ job.status }}
-        	notification_title: "Tests result for commit ${{ steps.commit.outputs.commit_message }} by ${{ steps.author.outputs.commit_author }}"
-        	message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> "
-      	env:
-        	SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          status: ${{ job.status }}
+          notification_title: "Tests result for commit ${{ steps.commit.outputs.commit_message }} by ${{ steps.author.outputs.commit_author }}"
+          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> "
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
