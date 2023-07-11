@@ -15,7 +15,7 @@ mod basic_usage_test {
     use cucumber::{given, then, when, World};
     use predicates::boolean::PredicateBooleanExt;
     use predicates::prelude::predicate;
-    use std::fs::{create_dir, create_dir_all};
+    use std::fs::create_dir_all;
     use std::path::PathBuf;
 
     #[derive(Debug, World)]

@@ -1,4 +1,4 @@
-use env_logger::{Builder, Env};
+use env_logger::Env;
 use log::info;
 use smells::analysis_module::public_analysis::do_analysis;
 use smells::formatters::json::convert_analysis_to_formatted_json;

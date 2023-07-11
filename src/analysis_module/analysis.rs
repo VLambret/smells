@@ -104,14 +104,14 @@ pub fn do_internal_analysis(
         folder_content: Some(btreemap! {}),
     };
 
-    let a = file_explorer.discover();
-    info!("Files vector length: {}", a.len());
+    let files_to_analyse = file_explorer.discover();
+    info!("Files vector length: {}", files_to_analyse.len());
 
-    let b = &analyse_all_files(a, metrics);
+    let file_analyses = &analyse_all_files(files_to_analyse, metrics);
 
     let updated_root_analysis = build_hierarchical_analysis_structure(
         root_analysis,
-        &keep_only_last_root_directory_in_analyses_file_names(b, root.to_path_buf()),
+        &keep_only_last_root_directory_in_analyses_file_names(file_analyses, root.to_path_buf()),
     );
     info!("Root HA structure completed !");
     build_top_analysis_structure(updated_root_analysis)
@@ -149,13 +149,11 @@ fn build_hierarchical_analysis_structure(
     file_analyses: &[FileAnalysis],
 ) -> HierarchicalAnalysis {
     let mut updated_root_analysis = root_analysis;
-    let mut ha_counter = 0;
-    for current_file_analysis in file_analyses {
+    for (ha_counter, current_file_analysis) in file_analyses.iter().enumerate() {
         let current_file_top_analysis = HierarchicalAnalysis::new(current_file_analysis);
         updated_root_analysis =
             combine_hierarchical_analysis(updated_root_analysis, current_file_top_analysis);
         info!("HA n°{} created", ha_counter);
-        ha_counter += 1;
     }
 
     updated_root_analysis
@@ -190,12 +188,12 @@ fn analyse_all_files(
     files_to_analyse: Vec<PathBuf>,
     metrics: &[Box<dyn IMetric>],
 ) -> Vec<FileAnalysis> {
-    let a = files_to_analyse
+    let file_analyses = files_to_analyse
         .iter()
         .map(|file| analyse_single_file(file, metrics))
         .collect();
     info!("Files analysis completed !");
-    a
+    file_analyses
 }
 
 fn analyse_single_file(current_file: &PathBuf, metrics: &[Box<dyn IMetric>]) -> FileAnalysis {
