@@ -1,5 +1,6 @@
 use crate::data_sources::file_explorer::IFileExplorer;
 use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreType};
+use log::info;
 use maplit::btreemap;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -102,13 +103,17 @@ pub fn do_internal_analysis(
         metrics: vec![],
         folder_content: Some(btreemap! {}),
     };
+
+    let a = file_explorer.discover();
+    info!("Files vector length: {}", a.len());
+
+    let b = &analyse_all_files(a, metrics);
+
     let updated_root_analysis = build_hierarchical_analysis_structure(
         root_analysis,
-        &keep_only_last_root_directory_in_analyses_file_names(
-            &analyse_all_files(file_explorer.discover(), metrics),
-            root.to_path_buf(),
-        ),
+        &keep_only_last_root_directory_in_analyses_file_names(b, root.to_path_buf()),
     );
+    info!("Root HA structure completed !");
     build_top_analysis_structure(updated_root_analysis)
 }
 
@@ -144,11 +149,13 @@ fn build_hierarchical_analysis_structure(
     file_analyses: &[FileAnalysis],
 ) -> HierarchicalAnalysis {
     let mut updated_root_analysis = root_analysis;
-
+    let mut ha_counter = 0;
     for current_file_analysis in file_analyses {
         let current_file_top_analysis = HierarchicalAnalysis::new(current_file_analysis);
         updated_root_analysis =
             combine_hierarchical_analysis(updated_root_analysis, current_file_top_analysis);
+        info!("HA n°{} created", ha_counter);
+        ha_counter += 1;
     }
 
     updated_root_analysis
@@ -183,10 +190,12 @@ fn analyse_all_files(
     files_to_analyse: Vec<PathBuf>,
     metrics: &[Box<dyn IMetric>],
 ) -> Vec<FileAnalysis> {
-    files_to_analyse
+    let a = files_to_analyse
         .iter()
         .map(|file| analyse_single_file(file, metrics))
-        .collect()
+        .collect();
+    info!("Files analysis completed !");
+    a
 }
 
 fn analyse_single_file(current_file: &PathBuf, metrics: &[Box<dyn IMetric>]) -> FileAnalysis {
