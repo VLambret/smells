@@ -80,7 +80,7 @@ pub mod file_explorer_tests {
     use crate::data_sources::file_explorer::{FakeFileExplorer, FileExplorer, IFileExplorer};
     use maplit::btreemap;
     use std::collections::{BTreeMap, HashSet};
-    use std::fs::{create_dir, create_dir_all, File, remove_dir_all};
+    use std::fs::{create_dir, create_dir_all, remove_dir_all, File};
     use std::path::PathBuf;
 
     fn assert_contains_same_items(actual_files: Vec<PathBuf>, expected_files: Vec<PathBuf>) {
@@ -114,7 +114,7 @@ pub mod file_explorer_tests {
             create_dir_all(&root).unwrap();
         }
         let file1 = root.join("file1.txt");
-        if !file1.exists(){
+        if !file1.exists() {
             File::create(&file1).unwrap();
         }
 
@@ -139,11 +139,11 @@ pub mod file_explorer_tests {
         let file1 = root.join("file1.txt");
         let file2 = root.join("file2.txt");
 
-        if !file1.exists(){
+        if !file1.exists() {
             File::create(&file1).unwrap();
         }
 
-        if !file2.exists(){
+        if !file2.exists() {
             File::create(&file2).unwrap();
         }
 
@@ -167,11 +167,11 @@ pub mod file_explorer_tests {
         }
         let subfolder = root.join("subfolder");
         let file1 = subfolder.join("file1.txt");
-        if !subfolder.exists(){
+        if !subfolder.exists() {
             create_dir(&subfolder).unwrap();
         }
 
-        if !file1.exists(){
+        if !file1.exists() {
             File::create(&file1).unwrap();
         }
 

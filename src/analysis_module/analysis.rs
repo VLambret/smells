@@ -2,7 +2,7 @@ use crate::data_sources::file_explorer::IFileExplorer;
 use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreType};
 use log::info;
 use maplit::btreemap;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 
 /* **************************************************************** */
@@ -218,46 +218,38 @@ fn combine_folder_content(
     root_content_entries: Option<BTreeMap<String, HierarchicalAnalysis>>,
     other_content_entries: Option<BTreeMap<String, HierarchicalAnalysis>>,
 ) -> Option<BTreeMap<String, HierarchicalAnalysis>> {
-    let mut updated_content: Vec<HierarchicalAnalysis> = vec![];
-    for root_content_entry in root_content_entries.clone().unwrap_or(btreemap! {}) {
-        let (root_content_entry_key, root_content_entry_analysis) = root_content_entry;
-        if other_content_entries
-            .clone()
-            .unwrap_or(btreemap! {})
-            .contains_key(&root_content_entry_key)
-        {
+    let mut updated_content: HashMap<String, HierarchicalAnalysis> = HashMap::new();
+
+    if let Some(root_content_entries) = root_content_entries.to_owned() {
+        for (root_content_entry_key, root_content_entry_analysis) in root_content_entries {
             if let Some(other_analysis) = other_content_entries
-                .clone()
-                .unwrap_or(btreemap! {})
-                .get(&root_content_entry_key)
+                .as_ref()
+                .and_then(|entries| entries.get(&root_content_entry_key))
             {
                 let updated_current_analysis = combine_hierarchical_analysis(
-                    root_content_entry_analysis.to_owned(),
-                    other_analysis.to_owned(),
+                    root_content_entry_analysis,
+                    other_analysis.clone(),
                 );
-                updated_content.push(updated_current_analysis);
+                updated_content.insert(root_content_entry_key, updated_current_analysis);
+            } else {
+                updated_content.insert(root_content_entry_key, root_content_entry_analysis);
             }
-        } else {
-            let current_analysis = root_content_entry_analysis.clone();
-            updated_content.push(current_analysis);
         }
     }
 
-    for other_content_entry in other_content_entries.unwrap_or(btreemap! {}) {
-        let (other_content_entry_key, other_content_entry_analysis) = other_content_entry;
-        if !root_content_entries
-            .clone()
-            .unwrap_or(btreemap! {})
-            .contains_key(&other_content_entry_key)
-        {
-            updated_content.push(other_content_entry_analysis);
+    if let Some(other_content_entries) = other_content_entries {
+        for (other_content_entry_key, other_content_entry_analysis) in other_content_entries {
+            if !root_content_entries
+                .as_ref()
+                .map(|entries| entries.contains_key(&other_content_entry_key))
+                .unwrap_or(false)
+            {
+                updated_content.insert(other_content_entry_key, other_content_entry_analysis);
+            }
         }
     }
-    let updated_folder_content: BTreeMap<_, _> = updated_content
-        .iter()
-        .map(|analysis| (analysis.file_name.clone(), analysis.clone()))
-        .collect();
-    Some(updated_folder_content)
+
+    Some(updated_content.into_iter().collect())
 }
 
 fn combine_hierarchical_analysis(

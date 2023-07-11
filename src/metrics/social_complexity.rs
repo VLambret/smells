@@ -86,7 +86,7 @@ mod tests {
     use git2::Repository;
     use git2::{Commit, Signature, Tree};
     use rstest::rstest;
-    use std::fs::{remove_dir_all, File, create_dir_all};
+    use std::fs::{create_dir_all, remove_dir_all, File};
     use std::io::Write;
 
     #[rstest(expected_social_complexity, case(0), case(1), case(2), case(10))]
@@ -141,9 +141,12 @@ mod tests {
     }
     fn create_git_test_repository(repo_name: String) -> Repository {
         // TODO : Repository::init doesn't work on Windows, it automatically add ./ to the path
-        let repo = std::env::current_dir()
-            .unwrap()
-            .join(PathBuf::from("tests").join("data").join("git_repositories").join(repo_name));
+        let repo = std::env::current_dir().unwrap().join(
+            PathBuf::from("tests")
+                .join("data")
+                .join("git_repositories")
+                .join(repo_name),
+        );
         if repo.exists() {
             remove_dir_all(&repo).unwrap();
         }
@@ -199,6 +202,6 @@ mod tests {
             tree,
             parents,
         )
-            .unwrap();
+        .unwrap();
     }
 }
