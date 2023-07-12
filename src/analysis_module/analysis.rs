@@ -239,12 +239,10 @@ fn combine_folder_content(
 
     if let Some(other_content_entries) = other_content_entries {
         for (other_content_entry_key, other_content_entry_analysis) in other_content_entries {
-            if !root_content_entries
-                .as_ref()
-                .map(|entries| entries.contains_key(&other_content_entry_key))
-                .unwrap_or(false)
-            {
-                updated_content.insert(other_content_entry_key, other_content_entry_analysis);
+            if let Some(root_content_entries) = root_content_entries.as_ref() {
+                if !root_content_entries.contains_key(&other_content_entry_key) {
+                    updated_content.insert(other_content_entry_key, other_content_entry_analysis);
+                }
             }
         }
     }
