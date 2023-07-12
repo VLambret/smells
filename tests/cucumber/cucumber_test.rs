@@ -1,16 +1,19 @@
-use crate::basic_usage_test::SmellsBasicWorld;
+use crate::smells_steps::SmellsWorld;
 use cucumber::World;
 
 fn main() {
-    futures::executor::block_on(SmellsBasicWorld::run(
+    futures::executor::block_on(SmellsWorld::run(
         "tests/cucumber/features/basic_usages.feature",
+    ));
+    futures::executor::block_on(SmellsWorld::run(
+        "tests/cucumber/features/social_complexity.feature",
     ));
 }
 
 /*************************************************************************************************************************/
 
 #[cfg(test)]
-mod basic_usage_test {
+mod smells_steps {
     use assert_cmd::Command;
     use cucumber::{given, then, when, World};
     use predicates::boolean::PredicateBooleanExt;
@@ -19,27 +22,33 @@ mod basic_usage_test {
     use std::path::PathBuf;
 
     #[derive(Debug, World)]
-    pub struct SmellsBasicWorld {
+    pub struct SmellsWorld {
         files: Vec<String>,
         cmd: Command,
+        analysed_folder: String,
     }
 
-    impl Default for SmellsBasicWorld {
+    impl Default for SmellsWorld {
         fn default() -> Self {
-            SmellsBasicWorld {
+            SmellsWorld {
                 files: vec![],
                 cmd: Command::cargo_bin("smells").expect("Failed to create Command"),
+                analysed_folder: String::default(),
             }
         }
     }
 
+    /***********************************************************************************
+     * BASIC USAGE
+     **********************************************************************************/
+
     #[given(expr = "no program argument is provided")]
-    fn no_argument_is_provided(w: &mut SmellsBasicWorld) {
+    fn no_argument_is_provided(w: &mut SmellsWorld) {
         w.files = vec![];
     }
 
     #[given(regex = "arguments are \"(.+)\"")]
-    fn arguments_exist(w: &mut SmellsBasicWorld, file: String) {
+    fn arguments_exist(w: &mut SmellsWorld, file: String) {
         let existing_folder = PathBuf::from("tests").join("data").join("existing_folder");
         if !existing_folder.exists() {
             create_dir_all(existing_folder).unwrap();
@@ -49,17 +58,17 @@ mod basic_usage_test {
     }
 
     #[when(expr = "smells is called")]
-    fn smells_called(w: &mut SmellsBasicWorld) {
+    fn smells_called(w: &mut SmellsWorld) {
         w.cmd.args(&w.files);
     }
 
-    #[then(regex = r"exit code is (.+)")]
-    fn exit_code_is_a_number(w: &mut SmellsBasicWorld, code_number: i32) {
+    #[then(regex = "exit code is (.+)")]
+    fn exit_code_is_a_number(w: &mut SmellsWorld, code_number: i32) {
         w.cmd.assert().code(code_number);
     }
 
     #[then(regex = "standard output is \"(.+)\"")]
-    fn stdout_is_empty(w: &mut SmellsBasicWorld, empty: String) {
+    fn stdout_is_empty(w: &mut SmellsWorld, empty: String) {
         if empty == "empty" {
             w.cmd.assert().stdout(predicate::str::is_empty());
         } else {
@@ -68,13 +77,13 @@ mod basic_usage_test {
     }
 
     #[then(regex = "standard output contains \"(.+)\"")]
-    fn stdout_contains_message(w: &mut SmellsBasicWorld, message: String) {
+    fn stdout_contains_message(w: &mut SmellsWorld, message: String) {
         w.cmd.assert().stdout(predicate::str::contains(message));
     }
 
     //TODO: find a way to handle fr/en
     #[then(regex = "standard error contains \"(.+)\"")]
-    fn stderr_contains_message(w: &mut SmellsBasicWorld, message: String) {
+    fn stderr_contains_message(w: &mut SmellsWorld, message: String) {
         let french_message = String::from("Le fichier spécifié est introuvable.");
         if message == "No such file or directory" {
             w.cmd.assert().stderr(
@@ -86,9 +95,16 @@ mod basic_usage_test {
     }
 
     #[then("standard error is empty")]
-    fn stderr_is_empty(w: &mut SmellsBasicWorld) {
+    fn stderr_is_empty(w: &mut SmellsWorld) {
         w.cmd.assert().stderr(predicate::str::is_empty());
     }
+
+    /***********************************************************************************
+     * SOCIAL COMPLEXITY
+     **********************************************************************************/
+
+    #[given(expr = "analysed folder is not a git repository")]
+    fn step_analysed_folder_is_not_a_git_repository(w: &mut SmellsWorld) {}
 }
 
 #[cfg(test)]
