@@ -2,9 +2,9 @@ use crate::smells_steps::SmellsWorld;
 use cucumber::World;
 
 fn main() {
-    futures::executor::block_on(SmellsWorld::run(
+    /*    futures::executor::block_on(SmellsWorld::run(
         "tests/cucumber/features/basic_usages.feature",
-    ));
+    ));*/
     futures::executor::block_on(SmellsWorld::run(
         "tests/cucumber/features/social_complexity.feature",
     ));
@@ -15,26 +15,39 @@ fn main() {
 #[cfg(test)]
 mod smells_steps {
     use assert_cmd::Command;
-    use cucumber::{given, then, when, World};
+    use cucumber::*;
     use predicates::boolean::PredicateBooleanExt;
     use predicates::prelude::predicate;
-    use std::fs::create_dir_all;
+    use serde_json::Value;
+    use std::fs::{create_dir, create_dir_all, remove_dir, File};
+    use std::io::{stdout, Write};
     use std::path::PathBuf;
 
     #[derive(Debug, World)]
     pub struct SmellsWorld {
-        files: Vec<String>,
+        analysed_folder: Vec<String>,
         cmd: Command,
-        analysed_folder: String,
     }
 
     impl Default for SmellsWorld {
         fn default() -> Self {
             SmellsWorld {
-                files: vec![],
+                analysed_folder: vec![],
                 cmd: Command::cargo_bin("smells").expect("Failed to create Command"),
-                analysed_folder: String::default(),
             }
+        }
+    }
+
+    fn convert_stdout_to_json(cmd: &mut Command) -> Value {
+        let actual_stdout = cmd.output().unwrap().stdout;
+        let actual_stdout_str = String::from_utf8(actual_stdout).unwrap();
+        convert_string_to_json(&actual_stdout_str)
+    }
+
+    fn convert_string_to_json(expected_stdout: &str) -> Value {
+        match serde_json::from_str(expected_stdout) {
+            Ok(json) => json,
+            Err(err) => panic!("Failed to parse JSON: {}", err),
         }
     }
 
@@ -44,7 +57,7 @@ mod smells_steps {
 
     #[given(expr = "no program argument is provided")]
     fn no_argument_is_provided(w: &mut SmellsWorld) {
-        w.files = vec![];
+        w.analysed_folder = vec![];
     }
 
     #[given(regex = "arguments are \"(.+)\"")]
@@ -54,12 +67,12 @@ mod smells_steps {
             create_dir_all(existing_folder).unwrap();
         }
         let split_file_argument = file.split_whitespace();
-        w.files = split_file_argument.map(String::from).collect();
+        w.analysed_folder = split_file_argument.map(String::from).collect();
     }
 
     #[when(expr = "smells is called")]
     fn smells_called(w: &mut SmellsWorld) {
-        w.cmd.args(&w.files);
+        w.cmd.args(&w.analysed_folder);
     }
 
     #[then(regex = "exit code is (.+)")]
@@ -104,7 +117,65 @@ mod smells_steps {
      **********************************************************************************/
 
     #[given(expr = "analysed folder is not a git repository")]
-    fn step_analysed_folder_is_not_a_git_repository(w: &mut SmellsWorld) {}
+    fn step_analysed_folder_is_not_a_git_repository(w: &mut SmellsWorld) {
+        let analyzed_folder = PathBuf::from("tests")
+            .join("data")
+            .join("non_git_repository");
+        if !analyzed_folder.exists() {
+            create_dir(&analyzed_folder).unwrap();
+        };
+        let mut file = File::create(PathBuf::from(&analyzed_folder).join("file5.txt")).unwrap();
+        for _n in 0..4 {
+            file.write_all(b"Line").unwrap()
+        }
+        w.analysed_folder = vec![analyzed_folder.to_string_lossy().to_string()];
+    }
+
+    #[then(regex = "the warning \"(.+)\" is raised")]
+    fn step_warning_is_raised(w: &mut SmellsWorld, warning: String) {
+        w.cmd.assert().stderr(predicate::str::contains("WARN:"));
+        w.cmd.assert().stderr(predicate::str::contains(warning));
+    }
+
+    #[then(regex = "no social complexity metric is computed")]
+    fn step_social_complexity_metric_is_not_computed(w: &mut SmellsWorld) {
+        let analysis_result = convert_stdout_to_json(&mut w.cmd);
+        /*if let Some(metrics) = analysis_result[w.analysed_folder[0].clone()]["metrics"].as_object() {
+            assert!(!metrics.contains_key("social_complexity"));
+        }*/
+        let analysed_folder = PathBuf::from(w.analysed_folder[0].clone());
+        let analysed_folder_file_name = analysed_folder.file_name().unwrap();
+        if let Some(analysis_fields) =
+            analysis_result.get(analysed_folder_file_name.to_string_lossy().to_string())
+        {
+            if let Some(metrics) = analysis_fields.get("metrics") {
+                if let Some(social_complexity) = metrics.get("social_complexity") {
+                    assert!(false)
+                } else {
+                    assert!(true)
+                }
+            } else {
+                assert!(false)
+            }
+        } else {
+            assert!(false)
+        }
+    }
+
+    /*    C:\Users\Lucas\git\smells\tests\data\non_git_repository
+     */
+
+    /***********************************************************************************
+     * TEARDOWN
+     **********************************************************************************/
+
+    /*
+    fn teardown(w: &mut SmellsWorld) {
+            w.analysed_folder.iter().for_each(|folder| {
+                let path = PathBuf::from(folder);
+                remove_dir(path).unwrap();
+            });
+    }*/
 }
 
 #[cfg(test)]

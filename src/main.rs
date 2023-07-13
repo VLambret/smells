@@ -1,4 +1,5 @@
 use env_logger::Env;
+use git2::Repository;
 use log::info;
 use smells::analysis_module::public_analysis::do_analysis;
 use smells::formatters::json::convert_analysis_to_formatted_json;
@@ -19,11 +20,18 @@ fn get_folder_to_analyse(input: &str) -> Result<PathBuf, String> {
     }
 }
 
+fn is_git_repository(path: &PathBuf) -> bool {
+    Repository::open(path).is_ok()
+}
+
 fn main() {
     let env = Env::default().filter_or("MY_LOG_LEVEL", "Error");
     env_logger::init_from_env(env);
 
     let folder_to_analyse = CmdArgs::from_args().folder_to_analyse;
+    if !is_git_repository(&folder_to_analyse) {
+        eprintln!("WARN: Analysed folder is not a git repository");
+    }
     let analysis = do_analysis(folder_to_analyse);
     info!("Root top analysis structure completed !");
     let formatted_json_output = convert_analysis_to_formatted_json(analysis);

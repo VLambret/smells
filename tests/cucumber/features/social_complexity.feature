@@ -2,10 +2,10 @@ Feature: Smells social complexity
 
 	Scenario: Analyse a non-git repository
 		Given analysed folder is not a git repository
-#		When smells is called
-#		Then exit code is 0
-#		And the warning "Analysed folder is not a git repository" is raised
-#		And no social complexity metric is computed
+		When smells is called
+		Then exit code is 0
+		And the warning "Analysed folder is not a git repository" is raised
+		And no social complexity metric is computed
 
 #	Scenario: Analyse a git repository without any contributors
 #		Given analysed folder is a git repository
