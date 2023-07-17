@@ -16,9 +16,11 @@ fn main() {
 mod smells_steps {
     use assert_cmd::Command;
     use cucumber::*;
+    use git2::Repository;
     use predicates::boolean::PredicateBooleanExt;
     use predicates::prelude::predicate;
     use serde_json::Value;
+    use std::collections::HashSet;
     use std::fs::{create_dir, create_dir_all, remove_dir, File};
     use std::io::{stdout, Write};
     use std::path::PathBuf;
@@ -116,6 +118,8 @@ mod smells_steps {
      * SOCIAL COMPLEXITY
      **********************************************************************************/
 
+    //	Scenario: Analyse a non-git repository
+
     #[given(expr = "analysed folder is not a git repository")]
     fn step_analysed_folder_is_not_a_git_repository(w: &mut SmellsWorld) {
         let analyzed_folder = PathBuf::from("tests")
@@ -140,9 +144,6 @@ mod smells_steps {
     #[then(regex = "no social complexity metric is computed")]
     fn step_social_complexity_metric_is_not_computed(w: &mut SmellsWorld) {
         let analysis_result = convert_stdout_to_json(&mut w.cmd);
-        /*if let Some(metrics) = analysis_result[w.analysed_folder[0].clone()]["metrics"].as_object() {
-            assert!(!metrics.contains_key("social_complexity"));
-        }*/
         let analysed_folder = PathBuf::from(w.analysed_folder[0].clone());
         let analysed_folder_file_name = analysed_folder.file_name().unwrap();
         if let Some(analysis_fields) =
@@ -162,8 +163,56 @@ mod smells_steps {
         }
     }
 
-    /*    C:\Users\Lucas\git\smells\tests\data\non_git_repository
-     */
+    //	Scenario: Analyse a git repository without any contributors
+
+    #[given(expr = "analysed folder is a git repository")]
+    fn step_analysed_folder_is_a_git_repository(w: &mut SmellsWorld) {
+        let analyzed_folder = PathBuf::from("tests").join("data").join("git_repositories");
+        w.analysed_folder = vec![analyzed_folder.to_string_lossy().to_string()];
+    }
+
+    #[given(expr = "there is no contributor")]
+    fn step_no_contributors(w: &mut SmellsWorld) {
+        let analyzed_folder =
+            PathBuf::from(w.analysed_folder[0].clone()).join("repo_with_0_authors");
+        w.analysed_folder = vec![analyzed_folder.to_string_lossy().to_string()];
+    }
+
+    #[then(expr = "no warning is raised")]
+    fn step_no_warning_is_raised(w: &mut SmellsWorld) {
+        w.cmd
+            .assert()
+            .stderr(predicate::str::contains("WARN:").not());
+    }
+
+    // 	Scenario: Analyse a git repository with contributors
+
+    #[then(regex = "(.+) contributed to (.+)")]
+    fn step_contributor_to_file(w: &mut SmellsWorld, contributor: String, file: String) {
+        let repo = Repository::open(PathBuf::from(&w.analysed_folder[0])).unwrap();
+        let mut revwalk = repo.revwalk().unwrap();
+        revwalk.push_head().unwrap();
+        let mut authors: Vec<String> = revwalk
+            .map(|r| {
+                let oid = r?;
+                repo.find_commit(oid)
+            })
+            .filter_map(|c| match c {
+                Ok(commit) => Some(commit),
+                Err(e) => {
+                    println!("Error walking the revisions {}, skipping", e);
+                    None
+                }
+            })
+            .fold(HashSet::new(), |mut sofar, cur| {
+                if let Some(name) = cur.author().name() {
+                    sofar.insert(name.to_string());
+                }
+                sofar
+            })
+            .into_iter()
+            .collect();
+    }
 
     /***********************************************************************************
      * TEARDOWN
