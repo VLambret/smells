@@ -1,11 +1,26 @@
 use assert_cmd::Command;
 use cucumber::{given, World};
 use env_logger::Env;
+use futures::FutureExt;
+use log::info;
+use std::fs::remove_dir;
+use std::path::PathBuf;
+use std::time::Duration;
+use std::{thread, time};
 
 #[derive(Debug, World)]
 pub struct SmellsWorld {
     analysed_folder: Vec<String>,
     cmd: Command,
+}
+
+impl SmellsWorld {
+    fn teardown(&mut self) {
+        self.analysed_folder.iter().for_each(|folder| {
+            let path = PathBuf::from(folder);
+            remove_dir(path).unwrap();
+        });
+    }
 }
 
 impl Default for SmellsWorld {
@@ -24,9 +39,21 @@ fn main() {
     let env = Env::default().filter_or("MY_LOG_LEVEL", "info");
     env_logger::init_from_env(env);
 
-    /*    futures::executor::block_on(SmellsWorld::run(
+    /*   futures::executor::block_on(SmellsWorld::run(
         "tests/cucumber/features/social_complexity.feature",
     ));*/
+
+    /*    futures::executor::block_on(SmellsWorld::cucumber()
+    /*        .after(|_feature, _rule, _scenario, _ev, world| {
+                world.unwrap().teardown();
+                let sleep_duration = Duration::from_millis(300);
+                let sleep_future = async move {
+                    thread::sleep(sleep_duration);
+                }.boxed();
+                sleep_future
+            })*/
+            .run_and_exit("tests/cucumber/features/social_complexity.feature"));
+    */
 }
 
 /*************************************************************************************************************************/
@@ -83,7 +110,7 @@ mod smells_steps {
     }
 
     #[then(regex = "exit code is (.+)")]
-    fn exit_code_is_a_number(w: &mut SmellsWorld, code_number: i32) {
+    fn ex0it_code_is_a_number(w: &mut SmellsWorld, code_number: i32) {
         w.cmd.assert().code(code_number);
     }
 
@@ -146,27 +173,17 @@ mod smells_steps {
         w.cmd.assert().stderr(predicate::str::contains(warning));
     }
 
-    //TODO: put helpful error messages
     #[then(regex = "no social complexity metric is computed")]
     fn step_social_complexity_metric_is_not_computed(w: &mut SmellsWorld) {
         let analysis_result = convert_stdout_to_json(&mut w.cmd);
         let analysed_folder = PathBuf::from(w.analysed_folder[0].clone());
         let analysed_folder_file_name = analysed_folder.file_name().unwrap();
-        if let Some(analysis_fields) =
-            analysis_result.get(analysed_folder_file_name.to_string_lossy().to_string())
-        {
-            if let Some(metrics) = analysis_fields.get("metrics") {
-                if let Some(social_complexity) = metrics.get("social_complexity") {
-                    assert!(false)
-                } else {
-                    assert!(true)
-                }
-            } else {
-                assert!(false)
-            }
-        } else {
-            assert!(false)
-        }
+
+        let social_complexity_field = analysis_result
+            .get(analysed_folder_file_name.to_string_lossy().to_string())
+            .and_then(|analysis_fields| analysis_fields.get("metrics"))
+            .and_then(|metrics| metrics.get("social_complexity"));
+        assert!(social_complexity_field.is_none())
     }
 
     //	Scenario: Analyse a git repository without any contributors
@@ -332,12 +349,12 @@ mod smells_steps {
      * TEARDOWN
      **********************************************************************************/
 
-    /*fn teardown(w: &mut SmellsWorld) {
-            w.analysed_folder.iter().for_each(|folder| {
-                let path = PathBuf::from(folder);
-                remove_dir(path).unwrap();
-            });
-    }*/
+    pub(crate) fn teardown(w: &mut SmellsWorld) {
+        w.analysed_folder.iter().for_each(|folder| {
+            let path = PathBuf::from(folder);
+            remove_dir(path).unwrap();
+        });
+    }
 }
 
 #[cfg(test)]
