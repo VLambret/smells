@@ -1,12 +1,8 @@
 use assert_cmd::Command;
 use cucumber::{given, World};
 use env_logger::Env;
-use futures::FutureExt;
-use log::info;
 use std::fs::remove_dir;
 use std::path::PathBuf;
-use std::time::Duration;
-use std::{thread, time};
 
 #[derive(Debug, World)]
 pub struct SmellsWorld {
@@ -15,7 +11,7 @@ pub struct SmellsWorld {
 }
 
 impl SmellsWorld {
-    fn teardown(&mut self) {
+    fn _teardown(&mut self) {
         self.analysed_folder.iter().for_each(|folder| {
             let path = PathBuf::from(folder);
             remove_dir(path).unwrap();
@@ -39,21 +35,20 @@ fn main() {
     let env = Env::default().filter_or("MY_LOG_LEVEL", "info");
     env_logger::init_from_env(env);
 
-    /*   futures::executor::block_on(SmellsWorld::run(
+    /*       futures::executor::block_on(SmellsWorld::run(
         "tests/cucumber/features/social_complexity.feature",
     ));*/
 
     /*    futures::executor::block_on(SmellsWorld::cucumber()
-    /*        .after(|_feature, _rule, _scenario, _ev, world| {
-                world.unwrap().teardown();
-                let sleep_duration = Duration::from_millis(300);
-                let sleep_future = async move {
-                    thread::sleep(sleep_duration);
-                }.boxed();
-                sleep_future
-            })*/
-            .run_and_exit("tests/cucumber/features/social_complexity.feature"));
-    */
+    .after(|_feature, _rule, _scenario, _ev, world| {
+        world.unwrap().teardown();
+        let sleep_duration = Duration::from_millis(300);
+        let sleep_future = async move {
+            thread::sleep(sleep_duration);
+        }.boxed();
+        sleep_future
+    })
+    .run_and_exit("tests/cucumber/features/social_complexity.feature"));*/
 }
 
 /*************************************************************************************************************************/
@@ -63,13 +58,12 @@ mod smells_steps {
     use super::*;
     use cucumber::*;
     use git2::{Commit, Repository, Signature, Tree};
-    use log::*;
     use predicates::boolean::PredicateBooleanExt;
     use predicates::prelude::predicate;
     use serde_json::Value;
-    use std::fs::{create_dir, create_dir_all, remove_dir, remove_dir_all, File};
+    use std::fs::{create_dir, create_dir_all, remove_dir_all, File};
     use std::io::Write;
-    use std::path::{Component, Path, PathBuf};
+    use std::path::PathBuf;
     use std::{assert_eq, panic, vec};
 
     fn convert_stdout_to_json(cmd: &mut Command) -> Value {
@@ -349,12 +343,12 @@ mod smells_steps {
      * TEARDOWN
      **********************************************************************************/
 
-    pub(crate) fn teardown(w: &mut SmellsWorld) {
+    /* pub(crate) fn _teardown(w: &mut SmellsWorld) {
         w.analysed_folder.iter().for_each(|folder| {
             let path = PathBuf::from(folder);
             remove_dir(path).unwrap();
         });
-    }
+    }*/
 }
 
 #[cfg(test)]
