@@ -1,44 +1,49 @@
-use crate::smells_steps::SmellsWorld;
-use cucumber::World;
+use assert_cmd::Command;
+use cucumber::{given, World};
+use env_logger::Env;
+
+#[derive(Debug, World)]
+pub struct SmellsWorld {
+    analysed_folder: Vec<String>,
+    cmd: Command,
+}
+
+impl Default for SmellsWorld {
+    fn default() -> SmellsWorld {
+        SmellsWorld {
+            analysed_folder: vec![],
+            cmd: Command::cargo_bin("smells").expect("Failed to create Command"),
+        }
+    }
+}
 
 fn main() {
     /*    futures::executor::block_on(SmellsWorld::run(
         "tests/cucumber/features/basic_usages.feature",
     ));*/
-    futures::executor::block_on(SmellsWorld::run(
+    let env = Env::default().filter_or("MY_LOG_LEVEL", "info");
+    env_logger::init_from_env(env);
+
+    /*    futures::executor::block_on(SmellsWorld::run(
         "tests/cucumber/features/social_complexity.feature",
-    ));
+    ));*/
 }
 
 /*************************************************************************************************************************/
 
 #[cfg(test)]
 mod smells_steps {
-    use assert_cmd::Command;
+    use super::*;
     use cucumber::*;
-    use git2::Repository;
+    use git2::{Commit, Repository, Signature, Tree};
+    use log::*;
     use predicates::boolean::PredicateBooleanExt;
     use predicates::prelude::predicate;
     use serde_json::Value;
-    use std::collections::HashSet;
-    use std::fs::{create_dir, create_dir_all, remove_dir, File};
-    use std::io::{stdout, Write};
-    use std::path::PathBuf;
-
-    #[derive(Debug, World)]
-    pub struct SmellsWorld {
-        analysed_folder: Vec<String>,
-        cmd: Command,
-    }
-
-    impl Default for SmellsWorld {
-        fn default() -> Self {
-            SmellsWorld {
-                analysed_folder: vec![],
-                cmd: Command::cargo_bin("smells").expect("Failed to create Command"),
-            }
-        }
-    }
+    use std::fs::{create_dir, create_dir_all, remove_dir, remove_dir_all, File};
+    use std::io::Write;
+    use std::path::{Component, Path, PathBuf};
+    use std::{assert_eq, panic, vec};
 
     fn convert_stdout_to_json(cmd: &mut Command) -> Value {
         let actual_stdout = cmd.output().unwrap().stdout;
@@ -141,6 +146,7 @@ mod smells_steps {
         w.cmd.assert().stderr(predicate::str::contains(warning));
     }
 
+    //TODO: put helpful error messages
     #[then(regex = "no social complexity metric is computed")]
     fn step_social_complexity_metric_is_not_computed(w: &mut SmellsWorld) {
         let analysis_result = convert_stdout_to_json(&mut w.cmd);
@@ -165,16 +171,34 @@ mod smells_steps {
 
     //	Scenario: Analyse a git repository without any contributors
 
+    fn create_git_test_repository() -> Repository {
+        let repo = std::env::current_dir().unwrap().join(
+            PathBuf::from("tests")
+                .join("data")
+                .join("git_repository_social_complexity"),
+        );
+        if repo.exists() {
+            remove_dir_all(&repo).unwrap();
+        }
+        create_dir_all(&repo).unwrap();
+        Repository::init(repo).unwrap()
+    }
+
     #[given(expr = "analysed folder is a git repository")]
     fn step_analysed_folder_is_a_git_repository(w: &mut SmellsWorld) {
-        let analyzed_folder = PathBuf::from("tests").join("data").join("git_repositories");
-        w.analysed_folder = vec![analyzed_folder.to_string_lossy().to_string()];
+        //let analyzed_folder = PathBuf::from("tests").join("data").join("git_repositories");
+        //w.analysed_folder = vec![analyzed_folder.to_string_lossy().to_string()];
+        w.analysed_folder = vec![create_git_test_repository()
+            .path()
+            .parent()
+            .unwrap()
+            .to_string_lossy()
+            .to_string()];
     }
 
     #[given(expr = "there is no contributor")]
     fn step_no_contributors(w: &mut SmellsWorld) {
-        let analyzed_folder =
-            PathBuf::from(w.analysed_folder[0].clone()).join("repo_with_0_authors");
+        let analyzed_folder = PathBuf::from(w.analysed_folder[0].clone());
         w.analysed_folder = vec![analyzed_folder.to_string_lossy().to_string()];
     }
 
@@ -187,39 +211,128 @@ mod smells_steps {
 
     // 	Scenario: Analyse a git repository with contributors
 
-    #[then(regex = "(.+) contributed to (.+)")]
+    #[given(regex = "(.+) contributed to (.+)")]
     fn step_contributor_to_file(w: &mut SmellsWorld, contributor: String, file: String) {
-        let repo = Repository::open(PathBuf::from(&w.analysed_folder[0])).unwrap();
-        let mut revwalk = repo.revwalk().unwrap();
-        revwalk.push_head().unwrap();
-        let mut authors: Vec<String> = revwalk
-            .map(|r| {
-                let oid = r?;
-                repo.find_commit(oid)
-            })
-            .filter_map(|c| match c {
-                Ok(commit) => Some(commit),
-                Err(e) => {
-                    println!("Error walking the revisions {}, skipping", e);
-                    None
-                }
-            })
-            .fold(HashSet::new(), |mut sofar, cur| {
-                if let Some(name) = cur.author().name() {
-                    sofar.insert(name.to_string());
-                }
-                sofar
-            })
-            .into_iter()
+        let repo = Repository::open(&w.analysed_folder[0]).unwrap();
+        let contributor_signature = Signature::now(&contributor, "mail").unwrap();
+        update_file(&repo, &file);
+        add_file_to_the_staging_area(&repo, file);
+        commit_changes_to_repo(&repo, &contributor_signature);
+    }
+
+    #[then(regex = "(.+) social complexity score is (.+)")]
+    fn step_social_complexity_score(w: &mut SmellsWorld, file: String, score: String) {
+        let analysis_result = convert_stdout_to_json(&mut w.cmd);
+        let analysed_folder = PathBuf::from(w.analysed_folder[0].clone());
+        let analysed_folder_file_name = PathBuf::from(analysed_folder.file_name().unwrap());
+        let file_full_path = analysed_folder_file_name.join(file);
+
+        assert_eq!(
+            get_social_complexity_score(file_full_path, &analysis_result),
+            score.parse::<i32>().unwrap()
+        );
+    }
+
+    fn get_social_complexity_score(file_path: PathBuf, analysis: &Value) -> Value {
+        let file_components: Vec<String> = file_path
+            .components()
+            .map(|component| component.as_os_str().to_string_lossy().to_string())
             .collect();
+
+        match file_components.as_slice() {
+            [file_name] => {
+                if let Some(file_fields) = analysis.get(file_name) {
+                    if let Some(metrics) = file_fields.get("metrics") {
+                        if let Some(score) = metrics.get("social_complexity") {
+                            return score.clone();
+                        }
+                    }
+                }
+            }
+            [first_dir, other_dirs @ ..] => {
+                let mut results = serde_json::Map::new();
+
+                if let Value::Object(obj) = analysis {
+                    if let Some(current_level_folder_content) = obj
+                        .get(first_dir)
+                        .and_then(|fields| fields.get("folder_content_analyses"))
+                    {
+                        if let Value::Array(arr) = current_level_folder_content {
+                            for item in arr {
+                                if let Value::Object(obj) = item {
+                                    results.extend(obj.clone());
+                                }
+                            }
+                        }
+                    }
+                }
+                let other_dirs_pathbuf = other_dirs.iter().collect::<PathBuf>();
+                return get_social_complexity_score(other_dirs_pathbuf, &Value::Object(results));
+            }
+            _ => {}
+        }
+        Value::Null
+    }
+
+    fn update_file(repo: &Repository, file: &String) {
+        let file_path = repo.path().parent().unwrap().join(file);
+
+        if let Some(parent_dir) = file_path.parent() {
+            create_dir_all(parent_dir).expect("Failed to create parent directory")
+        }
+
+        let mut file = File::options()
+            .create(true)
+            .append(true)
+            .open(file_path)
+            .unwrap();
+        writeln!(&mut file, "a").unwrap();
+    }
+
+    fn add_file_to_the_staging_area(repo: &Repository, file: String) {
+        let mut index = repo.index().unwrap(); // index = staging_area
+        index.add_path(&PathBuf::from(file)).unwrap();
+        index.write().unwrap();
+    }
+
+    fn commit_changes_to_repo(repo: &Repository, author: &Signature) {
+        match repo.head() {
+            Ok(head) => {
+                let parent = repo.find_commit(head.target().unwrap()).unwrap();
+                let tree = repo
+                    .find_tree(repo.index().unwrap().write_tree().unwrap())
+                    .unwrap();
+                let parents = &[&parent];
+                create_test_commit(repo, author, &tree, parents);
+            }
+            Err(_) => {
+                let tree_id = {
+                    let mut index = repo.index().unwrap();
+                    index.write_tree().unwrap()
+                };
+                let tree = repo.find_tree(tree_id).unwrap();
+                let parents = &[];
+                create_test_commit(repo, author, &tree, parents);
+            }
+        }
+    }
+    fn create_test_commit(repo: &Repository, author: &Signature, tree: &Tree, parents: &[&Commit]) {
+        repo.commit(
+            Some("HEAD"),
+            author,
+            author,
+            "Commit message",
+            tree,
+            parents,
+        )
+        .unwrap();
     }
 
     /***********************************************************************************
      * TEARDOWN
      **********************************************************************************/
 
-    /*
-    fn teardown(w: &mut SmellsWorld) {
+    /*fn teardown(w: &mut SmellsWorld) {
             w.analysed_folder.iter().for_each(|folder| {
                 let path = PathBuf::from(folder);
                 remove_dir(path).unwrap();

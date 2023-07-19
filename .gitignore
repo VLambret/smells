@@ -3,6 +3,10 @@ target
 tests/data/git_repositories
 tests\\data\\git_repositories
 
+tests/data/git_repository_social_complexity
+tests\\data\\git_repository_social_complexity
+
+
 # Added by cargo
 
 .idea/vcs.xml
