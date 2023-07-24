@@ -36,8 +36,7 @@ mod end_2_end {
         let expected_stdout = r#"{
             "empty_folder": {
                 "metrics": {
-                    "lines_count": 0,
-                    "social_complexity": 0
+                    "lines_count": 0
                 },
                 "folder_content": []
             }
@@ -66,15 +65,13 @@ mod end_2_end {
         let expected_stdout = r#"{
         "single_file_folder": {
             "metrics": {
-                "lines_count": 0,
-                "social_complexity": 0
+                "lines_count": 0
             },
             "folder_content_analyses": [
                 {
                     "file0.txt": {
                         "metrics": {
-                            "lines_count": 0,
-                            "social_complexity": 0
+                            "lines_count": 0
                         }
                     }
                 }
@@ -107,15 +104,13 @@ mod end_2_end {
         let expected_stdout = r#"{
             "single_file_folder_other": {
                 "metrics": {
-                    "lines_count": 5,
-                    "social_complexity": 0
+                    "lines_count": 5
                 },
                 "folder_content_analyses": [
                     {
                         "file5.txt": {
                             "metrics": {
-                                "lines_count": 5,
-                                "social_complexity": 0
+                                "lines_count": 5
                             }
                         }
                     }
@@ -145,23 +140,20 @@ mod end_2_end {
         let expected_stdout = r#"{
             "folder_with_multiple_files":{
                 "metrics": {
-                    "lines_count": 6,
-                    "social_complexity": 0
+                    "lines_count": 6
                 },
                 "folder_content_analyses":[
                     {
                     "file1.txt": {
                         "metrics": {
-                            "lines_count": 1,
-                            "social_complexity": 0
+                            "lines_count": 1
                         }
                     }
                     },
                     {
                     "file5.txt": {
                         "metrics": {
-                            "lines_count": 5,
-                            "social_complexity": 0
+                            "lines_count": 5
                         }
                     }
                     }
@@ -191,23 +183,20 @@ mod end_2_end {
         let expected_stdout = r#"{
             "folder_with_multiple_files":{
                 "metrics": {
-                    "lines_count": 6,
-                    "social_complexity": 0
+                    "lines_count": 6
                 },
                 "folder_content_analyses":[
                     {
                     "file1.txt": {
                         "metrics": {
-                            "lines_count": 1,
-                            "social_complexity": 0
+                            "lines_count": 1
                         }
                     }
                     },
                     {
                     "file5.txt": {
                         "metrics": {
-                            "lines_count": 5,
-                            "social_complexity": 0
+                            "lines_count": 5
                         }
                     }
                     }
@@ -268,30 +257,26 @@ mod end_2_end {
         let expected_stdout = r#"{
             "folder_with_folder_and_file": {
                 "metrics": {
-                    "lines_count": 11,
-                    "social_complexity": 0
+                    "lines_count": 11
                 },
             "folder_content_analyses": [
                 {
                     "file1.txt": {
                         "metrics": {
-                            "lines_count": 1,
-                            "social_complexity": 0
+                            "lines_count": 1
                         }
                     }
                 },
                 {
                     "folder": {
                         "metrics": {
-                            "lines_count": 10,
-                            "social_complexity": 0
+                            "lines_count": 10
                         },
                     "folder_content_analyses": [
                     {
                         "file10.txt": {
                             "metrics": {
-                                "lines_count": 10,
-                                "social_complexity": 0
+                                "lines_count": 10
                             }
                         }
                     }]
