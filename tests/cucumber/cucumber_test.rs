@@ -35,9 +35,9 @@ fn main() {
     let env = Env::default().filter_or("MY_LOG_LEVEL", "info");
     env_logger::init_from_env(env);
 
-    /*       futures::executor::block_on(SmellsWorld::run(
+    futures::executor::block_on(SmellsWorld::run(
         "tests/cucumber/features/social_complexity.feature",
-    ));*/
+    ));
 
     /*    futures::executor::block_on(SmellsWorld::cucumber()
     .after(|_feature, _rule, _scenario, _ev, world| {
