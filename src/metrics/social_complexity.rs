@@ -2,9 +2,9 @@ use crate::metrics::metric::MetricScoreType::Score;
 use crate::metrics::metric::{
     AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType,
 };
-use git2::{Commit, Error, ObjectType, Repository};
+use git2::{Commit, Error as git2Error, ObjectType, Repository};
 use log::{error, info, warn};
-use std::fmt::Debug;
+use std::fmt::{Debug, Error as OtherError};
 use std::fs::read_dir;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -26,9 +26,8 @@ impl IMetric for SocialComplexityMetric {
     fn analyse(&self, file_path: &Path) -> Option<Box<dyn IMetricValue>> {
         let relative_file_path = get_relative_file_path(file_path, &self.root);
         if is_file_versioned(&self.root, &relative_file_path) {
-            let authors: Result<Vec<String>, Error> =
-                get_authors_of_file(&self.root, &relative_file_path);
-            if let Ok(authors) = authors {
+            let authors_if_some = get_authors_of_file(&self.root, &relative_file_path);
+            if let Ok(Some(authors)) = authors_if_some {
                 Some(Box::new(SocialComplexityValue { authors }))
             } else {
                 None
@@ -46,26 +45,36 @@ fn is_file_versioned(repo: &Path, file: &Path) -> bool {
     }
 }
 
-fn get_authors_of_file(root: &PathBuf, file: &Path) -> Result<Vec<String>, Error> {
+fn get_authors_of_file(root: &PathBuf, file: &Path) -> Result<Option<Vec<String>>, git2Error> {
     let repo = Repository::open(root)?;
-    let blame = repo.blame_file(file, None).unwrap();
+    let blame = repo.blame_file(file, None)?;
 
     let spec = "HEAD:".to_owned() + file.to_string_lossy().as_ref();
-    let object = repo.revparse_single(&spec).unwrap();
-    let blob = repo.find_blob(object.id()).unwrap();
+    let object = repo.revparse_single(&spec)?;
+    let blob = repo.find_blob(object.id())?;
 
     let reader = BufReader::new(blob.content());
     let mut authors: Vec<String> = vec![];
     for (line_nb, _line_content) in reader.lines().enumerate() {
         if let Some(hunk) = blame.get_line(line_nb + 1) {
             let signature = hunk.orig_signature();
-            let author = signature.name().unwrap().to_string();
-            if !authors.contains(&author) {
-                authors.push(author);
+            //TODO: use std::error:Error for function return
+            let author_name = signature
+                .name()
+                .map(|name| name.to_string())
+                .ok_or(OtherError);
+            if let Ok(valid_author_name) = author_name {
+                if !authors.contains(&valid_author_name) {
+                    authors.push(valid_author_name);
+                }
             }
         }
     }
-    Ok(authors)
+    if !authors.is_empty() {
+        Ok(Some(authors))
+    } else {
+        Ok(None)
+    }
 }
 
 fn get_relative_file_path(file: &Path, root: &Path) -> PathBuf {
