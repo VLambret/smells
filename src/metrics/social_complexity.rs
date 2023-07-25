@@ -22,19 +22,27 @@ impl SocialComplexityMetric {
 
 impl IMetric for SocialComplexityMetric {
     fn analyse(&self, file_path: &Path) -> Option<Box<dyn IMetricValue>> {
-        // if is_file_versioned(file_path) {
-        Some(Box::new(SocialComplexityValue { authors: vec![] }))
-        /*      } else {
-                None
-            }
-        }*/
+        if is_file_versioned(&self.root, file_path) {
+            Some(Box::new(SocialComplexityValue { authors: vec![] }))
+        } else {
+            None
+        }
     }
 }
 
-/*fn is_file_versioned(file_path: &Path) -> bool {
-    match Repository::discover()
+fn is_file_versioned(repo: &Path, file: &Path) -> bool {
+    match Repository::discover(repo) {
+        Ok(repo) => {
+            if let Ok(statuses) = repo.status_file(file) {
+                !statuses.is_empty()
+            } else {
+                false
+            }
+        }
+        Err(_) => false,
+    }
 }
-*/
+
 #[derive(Debug, PartialEq, Clone)]
 struct SocialComplexityValue {
     authors: Vec<String>,
