@@ -25,7 +25,8 @@ fn main() {
 
     let folder_to_analyse = CmdArgs::from_args().folder_to_analyse;
     let analysis = do_analysis(folder_to_analyse);
-    info!("Root top analysis structure completed !");
+    // info!("cOUCOU").
+    //info!("Root top analysis structure completed !");
     let formatted_json_output = convert_analysis_to_formatted_json(analysis);
     print_formatted_json_output(formatted_json_output);
 }

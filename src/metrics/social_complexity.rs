@@ -2,9 +2,11 @@ use crate::metrics::metric::MetricScoreType::Score;
 use crate::metrics::metric::{
     AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType,
 };
-use git2::Repository;
+use git2::{Commit, Error, ObjectType, Repository};
+use log::{error, info, warn};
 use std::fmt::Debug;
 use std::fs::read_dir;
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
@@ -22,8 +24,15 @@ impl SocialComplexityMetric {
 
 impl IMetric for SocialComplexityMetric {
     fn analyse(&self, file_path: &Path) -> Option<Box<dyn IMetricValue>> {
-        if is_file_versioned(&self.root, file_path) {
-            Some(Box::new(SocialComplexityValue { authors: vec![] }))
+        let relative_file_path = get_relative_file_path(file_path, &self.root);
+        if is_file_versioned(&self.root, &relative_file_path) {
+            let authors: Result<Vec<String>, Error> =
+                get_authors_of_file(&self.root, &relative_file_path);
+            if let Ok(authors) = authors {
+                Some(Box::new(SocialComplexityValue { authors }))
+            } else {
+                None
+            }
         } else {
             None
         }
@@ -32,15 +41,36 @@ impl IMetric for SocialComplexityMetric {
 
 fn is_file_versioned(repo: &Path, file: &Path) -> bool {
     match Repository::discover(repo) {
-        Ok(repo) => {
-            if let Ok(statuses) = repo.status_file(file) {
-                !statuses.is_empty()
-            } else {
-                false
-            }
-        }
+        Ok(repo) => repo.status_file(file).is_ok(),
         Err(_) => false,
     }
+}
+
+fn get_authors_of_file(root: &PathBuf, file: &Path) -> Result<Vec<String>, Error> {
+    let repo = Repository::open(root)?;
+    let blame = repo.blame_file(file, None).unwrap();
+
+    let spec = "HEAD:".to_owned() + file.to_string_lossy().as_ref();
+    let object = repo.revparse_single(&spec).unwrap();
+    let blob = repo.find_blob(object.id()).unwrap();
+
+    let reader = BufReader::new(blob.content());
+    let mut authors: Vec<String> = vec![];
+    for (line_nb, _line_content) in reader.lines().enumerate() {
+        if let Some(hunk) = blame.get_line(line_nb + 1) {
+            let signature = hunk.orig_signature();
+            let author = signature.name().unwrap().to_string();
+            if !authors.contains(&author) {
+                authors.push(author);
+            }
+        }
+    }
+    Ok(authors)
+}
+
+fn get_relative_file_path(file: &Path, root: &Path) -> PathBuf {
+    let relative = file.strip_prefix(root).unwrap();
+    relative.to_owned()
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -54,15 +84,25 @@ impl IMetricValue for SocialComplexityValue {
     }
 
     fn get_score(&self) -> Result<MetricScoreType, AnalysisError> {
-        Ok(Score(0))
+        Ok(Score(self.authors.len() as u64))
     }
 
     fn get_value(&self) -> Result<MetricValueType, AnalysisError> {
-        todo!()
+        Ok(MetricValueType::Authors(self.authors.to_owned()))
     }
 
-    fn aggregate(&self, _other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
-        Box::new(SocialComplexityValue { authors: vec![] })
+    fn aggregate(&self, other: Box<dyn IMetricValue>) -> Box<dyn IMetricValue> {
+        let mut combined_authors = self.authors.clone();
+        if let Ok(MetricValueType::Authors(other_authors)) = other.get_value() {
+            for other_author in other_authors {
+                if !combined_authors.contains(&other_author) {
+                    combined_authors.push(other_author.to_owned());
+                }
+            }
+        }
+        Box::new(SocialComplexityValue {
+            authors: combined_authors,
+        })
     }
 }
 
