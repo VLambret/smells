@@ -7,21 +7,34 @@ use std::fmt::Debug;
 use std::fs::read_dir;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, Default, Clone)]
-pub struct SocialComplexityMetric {}
+#[derive(Debug, Clone)]
+pub struct SocialComplexityMetric {
+    root: PathBuf,
+}
 
 impl SocialComplexityMetric {
-    pub fn new() -> SocialComplexityMetric {
-        SocialComplexityMetric::default()
+    pub fn new(root: &PathBuf) -> SocialComplexityMetric {
+        SocialComplexityMetric {
+            root: root.to_owned(),
+        }
     }
 }
 
 impl IMetric for SocialComplexityMetric {
-    fn analyse(&self, _file_path: &Path) -> Box<dyn IMetricValue> {
-        Box::new(SocialComplexityValue { authors: vec![] })
+    fn analyse(&self, file_path: &Path) -> Option<Box<dyn IMetricValue>> {
+        // if is_file_versioned(file_path) {
+        Some(Box::new(SocialComplexityValue { authors: vec![] }))
+        /*      } else {
+                None
+            }
+        }*/
     }
 }
 
+/*fn is_file_versioned(file_path: &Path) -> bool {
+    match Repository::discover()
+}
+*/
 #[derive(Debug, PartialEq, Clone)]
 struct SocialComplexityValue {
     authors: Vec<String>,

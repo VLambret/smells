@@ -9,7 +9,7 @@ use std::path::PathBuf;
 pub fn do_analysis(root: PathBuf) -> TopAnalysis {
     let mut metrics_to_analyze: Vec<Box<dyn IMetric>> = vec![Box::new(LinesCountMetric::new())];
     if is_git_repository(&root) {
-        metrics_to_analyze.push(Box::new(SocialComplexityMetric::new()));
+        metrics_to_analyze.push(Box::new(SocialComplexityMetric::new(&root)));
     } else {
         eprintln!("WARN: Analysed folder is not a git repository");
     };

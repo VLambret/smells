@@ -105,7 +105,6 @@ pub fn do_internal_analysis(
     };
 
     let files_to_analyse = file_explorer.discover();
-    info!("Files vector length: {}", files_to_analyse.len());
 
     let file_analyses = &analyse_all_files(files_to_analyse, metrics);
 
@@ -113,7 +112,6 @@ pub fn do_internal_analysis(
         root_analysis,
         &keep_only_last_root_directory_in_analyses_file_names(file_analyses, root.to_path_buf()),
     );
-    info!("Root HA structure completed !");
     build_top_analysis_structure(updated_root_analysis)
 }
 
@@ -153,7 +151,6 @@ fn build_hierarchical_analysis_structure(
         let current_file_top_analysis = HierarchicalAnalysis::new(current_file_analysis);
         updated_root_analysis =
             combine_hierarchical_analysis(updated_root_analysis, current_file_top_analysis);
-        info!("HA n°{} created", ha_counter);
     }
 
     updated_root_analysis
@@ -192,7 +189,6 @@ fn analyse_all_files(
         .iter()
         .map(|file| analyse_single_file(file, metrics))
         .collect();
-    info!("Files analysis completed !");
     file_analyses
 }
 
@@ -210,8 +206,8 @@ fn get_file_metrics_value(
 ) -> Vec<Box<dyn IMetricValue>> {
     metrics
         .iter()
-        .map(|metric| metric.analyse(current_file))
-        .collect()
+        .filter_map(|metric| metric.analyse(current_file))
+        .collect::<Vec<Box<dyn IMetricValue>>>()
 }
 
 fn combine_folder_content(
@@ -479,11 +475,11 @@ mod internal_analysis_unit_tests {
     }
 
     impl IMetric for FakeMetric {
-        fn analyse(&self, _file_path: &Path) -> Box<dyn IMetricValue> {
-            Box::new(FakeMetricValue {
+        fn analyse(&self, _file_path: &Path) -> Option<Box<dyn IMetricValue>> {
+            Some(Box::new(FakeMetricValue {
                 metric_key: self.metric_key,
                 value: self.value,
-            })
+            }))
         }
     }
 
@@ -528,8 +524,8 @@ mod internal_analysis_unit_tests {
     struct BrokenMetricValue {}
 
     impl IMetric for BrokenMetric {
-        fn analyse(&self, _file_path: &Path) -> Box<dyn IMetricValue> {
-            Box::<BrokenMetricValue>::default()
+        fn analyse(&self, _file_path: &Path) -> Option<Box<dyn IMetricValue>> {
+            Some(Box::<BrokenMetricValue>::default())
         }
     }
 

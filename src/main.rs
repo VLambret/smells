@@ -20,7 +20,7 @@ fn get_folder_to_analyse(input: &str) -> Result<PathBuf, String> {
 }
 
 fn main() {
-    let env = Env::default().filter_or("MY_LOG_LEVEL", "Error");
+    let env = Env::default().filter_or("MY_LOG_LEVEL", "Info");
     env_logger::init_from_env(env);
 
     let folder_to_analyse = CmdArgs::from_args().folder_to_analyse;

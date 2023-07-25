@@ -13,7 +13,7 @@ use std::path::Path;
 pub struct LinesCountMetric {}
 
 impl IMetric for LinesCountMetric {
-    fn analyse(&self, file_path: &Path) -> Box<dyn IMetricValue> {
+    fn analyse(&self, file_path: &Path) -> Option<Box<dyn IMetricValue>> {
         let file = File::open(file_path);
         let mut content = String::new();
         let line_count = match file {
@@ -26,7 +26,8 @@ impl IMetric for LinesCountMetric {
             }
             Err(_) => Err(AnalysisError::from("Analysis error")),
         };
-        Box::new(LinesCountValue { line_count })
+        //TODO: handle option in case there is no metric computed
+        Some(Box::new(LinesCountValue { line_count }))
     }
 }
 

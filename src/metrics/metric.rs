@@ -5,7 +5,7 @@ use std::path::Path;
 pub type AnalysisError = String;
 
 pub trait IMetric: Debug {
-    fn analyse(&self, file_path: &Path) -> Box<dyn IMetricValue>;
+    fn analyse(&self, file_path: &Path) -> Option<Box<dyn IMetricValue>>;
 }
 
 //TODO: change to a simple type, or will there be other types of MetricScoreType ?
