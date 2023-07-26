@@ -2,10 +2,8 @@ use crate::metrics::metric::MetricScoreType::Score;
 use crate::metrics::metric::{
     AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType,
 };
-use git2::{Commit, Error as git2Error, ObjectType, Repository};
-use log::{error, info, warn};
+use git2::{Error as git2Error, Repository};
 use std::fmt::{Debug, Error as OtherError};
-use std::fs::read_dir;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 

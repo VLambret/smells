@@ -1,6 +1,5 @@
 use crate::data_sources::file_explorer::IFileExplorer;
 use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreType};
-use log::info;
 use maplit::btreemap;
 use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
@@ -147,7 +146,7 @@ fn build_hierarchical_analysis_structure(
     file_analyses: &[FileAnalysis],
 ) -> HierarchicalAnalysis {
     let mut updated_root_analysis = root_analysis;
-    for (ha_counter, current_file_analysis) in file_analyses.iter().enumerate() {
+    for (_ha_counter, current_file_analysis) in file_analyses.iter().enumerate() {
         let current_file_top_analysis = HierarchicalAnalysis::new(current_file_analysis);
         updated_root_analysis =
             combine_hierarchical_analysis(updated_root_analysis, current_file_top_analysis);
