@@ -1,8 +1,79 @@
+use git2::Error as git2Error;
+use std::error::Error;
+use std::fmt;
 use std::fmt::Debug;
 use std::ops::Add;
 use std::path::Path;
 
+/* **************************************************************** */
+
+#[derive(Debug)]
+pub enum AllErrors {
+    AnalysisError(AnalysisError),
+    ResultError(ResultError),
+    OptionError(OptionError),
+    GitError(git2Error),
+}
+
 pub type AnalysisError = String;
+
+#[derive(Debug)]
+pub struct ResultError {
+    details: String,
+}
+
+impl ResultError {
+    pub fn new() -> ResultError {
+        ResultError {
+            details: "Result is an error".to_string(),
+        }
+    }
+}
+
+impl fmt::Display for ResultError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.details)
+    }
+}
+
+impl Error for ResultError {
+    fn description(&self) -> &str {
+        &self.details
+    }
+}
+
+#[derive(Debug)]
+pub struct OptionError {
+    details: String,
+}
+
+impl OptionError {
+    pub fn new() -> OptionError {
+        OptionError {
+            details: "Result is an error".to_string(),
+        }
+    }
+}
+
+impl fmt::Display for OptionError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.details)
+    }
+}
+
+impl Error for OptionError {
+    fn description(&self) -> &str {
+        &self.details
+    }
+}
+
+impl From<git2Error> for AllErrors {
+    fn from(other: git2Error) -> AllErrors {
+        AllErrors::GitError(other)
+    }
+}
+
+/* **************************************************************** */
 
 pub trait IMetric: Debug {
     fn analyse(&self, file_path: &Path) -> Option<Box<dyn IMetricValue>>;
