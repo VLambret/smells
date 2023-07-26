@@ -98,9 +98,9 @@ mod smells_steps {
         w.analysed_folder = split_file_argument.map(String::from).collect();
     }
 
-    #[when(expr = "smells is called")]
-    fn smells_called(w: &mut SmellsWorld) {
-        w.cmd.args(&w.analysed_folder);
+    #[when(regex = "smells is called on (.+)")]
+    fn smells_called(w: &mut SmellsWorld, analysed_folder: String) {
+        w.cmd.args(&[analysed_folder]);
     }
 
     #[then(regex = "exit code is (.+)")]
