@@ -146,19 +146,19 @@ mod smells_steps {
 
     //	Scenario: Analyse a non-git repository
 
-    #[given(expr = "analysed folder is not a git repository")]
-    fn step_analysed_folder_is_not_a_git_repository(w: &mut SmellsWorld) {
-        let analyzed_folder = PathBuf::from("tests")
+    #[given(expr = "project is not a git repository")]
+    fn step_project_is_not_a_git_repository(w: &mut SmellsWorld) {
+        let project = PathBuf::from("tests")
             .join("data")
             .join("non_git_repository");
-        if !analyzed_folder.exists() {
-            create_dir(&analyzed_folder).unwrap();
+        if !project.exists() {
+            create_dir(&project).unwrap();
         };
-        let mut file = File::create(PathBuf::from(&analyzed_folder).join("file5.txt")).unwrap();
+        let mut file = File::create(PathBuf::from(&project).join("file5.txt")).unwrap();
         for _n in 0..4 {
             file.write_all(b"Line").unwrap()
         }
-        w.analysed_folder = vec![analyzed_folder.to_string_lossy().to_string()];
+        w.analysed_folder = vec![project.to_string_lossy().to_string()];
     }
 
     #[then(regex = "the warning \"(.+)\" is raised")]
@@ -195,10 +195,8 @@ mod smells_steps {
         Repository::init(repo).unwrap()
     }
 
-    #[given(expr = "analysed folder is a git repository")]
-    fn step_analysed_folder_is_a_git_repository(w: &mut SmellsWorld) {
-        //let analyzed_folder = PathBuf::from("tests").join("data").join("git_repositories");
-        //w.analysed_folder = vec![analyzed_folder.to_string_lossy().to_string()];
+    #[given(expr = "project is a git repository")]
+    fn step_project_is_a_git_repository(w: &mut SmellsWorld) {
         w.analysed_folder = vec![create_git_test_repository()
             .path()
             .parent()
