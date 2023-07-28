@@ -83,28 +83,20 @@ mod smells_steps {
      * BASIC USAGE
      **********************************************************************************/
 
-    #[given(expr = "no program argument is provided")]
-    fn no_argument_is_provided(w: &mut SmellsWorld) {
-        w.analysed_folder = vec![];
-    }
 
-    #[given(regex = "arguments are \"(.+)\"")]
-    fn arguments_exist(w: &mut SmellsWorld, file: String) {
-        let existing_folder = PathBuf::from("tests").join("data").join("existing_folder");
-        if !existing_folder.exists() {
-            create_dir_all(existing_folder).unwrap();
-        }
-        let split_file_argument = file.split_whitespace();
-        w.analysed_folder = split_file_argument.map(String::from).collect();
-    }
 
-    #[when(regex = "smells is called on (.+)")]
-    fn smells_called(w: &mut SmellsWorld, analysed_folder: String) {
-        w.cmd.args(&[analysed_folder]);
+    #[when(regex = "smells is called with \"(.*)\"")]
+    fn smells_called(w: &mut SmellsWorld, arguments: String) {
+        // TODO: verifier si proj existe
+        // save le rep courant
+        // changer le rep courant
+        let argv = arguments.split_whitespace();
+        w.cmd.args(argv);
+        // si proj existe --> restaurer le pwd precedent
     }
 
     #[then(regex = "exit code is (.+)")]
-    fn ex0it_code_is_a_number(w: &mut SmellsWorld, code_number: i32) {
+    fn exit_code_is_a_number(w: &mut SmellsWorld, code_number: i32) {
         w.cmd.assert().code(code_number);
     }
 
