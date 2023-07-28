@@ -23,29 +23,6 @@ impl SocialComplexityMetric {
     }
 }
 
-/*impl IMetric for SocialComplexityMetric {
-    fn analyse(&self, file_path: &Path) -> Option<Box<dyn IMetricValue>> {
-        if let Ok(relative_file_path) = get_relative_file_path(file_path, &self.root) {
-            if is_file_versioned(&self.root, &relative_file_path) {
-                let potential_authors = get_authors_of_file(&self.root, &relative_file_path);
-                if let Ok(potential_authors) = potential_authors {
-                    if let Some(authors) = potential_authors {
-                        Some(Box::new(SocialComplexityValue { authors: Ok(authors) }))
-                    } else {
-                        None
-                    }
-                } else {
-                    Some(Box::new(SocialComplexityValue { authors: Err("Analysis Error".to_string()) }))
-                }
-            } else {
-                None
-            }
-        } else {
-            Some(Box::new(SocialComplexityValue { authors: Err("Analysis Error".to_string()) }))
-        }
-    }
-}*/
-
 impl IMetric for SocialComplexityMetric {
     fn analyse(&self, file_path: &Path) -> Option<Box<dyn IMetricValue>> {
         if let Ok(relative_file_path) = get_relative_file_path(file_path, &self.root) {
