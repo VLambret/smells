@@ -6,6 +6,7 @@ use crate::metrics::metric::{
     ResultError,
 };
 use git2::Repository;
+use std::env;
 use std::fmt::Debug;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -55,12 +56,14 @@ fn is_file_versioned(repo: &Path, file: &Path) -> bool {
 }
 
 fn get_authors_of_file(root: &PathBuf, file: &Path) -> Result<Option<Vec<String>>, AllErrors> {
-    let repo = Repository::open(root)?;
-    let blame = repo.blame_file(file, None)?;
+    let repo = Repository::open(root).unwrap();
+    let blame = repo.blame_file(file, None).unwrap();
 
     let spec = "HEAD:".to_owned() + file.to_string_lossy().as_ref();
-    let object = repo.revparse_single(&spec)?;
-    let blob = repo.find_blob(object.id())?;
+    let pwd = env::current_dir().unwrap();
+    dbg!(&root, &file, &spec, &pwd);
+    let object = repo.revparse_single(&spec).unwrap();
+    let blob = repo.find_blob(object.id()).unwrap();
 
     let reader = BufReader::new(blob.content());
     let mut authors: Vec<String> = vec![];
