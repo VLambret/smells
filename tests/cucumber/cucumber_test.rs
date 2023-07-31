@@ -6,23 +6,23 @@ use std::path::PathBuf;
 
 #[derive(Debug, World)]
 pub struct SmellsWorld {
-    analysed_folder: Vec<String>,
+    analysed_folder: String,
     cmd: Command,
 }
 
-impl SmellsWorld {
+/*impl SmellsWorld {
     fn _teardown(&mut self) {
         self.analysed_folder.iter().for_each(|folder| {
             let path = PathBuf::from(folder);
             remove_dir(path).unwrap();
         });
     }
-}
+}*/
 
 impl Default for SmellsWorld {
     fn default() -> SmellsWorld {
         SmellsWorld {
-            analysed_folder: vec![],
+            analysed_folder: String::new(),
             cmd: Command::cargo_bin("smells").expect("Failed to create Command"),
         }
     }
@@ -58,13 +58,14 @@ mod smells_steps {
     use super::*;
     use cucumber::*;
     use git2::{Commit, Repository, Signature, Tree};
+    use log::warn;
     use predicates::boolean::PredicateBooleanExt;
     use predicates::prelude::predicate;
     use serde_json::Value;
     use std::fs::{create_dir, create_dir_all, remove_dir_all, File};
     use std::io::Write;
     use std::path::PathBuf;
-    use std::{assert_eq, panic, vec};
+    use std::{assert_eq, env, panic, vec};
 
     fn convert_stdout_to_json(cmd: &mut Command) -> Value {
         let actual_stdout = cmd.output().unwrap().stdout;
@@ -83,16 +84,23 @@ mod smells_steps {
      * BASIC USAGE
      **********************************************************************************/
 
-
-
     #[when(regex = "smells is called with \"(.*)\"")]
     fn smells_called(w: &mut SmellsWorld, arguments: String) {
-        // TODO: verifier si proj existe
+        /*        // TODO: verifier si proj existe
         // save le rep courant
         // changer le rep courant
         let argv = arguments.split_whitespace();
         w.cmd.args(argv);
-        // si proj existe --> restaurer le pwd precedent
+        // si proj existe --> restaurer le pwd precedent*/
+
+        let argv = arguments.split_whitespace();
+        let initial_dir = env::current_dir().unwrap();
+        let change_of_working_directory = env::set_current_dir(&w.analysed_folder);
+        if change_of_working_directory.is_ok() {
+            w.cmd.args(argv);
+        } else {
+            warn!("Change of working directory failed");
+        }
     }
 
     #[then(regex = "exit code is (.+)")]
@@ -150,7 +158,7 @@ mod smells_steps {
         for _n in 0..4 {
             file.write_all(b"Line").unwrap()
         }
-        w.analysed_folder = vec![project.to_string_lossy().to_string()];
+        w.analysed_folder = project.to_string_lossy().to_string();
     }
 
     #[then(regex = "the warning \"(.+)\" is raised")]
@@ -162,7 +170,7 @@ mod smells_steps {
     #[then(regex = "no social complexity metric is computed")]
     fn step_social_complexity_metric_is_not_computed(w: &mut SmellsWorld) {
         let analysis_result = convert_stdout_to_json(&mut w.cmd);
-        let analysed_folder = PathBuf::from(w.analysed_folder[0].clone());
+        let analysed_folder = PathBuf::from(w.analysed_folder.clone());
         let analysed_folder_file_name = analysed_folder.file_name().unwrap();
 
         let social_complexity_field = analysis_result
@@ -189,18 +197,18 @@ mod smells_steps {
 
     #[given(expr = "project is a git repository")]
     fn step_project_is_a_git_repository(w: &mut SmellsWorld) {
-        w.analysed_folder = vec![create_git_test_repository()
+        w.analysed_folder = create_git_test_repository()
             .path()
             .parent()
             .unwrap()
             .to_string_lossy()
-            .to_string()];
+            .to_string();
     }
 
     #[given(expr = "there is no contributor")]
     fn step_no_contributors(w: &mut SmellsWorld) {
-        let analyzed_folder = PathBuf::from(w.analysed_folder[0].clone());
-        w.analysed_folder = vec![analyzed_folder.to_string_lossy().to_string()];
+        let analyzed_folder = PathBuf::from(w.analysed_folder.clone());
+        w.analysed_folder = analyzed_folder.to_string_lossy().to_string();
     }
 
     #[then(expr = "no warning is raised")]
@@ -214,7 +222,7 @@ mod smells_steps {
 
     #[given(regex = "(.+) contributed to (.+)")]
     fn step_contributor_to_file(w: &mut SmellsWorld, contributor: String, file: String) {
-        let repo = Repository::open(&w.analysed_folder[0]).unwrap();
+        let repo = Repository::open(&w.analysed_folder).unwrap();
         let contributor_signature = Signature::now(&contributor, "mail").unwrap();
         update_file(&repo, &file);
         add_file_to_the_staging_area(&repo, file);
@@ -224,7 +232,7 @@ mod smells_steps {
     #[then(regex = "(.+) social complexity score is (.+)")]
     fn step_social_complexity_score(w: &mut SmellsWorld, file: String, score: String) {
         let analysis_result = convert_stdout_to_json(&mut w.cmd);
-        let analysed_folder = PathBuf::from(w.analysed_folder[0].clone());
+        let analysed_folder = PathBuf::from(w.analysed_folder.clone());
         let analysed_folder_file_name = PathBuf::from(analysed_folder.file_name().unwrap());
         let file_full_path = analysed_folder_file_name.join(file);
 
