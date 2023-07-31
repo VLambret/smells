@@ -3,9 +3,11 @@ use cucumber::{given, World};
 use env_logger::Env;
 use std::fs::remove_dir;
 use std::path::PathBuf;
+use std::str::SplitWhitespace;
 
 #[derive(Debug, World)]
 pub struct SmellsWorld {
+    project: String,
     analysed_folder: String,
     cmd: Command,
 }
@@ -22,6 +24,7 @@ pub struct SmellsWorld {
 impl Default for SmellsWorld {
     fn default() -> SmellsWorld {
         SmellsWorld {
+            project: String::new(),
             analysed_folder: String::new(),
             cmd: Command::cargo_bin("smells").expect("Failed to create Command"),
         }
@@ -86,16 +89,8 @@ mod smells_steps {
 
     #[when(regex = "smells is called with \"(.*)\"")]
     fn smells_called(w: &mut SmellsWorld, arguments: String) {
-        /*        // TODO: verifier si proj existe
-        // save le rep courant
-        // changer le rep courant
         let argv = arguments.split_whitespace();
-        w.cmd.args(argv);
-        // si proj existe --> restaurer le pwd precedent*/
-
-        let argv = arguments.split_whitespace();
-        let initial_dir = env::current_dir().unwrap();
-        let change_of_working_directory = env::set_current_dir(&w.analysed_folder);
+        let change_of_working_directory = env::set_current_dir(&w.project);
         if change_of_working_directory.is_ok() {
             w.cmd.args(argv);
         } else {
@@ -105,6 +100,8 @@ mod smells_steps {
 
     #[then(regex = "exit code is (.+)")]
     fn exit_code_is_a_number(w: &mut SmellsWorld, code_number: i32) {
+        env::set_current_dir(PathBuf::from(&w.project)).unwrap();
+        dbg!(env::current_dir().unwrap(), &w.cmd);
         w.cmd.assert().code(code_number);
     }
 
@@ -148,6 +145,7 @@ mod smells_steps {
 
     #[given(expr = "project is not a git repository")]
     fn step_project_is_not_a_git_repository(w: &mut SmellsWorld) {
+        env::set_current_dir(r"C:\Users\Lucas\git\smells").unwrap();
         let project = PathBuf::from("tests")
             .join("data")
             .join("non_git_repository");
@@ -156,9 +154,14 @@ mod smells_steps {
         };
         let mut file = File::create(PathBuf::from(&project).join("file5.txt")).unwrap();
         for _n in 0..4 {
-            file.write_all(b"Line").unwrap()
+            file.write_all(b"Line\n").unwrap()
         }
         w.analysed_folder = project.to_string_lossy().to_string();
+        w.project = env::current_dir()
+            .unwrap()
+            .join(w.analysed_folder.clone())
+            .to_string_lossy()
+            .to_string();
     }
 
     #[then(regex = "the warning \"(.+)\" is raised")]
@@ -183,7 +186,7 @@ mod smells_steps {
     //	Scenario: Analyse a git repository without any contributors
 
     fn create_git_test_repository() -> Repository {
-        let repo = std::env::current_dir().unwrap().join(
+        let repo = env::current_dir().unwrap().join(
             PathBuf::from("tests")
                 .join("data")
                 .join("git_repository_social_complexity"),
@@ -197,19 +200,29 @@ mod smells_steps {
 
     #[given(expr = "project is a git repository")]
     fn step_project_is_a_git_repository(w: &mut SmellsWorld) {
-        w.analysed_folder = create_git_test_repository()
+        env::set_current_dir(r"C:\Users\Lucas\git\smells").unwrap();
+        create_git_test_repository()
             .path()
             .parent()
             .unwrap()
             .to_string_lossy()
             .to_string();
+        w.project = env::current_dir()
+            .unwrap()
+            .join("tests")
+            .join("data")
+            .join("git_repository_social_complexity")
+            .to_string_lossy()
+            .to_string();
+        w.analysed_folder = PathBuf::from("tests")
+            .join("data")
+            .join("git_repository_social_complexity")
+            .to_string_lossy()
+            .to_string();
     }
 
     #[given(expr = "there is no contributor")]
-    fn step_no_contributors(w: &mut SmellsWorld) {
-        let analyzed_folder = PathBuf::from(w.analysed_folder.clone());
-        w.analysed_folder = analyzed_folder.to_string_lossy().to_string();
-    }
+    fn step_no_contributors(w: &mut SmellsWorld) {}
 
     #[then(expr = "no warning is raised")]
     fn step_no_warning_is_raised(w: &mut SmellsWorld) {
@@ -220,9 +233,16 @@ mod smells_steps {
 
     // 	Scenario: Analyse a git repository with contributors
 
+    #[when(expr = "smells is called")]
+    fn simple_smells_called(w: &mut SmellsWorld) {
+        let project = w.project.clone();
+        let argv = vec![project];
+        w.cmd.args(argv);
+    }
+
     #[given(regex = "(.+) contributed to (.+)")]
     fn step_contributor_to_file(w: &mut SmellsWorld, contributor: String, file: String) {
-        let repo = Repository::open(&w.analysed_folder).unwrap();
+        let repo = Repository::open(&w.project).unwrap();
         let contributor_signature = Signature::now(&contributor, "mail").unwrap();
         update_file(&repo, &file);
         add_file_to_the_staging_area(&repo, file);
