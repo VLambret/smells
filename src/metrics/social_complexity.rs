@@ -6,10 +6,8 @@ use crate::metrics::metric::{
     ResultError,
 };
 use git2::Repository;
-use std::env;
-use std::env::{current_dir, set_current_dir};
-use std::fmt::{format, Debug};
-use std::fs::canonicalize;
+use std::env::current_dir;
+use std::fmt::Debug;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
@@ -58,9 +56,7 @@ fn is_file_versioned(repo: &Path, file: &Path) -> bool {
 }
 
 fn get_authors_of_file(root: &PathBuf, file: &Path) -> Result<Option<Vec<String>>, AllErrors> {
-    set_current_dir(&root).unwrap();
-    dbg!(&root, &file, env::current_dir().unwrap());
-    let repo = Repository::open(current_dir().unwrap()).unwrap();
+    let repo = Repository::open(root).unwrap();
     let blame = repo.blame_file(file, None).unwrap();
     //TODO: find a robust solution
     let standardized_path = file.to_string_lossy().replace('\\', "/");
