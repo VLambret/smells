@@ -3,17 +3,20 @@ use cucumber::{given, World};
 use env_logger::Env;
 use futures::FutureExt;
 use log::info;
+use smells::metrics::metric::*;
 use std::env::set_current_dir;
 use std::fs::remove_dir_all;
 use std::path::PathBuf;
+use std::process::Output;
 use std::time::Duration;
-use std::{env, thread};
+use std::{env, io, process, thread};
 
 #[derive(Debug, World)]
 pub struct SmellsWorld {
     initial_wd: PathBuf,
     relative_path_to_project: PathBuf,
     cmd: Command,
+    cmd_output: Option<io::Result<Output>>,
 }
 
 impl Default for SmellsWorld {
@@ -22,6 +25,7 @@ impl Default for SmellsWorld {
             initial_wd: PathBuf::new(),
             relative_path_to_project: PathBuf::new(),
             cmd: Command::cargo_bin("smells").expect("Failed to create Command"),
+            cmd_output: None,
         }
     }
 }
@@ -92,10 +96,10 @@ mod smells_steps {
     use std::path::{Path, PathBuf};
     use std::{assert_eq, env, panic, vec};
 
-    fn convert_stdout_to_json(cmd: &mut Command) -> Value {
-        let actual_stdout = cmd.output().unwrap().stdout;
-        let actual_stdout_str = String::from_utf8(actual_stdout).unwrap();
-        convert_string_to_json(&actual_stdout_str)
+    fn convert_stdout_to_json(cmd_result: &Output) -> Value {
+        let stdout = cmd_result.stdout.to_owned();
+        let stdout_str = String::from_utf8(stdout).unwrap();
+        convert_string_to_json(&stdout_str)
     }
 
     fn convert_string_to_json(expected_stdout: &str) -> Value {
@@ -114,7 +118,7 @@ mod smells_steps {
         let argv = arguments.split_whitespace();
         let change_of_working_directory = set_current_dir(&w.relative_path_to_project);
         if change_of_working_directory.is_ok() {
-            let a = w.cmd.args(argv).assert();
+            w.cmd_output = Some(w.cmd.args(argv).output());
         } else {
             warn!("Change of working directory failed");
         }
@@ -122,7 +126,10 @@ mod smells_steps {
 
     #[then(regex = "exit code is (.+)")]
     fn exit_code_is_a_number(w: &mut SmellsWorld, code_number: i32) {
-        w.cmd.assert().code(code_number);
+        assert!(&w.cmd_output.is_some());
+        if let Some(Ok(output)) = &w.cmd_output {
+            assert_eq!(output.status.code(), Some(code_number));
+        }
     }
 
     #[then(regex = "standard output is \"(.+)\"")]
@@ -180,13 +187,19 @@ mod smells_steps {
 
     #[then(regex = "the warning \"(.+)\" is raised")]
     fn step_warning_is_raised(w: &mut SmellsWorld, warning: String) {
-        w.cmd.assert().stderr(predicate::str::contains("WARN:"));
-        w.cmd.assert().stderr(predicate::str::contains(warning));
+        if let Some(Ok(output)) = &w.cmd_output {
+            let stderr_str = String::from_utf8_lossy(&*output.stderr);
+            assert!(stderr_str.contains("WARN:"));
+            assert!(stderr_str.contains(&warning));
+        } else {
+            assert!(false);
+        }
     }
 
     #[then(regex = "no social complexity metric is computed")]
     fn step_social_complexity_metric_is_not_computed(w: &mut SmellsWorld) {
-        let analysis_result = convert_stdout_to_json(&mut w.cmd);
+        let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
+        let analysis_result = convert_stdout_to_json(&output);
         let analysed_folder = w.relative_path_to_project.clone();
         let analysed_folder_file_name = analysed_folder.file_name().unwrap();
 
@@ -231,9 +244,12 @@ mod smells_steps {
 
     #[then(expr = "no warning is raised")]
     fn step_no_warning_is_raised(w: &mut SmellsWorld) {
-        w.cmd
-            .assert()
-            .stderr(predicate::str::contains("WARN:").not());
+        if let Some(Ok(output)) = &w.cmd_output {
+            let stderr_str = String::from_utf8_lossy(&*output.stderr);
+            assert!(!stderr_str.contains("WARN:"));
+        } else {
+            assert!(false);
+        }
     }
 
     // 	Scenario: Analyse a git repository with contributors
@@ -250,7 +266,8 @@ mod smells_steps {
 
     #[then(regex = "(.+) social complexity score is (.+)")]
     fn step_social_complexity_score(w: &mut SmellsWorld, file: String, score: String) {
-        let analysis_result = convert_stdout_to_json(&mut w.cmd);
+        let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
+        let analysis_result = convert_stdout_to_json(&output);
         let analysed_folder = w.relative_path_to_project.clone();
         let analysed_folder_file_name = PathBuf::from(analysed_folder.file_name().unwrap());
         let file_full_path = analysed_folder_file_name.join(file);

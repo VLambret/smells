@@ -1,9 +1,9 @@
-use crate::metrics::metric::AllErrors::*;
 use crate::metrics::metric::MetricScoreType::Score;
 use crate::metrics::metric::MetricValueType::Authors;
+use crate::metrics::metric::SmellsError::*;
 use crate::metrics::metric::{
-    AllErrors, AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType, OptionError,
-    ResultError,
+    AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType, OptionError,
+    ResultError, SmellsError,
 };
 use git2::Repository;
 use std::env::current_dir;
@@ -55,7 +55,7 @@ fn is_file_versioned(repo: &Path, file: &Path) -> bool {
     }
 }
 
-fn get_authors_of_file(root: &PathBuf, file: &Path) -> Result<Option<Vec<String>>, AllErrors> {
+fn get_authors_of_file(root: &PathBuf, file: &Path) -> Result<Option<Vec<String>>, SmellsError> {
     let repo = Repository::open(root).unwrap();
     let blame = repo.blame_file(file, None).unwrap();
     //TODO: find a robust solution
@@ -90,7 +90,7 @@ fn get_authors_of_file(root: &PathBuf, file: &Path) -> Result<Option<Vec<String>
 fn get_relative_file_path(file: &Path, root: &Path) -> Result<PathBuf, ResultError> {
     match file.strip_prefix(root) {
         Ok(relative_file_path) => Ok(PathBuf::from(relative_file_path)),
-        Err(_) => Err(ResultError::new()),
+        Err(_) => Err(ResultError::new(String::new())),
     }
 }
 

@@ -1,5 +1,5 @@
 Feature: Smells social complexity
-	@serial
+
 	Scenario: Analyse a non-git repository
 		Given project is not a git repository
 		When smells is called with "."
@@ -7,7 +7,7 @@ Feature: Smells social complexity
 		And the warning "Analysed folder is not a git repository" is raised
 		And no social complexity metric is computed
 
-	@serial
+
 	Scenario: Analyse a git repository without any contributors
 		Given project is a git repository
 		And there is no contributor
@@ -16,7 +16,6 @@ Feature: Smells social complexity
 		Then no warning is raised
 		And no social complexity metric is computed
 
-	@serial
 	Scenario: Analyse a git repository with contributors
 		Given project is a git repository
         And author1 contributed to lib/mod1/file1.rs

@@ -8,7 +8,7 @@ use std::path::Path;
 /* **************************************************************** */
 
 #[derive(Debug)]
-pub enum AllErrors {
+pub enum SmellsError {
     AnalysisError(AnalysisError),
     ResultError(ResultError),
     OptionError(OptionError),
@@ -23,10 +23,11 @@ pub struct ResultError {
 }
 
 impl ResultError {
-    pub fn new() -> ResultError {
-        ResultError {
-            details: "Result is an error".to_string(),
+    pub fn new(mut message: String) -> ResultError {
+        if message.is_empty() {
+            message = "Result is an error".to_string()
         }
+        ResultError { details: message }
     }
 }
 
@@ -67,9 +68,9 @@ impl Error for OptionError {
     }
 }
 
-impl From<git2Error> for AllErrors {
-    fn from(other: git2Error) -> AllErrors {
-        AllErrors::GitError(other)
+impl From<git2Error> for SmellsError {
+    fn from(other: git2Error) -> SmellsError {
+        SmellsError::GitError(other)
     }
 }
 
