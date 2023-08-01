@@ -47,9 +47,10 @@ fn main() {
     let env = Env::default().filter_or("MY_LOG_LEVEL", "info");
     env_logger::init_from_env(env);
 
-    /*    futures::executor::block_on(SmellsWorld::run(
+    //TODO: Add to runner
+    futures::executor::block_on(SmellsWorld::run(
         "tests/cucumber/features/basic_usages.feature",
-    ));*/
+    ));
 
     /*   futures::executor::block_on(SmellsWorld::run(
         "tests/cucumber/features/social_complexity.feature",
@@ -96,10 +97,12 @@ mod smells_steps {
     use std::path::{Path, PathBuf};
     use std::{assert_eq, env, panic, vec};
 
-    fn convert_stdout_to_json(cmd_result: &Output) -> Value {
-        let stdout = cmd_result.stdout.to_owned();
-        let stdout_str = String::from_utf8(stdout).unwrap();
+    fn convert_std_to_json(cmd_output_std: Vec<u8>) -> Value {
+        let stdout_str = String::from_utf8(cmd_output_std.to_owned()).unwrap();
         convert_string_to_json(&stdout_str)
+    }
+    fn convert_std_to_string(cmd_output_std: Vec<u8>) -> String {
+        String::from_utf8(cmd_output_std).unwrap()
     }
 
     fn convert_string_to_json(expected_stdout: &str) -> Value {
@@ -116,7 +119,13 @@ mod smells_steps {
     #[when(regex = "smells is called with \"(.*)\"")]
     fn smells_called(w: &mut SmellsWorld, arguments: String) {
         let argv = arguments.split_whitespace();
-        let change_of_working_directory = set_current_dir(&w.relative_path_to_project);
+
+        let change_of_working_directory = if w.relative_path_to_project != PathBuf::new() {
+            set_current_dir(&w.relative_path_to_project)
+        } else {
+            Ok(())
+        };
+
         if change_of_working_directory.is_ok() {
             w.cmd_output = Some(w.cmd.args(argv).output());
         } else {
@@ -132,36 +141,52 @@ mod smells_steps {
         }
     }
 
-    #[then(regex = "standard output is \"(.+)\"")]
+    #[then(regex = "standard output is (.+)")]
     fn stdout_is_empty(w: &mut SmellsWorld, empty: String) {
+        assert!(w.cmd_output.is_some() && w.cmd_output.as_ref().unwrap().is_ok());
+        let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
         if empty == "empty" {
-            w.cmd.assert().stdout(predicate::str::is_empty());
+            assert!(output.stdout.is_empty());
         } else {
-            w.cmd.assert().stdout(predicate::str::is_empty().not());
+            assert!(!output.stdout.is_empty());
         }
     }
 
     #[then(regex = "standard output contains \"(.+)\"")]
     fn stdout_contains_message(w: &mut SmellsWorld, message: String) {
-        w.cmd.assert().stdout(predicate::str::contains(message));
+        assert!(w.cmd_output.is_some() && w.cmd_output.as_ref().unwrap().is_ok());
+        let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
+        let stdout: String = convert_std_to_string(output.stdout);
+        assert!(stdout.contains(&message));
     }
 
     //TODO: find a way to handle fr/en
     #[then(regex = "standard error contains \"(.+)\"")]
     fn stderr_contains_message(w: &mut SmellsWorld, message: String) {
         let french_message = String::from("Le fichier spécifié est introuvable.");
+        assert!(w.cmd_output.is_some() && w.cmd_output.as_ref().unwrap().is_ok());
+        let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
+        let stderr: String = convert_std_to_string(output.stderr);
+
         if message == "No such file or directory" {
-            w.cmd.assert().stderr(
-                predicate::str::contains(message).or(predicate::str::contains(french_message)),
-            );
+            assert!(stderr.contains(&message) || stderr.contains(&french_message))
         } else {
-            w.cmd.assert().stderr(predicate::str::contains(message));
+            assert!(stderr.contains(&message));
         }
     }
 
     #[then("standard error is empty")]
     fn stderr_is_empty(w: &mut SmellsWorld) {
-        w.cmd.assert().stderr(predicate::str::is_empty());
+        let stderr = convert_std_to_string(
+            w.cmd_output
+                .as_ref()
+                .unwrap()
+                .as_ref()
+                .cloned()
+                .unwrap()
+                .stderr,
+        );
+        assert!(stderr.is_empty());
     }
 
     /***********************************************************************************
@@ -199,7 +224,7 @@ mod smells_steps {
     #[then(regex = "no social complexity metric is computed")]
     fn step_social_complexity_metric_is_not_computed(w: &mut SmellsWorld) {
         let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
-        let analysis_result = convert_stdout_to_json(&output);
+        let analysis_result = convert_std_to_json(output.stdout);
         let analysed_folder = w.relative_path_to_project.clone();
         let analysed_folder_file_name = analysed_folder.file_name().unwrap();
 
@@ -267,7 +292,7 @@ mod smells_steps {
     #[then(regex = "(.+) social complexity score is (.+)")]
     fn step_social_complexity_score(w: &mut SmellsWorld, file: String, score: String) {
         let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
-        let analysis_result = convert_stdout_to_json(&output);
+        let analysis_result = convert_std_to_json(output.stdout);
         let analysed_folder = w.relative_path_to_project.clone();
         let analysed_folder_file_name = PathBuf::from(analysed_folder.file_name().unwrap());
         let file_full_path = analysed_folder_file_name.join(file);
@@ -361,6 +386,7 @@ mod smells_steps {
             }
         }
     }
+
     fn create_test_commit(repo: &Repository, author: &Signature, tree: &Tree, parents: &[&Commit]) {
         repo.commit(
             Some("HEAD"),
