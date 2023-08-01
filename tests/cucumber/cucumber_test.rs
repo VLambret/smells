@@ -3,22 +3,22 @@ use cucumber::{given, World};
 use env_logger::Env;
 use futures::FutureExt;
 use std::env::set_current_dir;
+use std::path::PathBuf;
 use std::time::Duration;
 use std::{env, thread};
 
 #[derive(Debug, World)]
 pub struct SmellsWorld {
-    //TODO: Pathbuf
-    initial_wd: String,
-    relative_path_to_project: String,
+    initial_wd: PathBuf,
+    relative_path_to_project: PathBuf,
     cmd: Command,
 }
 
 impl Default for SmellsWorld {
     fn default() -> SmellsWorld {
         SmellsWorld {
-            initial_wd: "".to_string(),
-            relative_path_to_project: String::new(),
+            initial_wd: PathBuf::new(),
+            relative_path_to_project: PathBuf::new(),
             cmd: Command::cargo_bin("smells").expect("Failed to create Command"),
         }
     }
@@ -40,7 +40,7 @@ fn main() {
     futures::executor::block_on(
         SmellsWorld::cucumber()
             .before(|_feature, _rule, _scenario, world| {
-                world.initial_wd = env::current_dir().unwrap().to_string_lossy().to_string();
+                world.initial_wd = env::current_dir().unwrap();
                 let sleep_duration = Duration::from_millis(300);
                 let sleep_future = async move {
                     thread::sleep(sleep_duration);
@@ -151,17 +151,17 @@ mod smells_steps {
 
     #[given(expr = "project is not a git repository")]
     fn step_project_is_not_a_git_repository(w: &mut SmellsWorld) {
-        let project = PathBuf::from("tests")
+        w.relative_path_to_project = PathBuf::from("tests")
             .join("data")
             .join("non_git_repository");
-        if !project.exists() {
-            create_dir(&project).unwrap();
+        if !w.relative_path_to_project.exists() {
+            create_dir(&w.relative_path_to_project).unwrap();
         };
-        let mut file = File::create(PathBuf::from(&project).join("file5.txt")).unwrap();
+        let mut file =
+            File::create(PathBuf::from(&w.relative_path_to_project).join("file5.txt")).unwrap();
         for _n in 0..4 {
             file.write_all(b"Line\n").unwrap()
         }
-        w.relative_path_to_project = project.to_string_lossy().to_string();
     }
 
     #[then(regex = "the warning \"(.+)\" is raised")]
@@ -173,7 +173,7 @@ mod smells_steps {
     #[then(regex = "no social complexity metric is computed")]
     fn step_social_complexity_metric_is_not_computed(w: &mut SmellsWorld) {
         let analysis_result = convert_stdout_to_json(&mut w.cmd);
-        let analysed_folder = PathBuf::from(w.relative_path_to_project.clone());
+        let analysed_folder = w.relative_path_to_project.clone();
         let analysed_folder_file_name = analysed_folder.file_name().unwrap();
 
         let social_complexity_field = analysis_result
@@ -209,9 +209,7 @@ mod smells_steps {
 
         w.relative_path_to_project = PathBuf::from("tests")
             .join("data")
-            .join("git_repository_social_complexity")
-            .to_string_lossy()
-            .to_string();
+            .join("git_repository_social_complexity");
     }
 
     #[given(expr = "there is no contributor")]
@@ -239,7 +237,7 @@ mod smells_steps {
     #[then(regex = "(.+) social complexity score is (.+)")]
     fn step_social_complexity_score(w: &mut SmellsWorld, file: String, score: String) {
         let analysis_result = convert_stdout_to_json(&mut w.cmd);
-        let analysed_folder = PathBuf::from(w.relative_path_to_project.clone());
+        let analysed_folder = w.relative_path_to_project.clone();
         let analysed_folder_file_name = PathBuf::from(analysed_folder.file_name().unwrap());
         let file_full_path = analysed_folder_file_name.join(file);
 
