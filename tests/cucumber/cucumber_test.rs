@@ -1,14 +1,20 @@
 use assert_cmd::Command;
 use cucumber::{given, World};
 use env_logger::Env;
+use futures::FutureExt;
+use std::env::set_current_dir;
 use std::fs::remove_dir;
 use std::path::PathBuf;
 use std::str::SplitWhitespace;
+use std::time::Duration;
+use std::{env, thread};
 
 #[derive(Debug, World)]
 pub struct SmellsWorld {
-    project: String,
-    analysed_folder: String,
+    //TODO: Pathbuf
+    initial_wd: String,
+    absolute_path_to_project: String,
+    relative_path_to_project: String,
     cmd: Command,
 }
 
@@ -24,8 +30,9 @@ pub struct SmellsWorld {
 impl Default for SmellsWorld {
     fn default() -> SmellsWorld {
         SmellsWorld {
-            project: String::new(),
-            analysed_folder: String::new(),
+            initial_wd: "".to_string(),
+            absolute_path_to_project: String::new(),
+            relative_path_to_project: String::new(),
             cmd: Command::cargo_bin("smells").expect("Failed to create Command"),
         }
     }
@@ -38,20 +45,32 @@ fn main() {
     let env = Env::default().filter_or("MY_LOG_LEVEL", "info");
     env_logger::init_from_env(env);
 
-    futures::executor::block_on(SmellsWorld::run(
+    /*   futures::executor::block_on(SmellsWorld::run(
         "tests/cucumber/features/social_complexity.feature",
-    ));
+    ));*/
 
-    /*    futures::executor::block_on(SmellsWorld::cucumber()
-    .after(|_feature, _rule, _scenario, _ev, world| {
-        world.unwrap().teardown();
-        let sleep_duration = Duration::from_millis(300);
-        let sleep_future = async move {
-            thread::sleep(sleep_duration);
-        }.boxed();
-        sleep_future
-    })
-    .run_and_exit("tests/cucumber/features/social_complexity.feature"));*/
+    futures::executor::block_on(
+        SmellsWorld::cucumber()
+            .before(|_feature, _rule, _scenario, world| {
+                world.initial_wd = env::current_dir().unwrap().to_string_lossy().to_string();
+                let sleep_duration = Duration::from_millis(300);
+                let sleep_future = async move {
+                    thread::sleep(sleep_duration);
+                }
+                .boxed();
+                sleep_future
+            })
+            .after(|_feature, _rule, _scenario, _ev, world| {
+                set_current_dir(&world.unwrap().initial_wd).unwrap();
+                let sleep_duration = Duration::from_millis(300);
+                let sleep_future = async move {
+                    thread::sleep(sleep_duration);
+                }
+                .boxed();
+                sleep_future
+            })
+            .run_and_exit("tests/cucumber/features/social_complexity.feature"),
+    );
 }
 
 /*************************************************************************************************************************/
@@ -65,9 +84,10 @@ mod smells_steps {
     use predicates::boolean::PredicateBooleanExt;
     use predicates::prelude::predicate;
     use serde_json::Value;
+    use std::env::set_current_dir;
     use std::fs::{create_dir, create_dir_all, remove_dir_all, File};
     use std::io::Write;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::{assert_eq, env, panic, vec};
 
     fn convert_stdout_to_json(cmd: &mut Command) -> Value {
@@ -90,7 +110,7 @@ mod smells_steps {
     #[when(regex = "smells is called with \"(.*)\"")]
     fn smells_called(w: &mut SmellsWorld, arguments: String) {
         let argv = arguments.split_whitespace();
-        let change_of_working_directory = env::set_current_dir(&w.project);
+        let change_of_working_directory = set_current_dir(&w.relative_path_to_project);
         if change_of_working_directory.is_ok() {
             w.cmd.args(argv);
         } else {
@@ -100,8 +120,6 @@ mod smells_steps {
 
     #[then(regex = "exit code is (.+)")]
     fn exit_code_is_a_number(w: &mut SmellsWorld, code_number: i32) {
-        env::set_current_dir(PathBuf::from(&w.project)).unwrap();
-        dbg!(env::current_dir().unwrap(), &w.cmd);
         w.cmd.assert().code(code_number);
     }
 
@@ -145,7 +163,6 @@ mod smells_steps {
 
     #[given(expr = "project is not a git repository")]
     fn step_project_is_not_a_git_repository(w: &mut SmellsWorld) {
-        env::set_current_dir(r"C:\Users\Lucas\git\smells").unwrap();
         let project = PathBuf::from("tests")
             .join("data")
             .join("non_git_repository");
@@ -156,10 +173,9 @@ mod smells_steps {
         for _n in 0..4 {
             file.write_all(b"Line\n").unwrap()
         }
-        w.analysed_folder = project.to_string_lossy().to_string();
-        w.project = env::current_dir()
-            .unwrap()
-            .join(w.analysed_folder.clone())
+        w.relative_path_to_project = project.to_string_lossy().to_string();
+        w.absolute_path_to_project = PathBuf::from(&w.initial_wd)
+            .join(w.relative_path_to_project.clone())
             .to_string_lossy()
             .to_string();
     }
@@ -173,7 +189,7 @@ mod smells_steps {
     #[then(regex = "no social complexity metric is computed")]
     fn step_social_complexity_metric_is_not_computed(w: &mut SmellsWorld) {
         let analysis_result = convert_stdout_to_json(&mut w.cmd);
-        let analysed_folder = PathBuf::from(w.analysed_folder.clone());
+        let analysed_folder = PathBuf::from(w.relative_path_to_project.clone());
         let analysed_folder_file_name = analysed_folder.file_name().unwrap();
 
         let social_complexity_field = analysis_result
@@ -200,21 +216,20 @@ mod smells_steps {
 
     #[given(expr = "project is a git repository")]
     fn step_project_is_a_git_repository(w: &mut SmellsWorld) {
-        env::set_current_dir(r"C:\Users\Lucas\git\smells").unwrap();
+        //set_current_dir(PathBuf::from(&w.initial_wd)).unwrap();
         create_git_test_repository()
             .path()
             .parent()
             .unwrap()
             .to_string_lossy()
             .to_string();
-        w.project = env::current_dir()
-            .unwrap()
+        w.absolute_path_to_project = PathBuf::from(&w.initial_wd)
             .join("tests")
             .join("data")
             .join("git_repository_social_complexity")
             .to_string_lossy()
             .to_string();
-        w.analysed_folder = PathBuf::from("tests")
+        w.relative_path_to_project = PathBuf::from("tests")
             .join("data")
             .join("git_repository_social_complexity")
             .to_string_lossy()
@@ -235,14 +250,14 @@ mod smells_steps {
 
     #[when(expr = "smells is called")]
     fn simple_smells_called(w: &mut SmellsWorld) {
-        let project = w.project.clone();
+        let project = w.absolute_path_to_project.clone();
         let argv = vec![project];
         w.cmd.args(argv);
     }
 
     #[given(regex = "(.+) contributed to (.+)")]
     fn step_contributor_to_file(w: &mut SmellsWorld, contributor: String, file: String) {
-        let repo = Repository::open(&w.project).unwrap();
+        let repo = Repository::open(&w.absolute_path_to_project).unwrap();
         let contributor_signature = Signature::now(&contributor, "mail").unwrap();
         update_file(&repo, &file);
         add_file_to_the_staging_area(&repo, file);
@@ -252,7 +267,7 @@ mod smells_steps {
     #[then(regex = "(.+) social complexity score is (.+)")]
     fn step_social_complexity_score(w: &mut SmellsWorld, file: String, score: String) {
         let analysis_result = convert_stdout_to_json(&mut w.cmd);
-        let analysed_folder = PathBuf::from(w.analysed_folder.clone());
+        let analysed_folder = PathBuf::from(w.relative_path_to_project.clone());
         let analysed_folder_file_name = PathBuf::from(analysed_folder.file_name().unwrap());
         let file_full_path = analysed_folder_file_name.join(file);
 
