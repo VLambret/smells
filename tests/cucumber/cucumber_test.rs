@@ -3,9 +3,6 @@ use cucumber::{given, World};
 use env_logger::Env;
 use futures::FutureExt;
 use std::env::set_current_dir;
-use std::fs::remove_dir;
-use std::path::PathBuf;
-use std::str::SplitWhitespace;
 use std::time::Duration;
 use std::{env, thread};
 
@@ -13,25 +10,14 @@ use std::{env, thread};
 pub struct SmellsWorld {
     //TODO: Pathbuf
     initial_wd: String,
-    absolute_path_to_project: String,
     relative_path_to_project: String,
     cmd: Command,
 }
-
-/*impl SmellsWorld {
-    fn _teardown(&mut self) {
-        self.analysed_folder.iter().for_each(|folder| {
-            let path = PathBuf::from(folder);
-            remove_dir(path).unwrap();
-        });
-    }
-}*/
 
 impl Default for SmellsWorld {
     fn default() -> SmellsWorld {
         SmellsWorld {
             initial_wd: "".to_string(),
-            absolute_path_to_project: String::new(),
             relative_path_to_project: String::new(),
             cmd: Command::cargo_bin("smells").expect("Failed to create Command"),
         }
@@ -48,6 +34,8 @@ fn main() {
     /*   futures::executor::block_on(SmellsWorld::run(
         "tests/cucumber/features/social_complexity.feature",
     ));*/
+
+    //TODO:teardown
 
     futures::executor::block_on(
         SmellsWorld::cucumber()
@@ -84,7 +72,7 @@ mod smells_steps {
     use predicates::boolean::PredicateBooleanExt;
     use predicates::prelude::predicate;
     use serde_json::Value;
-    use std::env::set_current_dir;
+    use std::env::{current_dir, set_current_dir};
     use std::fs::{create_dir, create_dir_all, remove_dir_all, File};
     use std::io::Write;
     use std::path::{Path, PathBuf};
@@ -174,10 +162,6 @@ mod smells_steps {
             file.write_all(b"Line\n").unwrap()
         }
         w.relative_path_to_project = project.to_string_lossy().to_string();
-        w.absolute_path_to_project = PathBuf::from(&w.initial_wd)
-            .join(w.relative_path_to_project.clone())
-            .to_string_lossy()
-            .to_string();
     }
 
     #[then(regex = "the warning \"(.+)\" is raised")]
@@ -202,7 +186,7 @@ mod smells_steps {
     //	Scenario: Analyse a git repository without any contributors
 
     fn create_git_test_repository() -> Repository {
-        let repo = env::current_dir().unwrap().join(
+        let repo = current_dir().unwrap().join(
             PathBuf::from("tests")
                 .join("data")
                 .join("git_repository_social_complexity"),
@@ -216,19 +200,13 @@ mod smells_steps {
 
     #[given(expr = "project is a git repository")]
     fn step_project_is_a_git_repository(w: &mut SmellsWorld) {
-        //set_current_dir(PathBuf::from(&w.initial_wd)).unwrap();
         create_git_test_repository()
             .path()
             .parent()
             .unwrap()
             .to_string_lossy()
             .to_string();
-        w.absolute_path_to_project = PathBuf::from(&w.initial_wd)
-            .join("tests")
-            .join("data")
-            .join("git_repository_social_complexity")
-            .to_string_lossy()
-            .to_string();
+
         w.relative_path_to_project = PathBuf::from("tests")
             .join("data")
             .join("git_repository_social_complexity")
@@ -248,16 +226,10 @@ mod smells_steps {
 
     // 	Scenario: Analyse a git repository with contributors
 
-    #[when(expr = "smells is called")]
-    fn simple_smells_called(w: &mut SmellsWorld) {
-        let project = w.absolute_path_to_project.clone();
-        let argv = vec![project];
-        w.cmd.args(argv);
-    }
-
     #[given(regex = "(.+) contributed to (.+)")]
     fn step_contributor_to_file(w: &mut SmellsWorld, contributor: String, file: String) {
-        let repo = Repository::open(&w.absolute_path_to_project).unwrap();
+        let repo = Repository::open(PathBuf::from(&w.initial_wd).join(&w.relative_path_to_project))
+            .unwrap();
         let contributor_signature = Signature::now(&contributor, "mail").unwrap();
         update_file(&repo, &file);
         add_file_to_the_staging_area(&repo, file);
@@ -371,17 +343,6 @@ mod smells_steps {
         )
         .unwrap();
     }
-
-    /***********************************************************************************
-     * TEARDOWN
-     **********************************************************************************/
-
-    /* pub(crate) fn _teardown(w: &mut SmellsWorld) {
-        w.analysed_folder.iter().for_each(|folder| {
-            let path = PathBuf::from(folder);
-            remove_dir(path).unwrap();
-        });
-    }*/
 }
 
 #[cfg(test)]
