@@ -5,6 +5,9 @@ tests\\data\\git_repositories
 
 tests/data/git_repository_social_complexity
 tests\\data\\git_repository_social_complexity
+tests/data/non_git_repository
+tests\\data\\non_git_repository
+
 
 
 # Added by cargo

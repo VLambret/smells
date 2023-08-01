@@ -2,7 +2,9 @@ use assert_cmd::Command;
 use cucumber::{given, World};
 use env_logger::Env;
 use futures::FutureExt;
+use log::info;
 use std::env::set_current_dir;
+use std::fs::remove_dir_all;
 use std::path::PathBuf;
 use std::time::Duration;
 use std::{env, thread};
@@ -24,18 +26,30 @@ impl Default for SmellsWorld {
     }
 }
 
+impl SmellsWorld {
+    fn teardown(&self) {
+        //TODO: suppression of test folders can't be done because files are used by another process (step ?)
+
+        /* let full_project_path = self.initial_wd.join(&self.relative_path_to_project);
+        if full_project_path.exists() {
+            remove_dir_all(&full_project_path).unwrap();
+        } else {
+        }*/
+        set_current_dir(&self.initial_wd).unwrap();
+    }
+}
+
 fn main() {
+    let env = Env::default().filter_or("MY_LOG_LEVEL", "info");
+    env_logger::init_from_env(env);
+
     /*    futures::executor::block_on(SmellsWorld::run(
         "tests/cucumber/features/basic_usages.feature",
     ));*/
-    let env = Env::default().filter_or("MY_LOG_LEVEL", "info");
-    env_logger::init_from_env(env);
 
     /*   futures::executor::block_on(SmellsWorld::run(
         "tests/cucumber/features/social_complexity.feature",
     ));*/
-
-    //TODO:teardown
 
     futures::executor::block_on(
         SmellsWorld::cucumber()
@@ -49,7 +63,7 @@ fn main() {
                 sleep_future
             })
             .after(|_feature, _rule, _scenario, _ev, world| {
-                set_current_dir(&world.unwrap().initial_wd).unwrap();
+                world.unwrap().teardown();
                 let sleep_duration = Duration::from_millis(300);
                 let sleep_future = async move {
                     thread::sleep(sleep_duration);
@@ -100,7 +114,7 @@ mod smells_steps {
         let argv = arguments.split_whitespace();
         let change_of_working_directory = set_current_dir(&w.relative_path_to_project);
         if change_of_working_directory.is_ok() {
-            w.cmd.args(argv);
+            let a = w.cmd.args(argv).assert();
         } else {
             warn!("Change of working directory failed");
         }
