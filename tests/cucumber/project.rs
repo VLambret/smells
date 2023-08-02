@@ -9,6 +9,12 @@ pub struct Project {
 }
 
 impl Project {
+    pub(crate) fn create_file(&self, filename: String) {
+        File::create(filename);
+    }
+}
+
+impl Project {
     pub(crate) fn init_git_repository(&self) {
         create_git_test_repository();
     }
