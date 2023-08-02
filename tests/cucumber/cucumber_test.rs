@@ -195,19 +195,7 @@ mod smells_steps {
 
     #[given(expr = "project is not a git repository")]
     fn step_project_is_not_a_git_repository(w: &mut SmellsWorld) {
-        let relative_path_to_project = PathBuf::from("tests")
-            .join("data")
-            .join("non_git_repository");
-        if !relative_path_to_project.exists() {
-            create_dir(&relative_path_to_project).unwrap();
-        };
-        let mut file =
-            File::create(PathBuf::from(&relative_path_to_project).join("file5.txt")).unwrap();
-        for _n in 0..4 {
-            file.write_all(b"Line\n").unwrap()
-        }
-
-        w.relative_path_to_project = relative_path_to_project;
+        w.relative_path_to_project = w.project.relative_path_to_project.clone();
     }
 
     #[then(regex = "the warning \"(.+)\" is raised")]
