@@ -6,6 +6,7 @@ Feature: Smells social complexity
 		When smells is called with "."
 		Then exit code is 0
 		And the warning "Analysed folder is not a git repository" is raised
+#		And file1.rs line_count score is 2
 		And no social complexity metric is computed
 
 
