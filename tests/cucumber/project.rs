@@ -1,4 +1,4 @@
-use std::fs::{create_dir, File};
+use std::fs::{create_dir, File, remove_dir_all};
 use std::io::Write;
 use std::path::PathBuf;
 use crate::cucumber_test_annex_functions::create_git_test_repository;
@@ -12,6 +12,12 @@ impl Project {
     pub(crate) fn init_git_repository(&self) {
         create_git_test_repository();
     }
+
+    pub fn destroy(&self) {
+        if self.relative_path_to_project.exists() {
+            remove_dir_all(&self.relative_path_to_project).unwrap();
+        }
+    }
 }
 
 impl Project {
@@ -19,14 +25,15 @@ impl Project {
         let relative_path_to_project = PathBuf::from("tests")
             .join("data")
             .join("generated_project");
-        if !relative_path_to_project.exists() {
-            create_dir(&relative_path_to_project).unwrap();
-        };
+
+        let project = Project { relative_path_to_project };
+        project.destroy();
+        create_dir(&project.relative_path_to_project).unwrap();
         let mut file =
-            File::create(PathBuf::from(&relative_path_to_project).join("file5.txt")).unwrap();
+            File::create(PathBuf::from(&project.relative_path_to_project).join("file5.txt")).unwrap();
         for _n in 0..4 {
             file.write_all(b"Line\n").unwrap()
         };
-        Project { relative_path_to_project }
+        project
     }
 }
