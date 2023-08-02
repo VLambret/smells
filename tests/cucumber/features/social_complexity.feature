@@ -27,11 +27,11 @@ Feature: Smells social complexity
 		When smells is called with "."
        	Then exit code is 0
 		And no warning is raised
-		And lib/mod1/file1.rs social complexity score is 1
-		And lib/mod1/file2.rs social complexity score is 2
-		And lib/README social complexity score is 1
-		And lib/mod1 social complexity score is 2
-		And lib social complexity score is 3
+		And lib/mod1/file1.rs social_complexity score is 1
+		And lib/mod1/file2.rs social_complexity score is 2
+		And lib/README social_complexity score is 1
+		And lib/mod1 social_complexity score is 2
+		And lib social_complexity score is 3
 
 
 #	Scenario: Analyse of a not versioned file in a git repository gives no social complexity score
