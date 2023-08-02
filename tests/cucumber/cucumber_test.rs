@@ -118,8 +118,8 @@ mod smells_steps {
     fn smells_called(w: &mut SmellsWorld, arguments: String) {
         let argv = arguments.split_whitespace();
 
-        let change_of_working_directory = if w.relative_path_to_project != PathBuf::new() {
-            set_current_dir(&w.relative_path_to_project)
+        let change_of_working_directory = if w.project.relative_path_to_project != PathBuf::new() {
+            set_current_dir(&w.project.relative_path_to_project)
         } else {
             Ok(())
         };
@@ -195,7 +195,6 @@ mod smells_steps {
 
     #[given(expr = "project is not a git repository")]
     fn step_project_is_not_a_git_repository(w: &mut SmellsWorld) {
-        w.relative_path_to_project = w.project.relative_path_to_project.clone();
     }
 
     #[then(regex = "the warning \"(.+)\" is raised")]
@@ -213,7 +212,7 @@ mod smells_steps {
     fn step_social_complexity_metric_is_not_computed(w: &mut SmellsWorld) {
         let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
         let analysis_result = convert_std_to_json(output.stdout);
-        let analysed_folder = w.relative_path_to_project.clone();
+        let analysed_folder = w.project.relative_path_to_project.clone();
         let analysed_folder_file_name = analysed_folder.file_name().unwrap();
 
         let social_complexity_field = analysis_result
@@ -233,7 +232,7 @@ mod smells_steps {
             .to_string_lossy()
             .to_string();
 
-        w.relative_path_to_project = PathBuf::from("tests")
+        w.project.relative_path_to_project = PathBuf::from("tests")
             .join("data")
             .join("git_repository_social_complexity");
     }
@@ -255,7 +254,7 @@ mod smells_steps {
 
     #[given(regex = "(.+) contributed to (.+)")]
     fn step_contributor_to_file(w: &mut SmellsWorld, contributor: String, file: String) {
-        let repo = Repository::open(PathBuf::from(&w.initial_wd).join(&w.relative_path_to_project))
+        let repo = Repository::open(PathBuf::from(&w.initial_wd).join(&w.project.relative_path_to_project))
             .unwrap();
         let contributor_signature = Signature::now(&contributor, "mail").unwrap();
         update_file(&repo, &file);
@@ -267,7 +266,7 @@ mod smells_steps {
     fn step_social_complexity_score(w: &mut SmellsWorld, file: String, score: String) {
         let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
         let analysis_result = convert_std_to_json(output.stdout);
-        let analysed_folder = w.relative_path_to_project.clone();
+        let analysed_folder = w.project.relative_path_to_project.clone();
         let analysed_folder_file_name = PathBuf::from(analysed_folder.file_name().unwrap());
         let file_full_path = analysed_folder_file_name.join(file);
 
