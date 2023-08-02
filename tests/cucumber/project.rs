@@ -18,7 +18,7 @@ impl Project {
     pub(crate) fn new() -> Project {
         let relative_path_to_project = PathBuf::from("tests")
             .join("data")
-            .join("non_git_repository");
+            .join("generated_project");
         if !relative_path_to_project.exists() {
             create_dir(&relative_path_to_project).unwrap();
         };
