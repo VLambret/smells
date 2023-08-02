@@ -47,17 +47,16 @@ fn main() {
     let env = Env::default().filter_or("MY_LOG_LEVEL", "info");
     env_logger::init_from_env(env);
 
-    //TODO: Add to runner
-    //futures::executor::block_on(SmellsWorld::run(
-    //    "tests/cucumber/features/basic_usages.feature",
-    //));
+   let feature_files = [
+       "tests/cucumber/features/basic_usages.feature",
+       "tests/cucumber/features/social_complexity.feature"
+   ];
 
-    /*   futures::executor::block_on(SmellsWorld::run(
-        "tests/cucumber/features/social_complexity.feature",
-    ));*/
+    let mut error_number = 0;
 
-    let mut error_number = run_feature_file("tests/cucumber/features/basic_usages.feature");
-    error_number += run_feature_file("tests/cucumber/features/social_complexity.feature");
+    for feature in feature_files {
+        error_number += run_feature_file(feature);
+    }
 
     if (error_number != 0)
     {
