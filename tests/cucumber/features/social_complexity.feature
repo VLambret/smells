@@ -1,14 +1,5 @@
 Feature: Smells social complexity
 
-	Scenario: Analyse a non-git repository
-		Given project is not a git repository
-		And file.rs is created
-		When smells is called with "."
-		Then exit code is 0
-		And the warning "Analysed folder is not a git repository" is raised
-#		And file1.rs line_count score is 2
-		And no social complexity metric is computed
-
 
 	Scenario: Analyse a git repository without any contributors
 		Given project is a git repository
@@ -32,6 +23,16 @@ Feature: Smells social complexity
 		And lib/README social_complexity score is 1
 		And lib/mod1 social_complexity score is 2
 		And lib social_complexity score is 3
+
+	Scenario: Analyse a non-git repository
+		Given project is not a git repository
+		And file.rs is created
+		When smells is called with "."
+		Then exit code is 0
+		And the warning "Analysed folder is not a git repository" is raised
+		And file.rs lines_count score is 0
+		And no social complexity metric is computed
+
 
 
 #	Scenario: Analyse of a not versioned file in a git repository gives no social complexity score

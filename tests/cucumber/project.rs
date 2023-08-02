@@ -10,7 +10,8 @@ pub struct Project {
 
 impl Project {
     pub(crate) fn create_file(&self, filename: String) {
-        File::create(filename);
+        let file_in_project = self.relative_path_to_project.join(filename);
+        File::create(file_in_project);
     }
 }
 

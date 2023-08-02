@@ -68,7 +68,7 @@ pub fn get_social_complexity_score(file_path: PathBuf, analysis: &Value, metric_
                 }
             }
             let other_dirs_pathbuf = other_dirs.iter().collect::<PathBuf>();
-            return get_social_complexity_score(other_dirs_pathbuf, &Value::Object(results), "social_complexity");
+            return get_social_complexity_score(other_dirs_pathbuf, &Value::Object(results), metric_key);
         }
         _ => {}
     }
