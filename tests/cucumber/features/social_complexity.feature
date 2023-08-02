@@ -30,3 +30,15 @@ Feature: Smells social complexity
 		And lib/README social complexity score is 1
 		And lib/mod1 social complexity score is 2
 		And lib social complexity score is 3
+
+
+#	Scenario: Analyse of a not versioned file in a git repository gives no social complexity score
+#		Given project is a git repository
+#		And author1 contributed to file1.rs
+#		And file2.rs has been created
+#		When smells is called with "."
+#		Then exit code is 0
+#		And no warning is raised
+#		And file1.rs social complexity score is 1
+#		And file2.rs has no social complexity score
+#
