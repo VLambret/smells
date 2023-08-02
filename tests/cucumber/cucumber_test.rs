@@ -7,7 +7,7 @@ use futures::FutureExt;
 use log::info;
 use std::env::set_current_dir;
 use std::path::PathBuf;
-use std::process::Output;
+use std::process::{exit, Output};
 use std::time::Duration;
 use std::{env, io, thread};
 
@@ -48,15 +48,25 @@ fn main() {
     env_logger::init_from_env(env);
 
     //TODO: Add to runner
-    futures::executor::block_on(SmellsWorld::run(
-        "tests/cucumber/features/basic_usages.feature",
-    ));
+    //futures::executor::block_on(SmellsWorld::run(
+    //    "tests/cucumber/features/basic_usages.feature",
+    //));
 
     /*   futures::executor::block_on(SmellsWorld::run(
         "tests/cucumber/features/social_complexity.feature",
     ));*/
 
-    futures::executor::block_on(
+    let mut error_number = run_feature_file("tests/cucumber/features/basic_usages.feature");
+    error_number += run_feature_file("tests/cucumber/features/social_complexity.feature");
+
+    if (error_number != 0)
+    {
+        exit(42);
+    }
+}
+
+fn run_feature_file(feature_file: &str) -> usize {
+    let result = futures::executor::block_on(
         SmellsWorld::cucumber()
             .before(|_feature, _rule, _scenario, world| {
                 world.initial_wd = env::current_dir().unwrap();
@@ -64,7 +74,7 @@ fn main() {
                 let sleep_future = async move {
                     thread::sleep(sleep_duration);
                 }
-                .boxed();
+                    .boxed();
                 sleep_future
             })
             .after(|_feature, _rule, _scenario, _ev, world| {
@@ -73,11 +83,13 @@ fn main() {
                 let sleep_future = async move {
                     thread::sleep(sleep_duration);
                 }
-                .boxed();
+                    .boxed();
                 sleep_future
             })
-            .run_and_exit("tests/cucumber/features/social_complexity.feature"),
+            .fail_on_skipped()
+            .run(feature_file),
     );
+    result.steps_stats().failed
 }
 
 /*************************************************************************************************************************/
