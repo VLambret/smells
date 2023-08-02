@@ -1,4 +1,5 @@
 mod cucumber_test_annex_functions;
+mod project;
 
 use assert_cmd::Command;
 use cucumber::{given, World};
@@ -10,9 +11,11 @@ use std::path::PathBuf;
 use std::process::{exit, Output};
 use std::time::Duration;
 use std::{env, io, thread};
+use crate::project::Project;
 
 #[derive(Debug, World)]
 pub struct SmellsWorld {
+    project: Project,
     initial_wd: PathBuf,
     relative_path_to_project: PathBuf,
     cmd: Command,
@@ -22,6 +25,7 @@ pub struct SmellsWorld {
 impl Default for SmellsWorld {
     fn default() -> SmellsWorld {
         SmellsWorld {
+            project: Project::new(),
             initial_wd: PathBuf::new(),
             relative_path_to_project: PathBuf::new(),
             cmd: Command::cargo_bin("smells").expect("Failed to create Command"),
