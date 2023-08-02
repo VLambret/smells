@@ -225,6 +225,8 @@ mod smells_steps {
     //	Scenario: Analyse a git repository without any contributors
     #[given(expr = "project is a git repository")]
     fn step_project_is_a_git_repository(w: &mut SmellsWorld) {
+        w.project.init_git_repository();
+
         create_git_test_repository()
             .path()
             .parent()

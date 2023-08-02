@@ -8,6 +8,11 @@ pub struct Project {
 }
 
 impl Project {
+    pub(crate) fn init_git_repository(&self) {
+    }
+}
+
+impl Project {
     pub(crate) fn new() -> Project {
         let relative_path_to_project = PathBuf::from("tests")
             .join("data")
