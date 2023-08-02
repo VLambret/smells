@@ -29,11 +29,6 @@ impl Project {
         let project = Project { relative_path_to_project };
         project.destroy();
         create_dir(&project.relative_path_to_project).unwrap();
-        let mut file =
-            File::create(PathBuf::from(&project.relative_path_to_project).join("file5.txt")).unwrap();
-        for _n in 0..4 {
-            file.write_all(b"Line\n").unwrap()
-        };
         project
     }
 }
