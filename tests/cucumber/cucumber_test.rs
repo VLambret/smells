@@ -227,13 +227,6 @@ mod smells_steps {
     fn step_project_is_a_git_repository(w: &mut SmellsWorld) {
         w.project.init_git_repository();
 
-        create_git_test_repository()
-            .path()
-            .parent()
-            .unwrap()
-            .to_string_lossy()
-            .to_string();
-
         w.project.relative_path_to_project = PathBuf::from("tests")
             .join("data")
             .join("git_repository_social_complexity");

@@ -1,6 +1,7 @@
 use std::fs::{create_dir, File};
 use std::io::Write;
 use std::path::PathBuf;
+use crate::cucumber_test_annex_functions::create_git_test_repository;
 
 #[derive(Debug)]
 pub struct Project {
@@ -9,6 +10,7 @@ pub struct Project {
 
 impl Project {
     pub(crate) fn init_git_repository(&self) {
+        create_git_test_repository();
     }
 }
 
