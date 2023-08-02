@@ -25,7 +25,7 @@ pub fn create_git_test_repository() -> Repository {
     let repo = current_dir().unwrap().join(
         PathBuf::from("tests")
             .join("data")
-            .join("git_repository_social_complexity"),
+            .join("generated_project"),
     );
     if repo.exists() {
         remove_dir_all(&repo).unwrap();

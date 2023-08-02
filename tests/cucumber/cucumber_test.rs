@@ -229,7 +229,7 @@ mod smells_steps {
 
         w.project.relative_path_to_project = PathBuf::from("tests")
             .join("data")
-            .join("git_repository_social_complexity");
+            .join("generated_project");
     }
 
     #[given(expr = "there is no contributor")]
