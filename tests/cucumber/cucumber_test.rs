@@ -198,6 +198,24 @@ mod smells_steps {
 
 
     /***********************************************************************************
+     * METRICS
+     **********************************************************************************/
+
+    #[then(regex = "(.+) (.+) score is (.+)")]
+    fn step_social_complexity_score(w: &mut SmellsWorld, file: String, metric_key: String, score: String) {
+        let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
+        let analysis_result = convert_std_to_json(output.stdout);
+        let analysed_folder = w.project.relative_path_to_project.clone();
+        let analysed_folder_file_name = PathBuf::from(analysed_folder.file_name().unwrap());
+        let file_full_path = analysed_folder_file_name.join(file);
+
+        assert_eq!(
+            get_social_complexity_score(file_full_path, &analysis_result, &metric_key),
+            score.parse::<i32>().unwrap()
+        );
+    }
+
+    /***********************************************************************************
      * SOCIAL COMPLEXITY
      **********************************************************************************/
 
@@ -265,20 +283,6 @@ mod smells_steps {
         update_file(&repo, &file);
         add_file_to_the_staging_area(&repo, file);
         commit_changes_to_repo(&repo, &contributor_signature);
-    }
-
-    #[then(regex = "(.+) (.+) score is (.+)")]
-    fn step_social_complexity_score(w: &mut SmellsWorld, file: String, metric_key: String, score: String) {
-        let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
-        let analysis_result = convert_std_to_json(output.stdout);
-        let analysed_folder = w.project.relative_path_to_project.clone();
-        let analysed_folder_file_name = PathBuf::from(analysed_folder.file_name().unwrap());
-        let file_full_path = analysed_folder_file_name.join(file);
-
-        assert_eq!(
-            get_social_complexity_score(file_full_path, &analysis_result, &metric_key),
-            score.parse::<i32>().unwrap()
-        );
     }
 }
 
