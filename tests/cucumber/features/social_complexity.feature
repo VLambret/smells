@@ -2,6 +2,7 @@ Feature: Smells social complexity
 
 	Scenario: Analyse a non-git repository
 		Given project is not a git repository
+		And file.rs is created
 		When smells is called with "."
 		Then exit code is 0
 		And the warning "Analysed folder is not a git repository" is raised
@@ -35,7 +36,7 @@ Feature: Smells social complexity
 #	Scenario: Analyse of a not versioned file in a git repository gives no social complexity score
 #		Given project is a git repository
 #		And author1 contributed to file1.rs
-#		And file2.rs has been created
+#		And file2.rs is created
 #		When smells is called with "."
 #		Then exit code is 0
 #		And no warning is raised
