@@ -105,6 +105,7 @@ mod smells_steps {
     use std::fs::{create_dir, create_dir_all, remove_dir_all, File};
     use std::path::PathBuf;
     use std::{assert_eq, panic, vec};
+    use serde_json::Value;
     use serde_json::Value::Null;
 
     /***********************************************************************************
@@ -197,29 +198,23 @@ mod smells_steps {
      **********************************************************************************/
 
     #[then(regex = "(.+) (.+) score is (.+)")]
-    fn step_metric_score(w: &mut SmellsWorld, file: String, metric_key: String, score: String) {
-        let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
-        let analysis_result = convert_std_to_json(output.stdout);
-        let analysed_folder = w.project.relative_path_to_project.clone();
-        let analysed_folder_file_name = PathBuf::from(analysed_folder.file_name().unwrap());
-        let file_full_path = analysed_folder_file_name.join(file);
+    fn step_get_metric_score(w: &mut SmellsWorld, file: String, metric_key: String, score: String) {
+        let analysis_result = get_json_analysis(&w.cmd_output);
+        let filename = get_filename_for_analysis(&w.project.relative_path_to_project, file);
 
         assert_eq!(
-            get_metric_score(file_full_path, &analysis_result, &metric_key),
+            get_metric_score(filename, &analysis_result, &metric_key),
             score.parse::<i32>().unwrap()
         );
     }
 
     #[then(regex = "(.+) has no (.+) score")]
     fn step_no_metric_score(w: &mut SmellsWorld, file: String, metric_key: String) {
-        let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
-        let analysis_result = convert_std_to_json(output.stdout);
-        let analysed_folder = w.project.relative_path_to_project.clone();
-        let analysed_folder_file_name = PathBuf::from(analysed_folder.file_name().unwrap());
-        let file_full_path = analysed_folder_file_name.join(file);
+        let analysis_result = get_json_analysis(&w.cmd_output);
+        let filename = get_filename_for_analysis(&w.project.relative_path_to_project, file);
 
         assert_eq!(
-            get_metric_score(file_full_path, &analysis_result, &metric_key),
+            get_metric_score(filename, &analysis_result, &metric_key),
             Null
         );
     }

@@ -29,10 +29,8 @@ impl IMetric for SocialComplexityMetric {
     fn analyse(&self, file_path: &Path) -> Option<Box<dyn IMetricValue>> {
         if let Ok(relative_file_path) = get_relative_file_path(file_path, &self.root) {
             if !is_file_versioned(&self.root, &relative_file_path) {
-                warn!("{:?} not versioned",relative_file_path );
                 return None;
             } else {
-                warn!("{:?} versioned",relative_file_path );
                 match get_authors_of_file(&self.root, &relative_file_path) {
                     Ok(Some(authors)) => Some(Box::new(SocialComplexityValue {
                         authors: Ok(authors),
