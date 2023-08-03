@@ -40,5 +40,5 @@ Feature: Smells social complexity
 		When smells is called with "."
 		Then exit code is 0
 		And no warning is raised
-#		And file1.rs social complexity score is 1
+		And file1.rs social_complexity score is 1
 #		And file2.rs has no social complexity score

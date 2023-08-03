@@ -29,10 +29,10 @@ impl IMetric for SocialComplexityMetric {
     fn analyse(&self, file_path: &Path) -> Option<Box<dyn IMetricValue>> {
         if let Ok(relative_file_path) = get_relative_file_path(file_path, &self.root) {
             if !is_file_versioned(&self.root, &relative_file_path) {
-                warn!("File : {:?} is not versioned", &relative_file_path);
+                warn!("{:?} not versioned",relative_file_path );
                 return None;
             } else {
-                info!("File : {:?} is versioned", &relative_file_path);
+                warn!("{:?} versioned",relative_file_path );
                 match get_authors_of_file(&self.root, &relative_file_path) {
                     Ok(Some(authors)) => Some(Box::new(SocialComplexityValue {
                         authors: Ok(authors),
@@ -54,12 +54,8 @@ impl IMetric for SocialComplexityMetric {
 fn is_file_versioned(repo: &Path, file: &Path) -> bool {
     match Repository::discover(repo) {
         Ok(repo) => {
-            // Verif index
-            // Verif Main
-            //repo.status_file(file).is_ok()
-            // repo.index().and_then(|index| {
-            //     Ok(index.get_path(file))
-            // }).is_ok()
+
+            //TODO: check MAIN also
 
             if let Ok(index) = repo.index() {
                 let file_in_index = index.get_path(file, 0);
