@@ -199,12 +199,7 @@ mod smells_steps {
      **********************************************************************************/
 
     #[then(regex = "(.+) (.+) score is (.+)")]
-    fn step_metric_score(
-        w: &mut SmellsWorld,
-        file: String,
-        metric_key: String,
-        score: String,
-    ) {
+    fn step_metric_score(w: &mut SmellsWorld, file: String, metric_key: String, score: String) {
         let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
         let analysis_result = convert_std_to_json(output.stdout);
         let analysed_folder = w.project.relative_path_to_project.clone();
@@ -238,7 +233,7 @@ mod smells_steps {
     }
 
     #[then(regex = "no (.+) metric is computed")]
-    fn step_metric_is_not_computed(w: &mut SmellsWorld, metric_key : String) {
+    fn step_metric_is_not_computed(w: &mut SmellsWorld, metric_key: String) {
         let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
         let analysis_result = convert_std_to_json(output.stdout);
         let analysed_folder = w.project.relative_path_to_project.clone();
@@ -278,15 +273,13 @@ mod smells_steps {
 
         let contributor_signature = Signature::now(&contributor, "mail").unwrap();
         w.project.create_file(file.to_owned());
-        w.project.get_contribution_to(file.to_owned());
-        //update_file(&repo, &file);
+        w.project.get_contribution_in(file.to_owned());
         add_file_to_the_staging_area(&repo, file);
         commit_changes_to_repo(&repo, &contributor_signature);
 
         /*
         w.project.add_file_to_stagging_area(&file, &repo);
         w.project.commit_changes_in_repo(&repo, &contributor_signature);*/
-
     }
 }
 

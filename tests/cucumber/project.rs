@@ -1,8 +1,8 @@
 use crate::cucumber_test_auxiliary_functions::create_git_test_repository;
-use std::fs::{create_dir, remove_dir_all, File, create_dir_all};
+use git2::Signature;
+use std::fs::{create_dir, create_dir_all, remove_dir_all, File};
 use std::io::Write;
 use std::path::PathBuf;
-use git2::Signature;
 
 #[derive(Debug)]
 pub struct Project {
@@ -10,7 +10,7 @@ pub struct Project {
 }
 
 impl Project {
-    pub(crate) fn get_contribution_to(&self, filename: String) {
+    pub(crate) fn get_contribution_in(&self, filename: String) {
         let file_in_project = self.relative_path_to_project.join(filename);
         let mut file = File::options()
             .create(true)
@@ -31,7 +31,7 @@ impl Project {
         if !file_in_project.exists() {
             File::create(file_in_project).unwrap();
         }
-        }
+    }
 }
 
 impl Project {

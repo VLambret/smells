@@ -83,21 +83,6 @@ pub fn get_social_complexity_score(
     Value::Null
 }
 
-pub fn update_file(repo: &Repository, file: &String) {
-    let file_path = repo.path().parent().unwrap().join(file);
-
-    if let Some(parent_dir) = file_path.parent() {
-        create_dir_all(parent_dir).expect("Failed to create parent directory")
-    }
-
-    let mut file = File::options()
-        .create(true)
-        .append(true)
-        .open(file_path)
-        .unwrap();
-    writeln!(&mut file, "a").unwrap();
-}
-
 pub fn add_file_to_the_staging_area(repo: &Repository, file: String) {
     let mut index = repo.index().unwrap(); // index = staging_area
     index.add_path(&PathBuf::from(file)).unwrap();
