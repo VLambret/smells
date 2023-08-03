@@ -34,7 +34,11 @@ pub fn create_git_test_repository() -> Repository {
     Repository::init(repo).unwrap()
 }
 
-pub fn get_social_complexity_score(file_path: PathBuf, analysis: &Value, metric_key: &str) -> Value {
+pub fn get_social_complexity_score(
+    file_path: PathBuf,
+    analysis: &Value,
+    metric_key: &str,
+) -> Value {
     let file_components: Vec<String> = file_path
         .components()
         .map(|component| component.as_os_str().to_string_lossy().to_string())
@@ -68,7 +72,11 @@ pub fn get_social_complexity_score(file_path: PathBuf, analysis: &Value, metric_
                 }
             }
             let other_dirs_pathbuf = other_dirs.iter().collect::<PathBuf>();
-            return get_social_complexity_score(other_dirs_pathbuf, &Value::Object(results), metric_key);
+            return get_social_complexity_score(
+                other_dirs_pathbuf,
+                &Value::Object(results),
+                metric_key,
+            );
         }
         _ => {}
     }

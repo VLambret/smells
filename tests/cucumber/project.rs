@@ -1,17 +1,17 @@
-use std::fs::{create_dir, File, remove_dir_all};
+use crate::cucumber_test_auxiliary_functions::create_git_test_repository;
+use std::fs::{create_dir, remove_dir_all, File};
 use std::io::Write;
 use std::path::PathBuf;
-use crate::cucumber_test_auxiliary_functions::create_git_test_repository;
 
 #[derive(Debug)]
 pub struct Project {
-    pub relative_path_to_project: PathBuf
+    pub relative_path_to_project: PathBuf,
 }
 
 impl Project {
     pub(crate) fn create_file(&self, filename: String) {
         let file_in_project = self.relative_path_to_project.join(filename);
-        File::create(file_in_project);
+        File::create(file_in_project).unwrap();
     }
 }
 
@@ -33,7 +33,9 @@ impl Project {
             .join("data")
             .join("generated_project");
 
-        let project = Project { relative_path_to_project };
+        let project = Project {
+            relative_path_to_project,
+        };
         project.destroy();
         create_dir(&project.relative_path_to_project).unwrap();
         project

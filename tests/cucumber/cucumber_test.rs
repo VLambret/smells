@@ -1,6 +1,7 @@
 mod cucumber_test_auxiliary_functions;
 mod project;
 
+use crate::project::Project;
 use assert_cmd::Command;
 use cucumber::{given, World};
 use env_logger::Env;
@@ -11,7 +12,6 @@ use std::path::PathBuf;
 use std::process::{exit, Output};
 use std::time::Duration;
 use std::{env, io, thread};
-use crate::project::Project;
 
 #[derive(Debug, World)]
 pub struct SmellsWorld {
@@ -51,10 +51,10 @@ fn main() {
     let env = Env::default().filter_or("MY_LOG_LEVEL", "info");
     env_logger::init_from_env(env);
 
-   let feature_files = [
-       "tests/cucumber/features/basic_usages.feature",
-       "tests/cucumber/features/social_complexity.feature"
-   ];
+    let feature_files = [
+        "tests/cucumber/features/basic_usages.feature",
+        "tests/cucumber/features/social_complexity.feature",
+    ];
 
     let mut error_number = 0;
 
@@ -62,8 +62,7 @@ fn main() {
         error_number += run_feature_file(feature);
     }
 
-    if (error_number != 0)
-    {
+    if (error_number != 0) {
         exit(42);
     }
 }
@@ -77,7 +76,7 @@ fn run_feature_file(feature_file: &str) -> usize {
                 let sleep_future = async move {
                     thread::sleep(sleep_duration);
                 }
-                    .boxed();
+                .boxed();
                 sleep_future
             })
             .after(|_feature, _rule, _scenario, _ev, world| {
@@ -86,7 +85,7 @@ fn run_feature_file(feature_file: &str) -> usize {
                 let sleep_future = async move {
                     thread::sleep(sleep_duration);
                 }
-                    .boxed();
+                .boxed();
                 sleep_future
             })
             .fail_on_skipped()
@@ -133,9 +132,10 @@ mod smells_steps {
 
     #[then(regex = "exit code is (.+)")]
     fn exit_code_is_a_number(w: &mut SmellsWorld, code_number: i32) {
-        assert!(&w.cmd_output.is_some());
         if let Some(Ok(output)) = &w.cmd_output {
             assert_eq!(output.status.code(), Some(code_number));
+        } else {
+            assert!(false)
         }
     }
 
@@ -196,13 +196,17 @@ mod smells_steps {
         w.project.create_file(file);
     }
 
-
     /***********************************************************************************
      * METRICS
      **********************************************************************************/
 
     #[then(regex = "(.+) (.+) score is (.+)")]
-    fn step_social_complexity_score(w: &mut SmellsWorld, file: String, metric_key: String, score: String) {
+    fn step_social_complexity_score(
+        w: &mut SmellsWorld,
+        file: String,
+        metric_key: String,
+        score: String,
+    ) {
         let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
         let analysis_result = convert_std_to_json(output.stdout);
         let analysed_folder = w.project.relative_path_to_project.clone();
@@ -222,8 +226,7 @@ mod smells_steps {
     //	Scenario: Analyse a non-git repository
 
     #[given(expr = "project is not a git repository")]
-    fn step_project_is_not_a_git_repository(w: &mut SmellsWorld) {
-    }
+    fn step_project_is_not_a_git_repository(w: &mut SmellsWorld) {}
 
     #[then(regex = "the warning \"(.+)\" is raised")]
     fn step_warning_is_raised(w: &mut SmellsWorld, warning: String) {
@@ -277,8 +280,10 @@ mod smells_steps {
 
     #[given(regex = "(.+) contributed to (.+)")]
     fn step_contributor_to_file(w: &mut SmellsWorld, contributor: String, file: String) {
-        let repo = Repository::open(PathBuf::from(&w.initial_wd).join(&w.project.relative_path_to_project))
-            .unwrap();
+        let repo = Repository::open(
+            PathBuf::from(&w.initial_wd).join(&w.project.relative_path_to_project),
+        )
+        .unwrap();
         let contributor_signature = Signature::now(&contributor, "mail").unwrap();
         update_file(&repo, &file);
         add_file_to_the_staging_area(&repo, file);
