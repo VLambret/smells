@@ -199,7 +199,7 @@ mod smells_steps {
      **********************************************************************************/
 
     #[then(regex = "(.+) (.+) score is (.+)")]
-    fn step_social_complexity_score(
+    fn step_metric_score(
         w: &mut SmellsWorld,
         file: String,
         metric_key: String,
