@@ -1,4 +1,4 @@
-use crate::cucumber_test_auxiliary_functions::{create_git_test_repository, create_test_commit};
+use crate::cucumber_test_auxiliary_functions::{add_file_to_staging_area, create_git_test_repository, create_test_commit};
 use git2::{Repository, Signature};
 use std::fs::{create_dir, create_dir_all, remove_dir_all, File};
 use std::io::Write;
@@ -44,7 +44,8 @@ impl Project {
         }
     }
 
-    pub(crate) fn get_contribution_in(&self, filename: &String) {
+    pub(crate) fn get_a_contribution_in(&self, filename: &String) {
+        let repo = Repository::open(&self.relative_path_to_project).unwrap();
         let file_in_project = self.relative_path_to_project.join(filename);
         let mut file = File::options()
             .create(true)
@@ -52,6 +53,9 @@ impl Project {
             .open(file_in_project)
             .unwrap();
         writeln!(&mut file, "a").unwrap();
+
+        add_file_to_staging_area(filename, &repo);
+
     }
 
 }
