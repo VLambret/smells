@@ -1,8 +1,7 @@
 use git2::{Commit, Repository, Signature, Tree};
 use serde_json::Value;
 use std::env::current_dir;
-use std::fs::{create_dir_all, remove_dir_all, File};
-use std::io::{Result, Write};
+use std::fs::{create_dir_all, remove_dir_all};
 use std::path::PathBuf;
 
 pub fn convert_std_to_json(cmd_output_std: Vec<u8>) -> Value {
@@ -34,7 +33,7 @@ pub fn create_git_test_repository() -> Repository {
     Repository::init(repo).unwrap()
 }
 
-pub fn get_social_complexity_score(
+pub fn get_metric_score(
     file_path: PathBuf,
     analysis: &Value,
     metric_key: &str,
@@ -72,7 +71,7 @@ pub fn get_social_complexity_score(
                 }
             }
             let other_dirs_pathbuf = other_dirs.iter().collect::<PathBuf>();
-            return get_social_complexity_score(
+            return get_metric_score(
                 other_dirs_pathbuf,
                 &Value::Object(results),
                 metric_key,

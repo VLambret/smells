@@ -207,7 +207,7 @@ mod smells_steps {
         let file_full_path = analysed_folder_file_name.join(file);
 
         assert_eq!(
-            get_social_complexity_score(file_full_path, &analysis_result, &metric_key),
+            get_metric_score(file_full_path, &analysis_result, &metric_key),
             score.parse::<i32>().unwrap()
         );
     }
