@@ -141,7 +141,6 @@ mod smells_steps {
 
     #[then(regex = "standard output is (.+)")]
     fn stdout_is_empty(w: &mut SmellsWorld, empty: String) {
-        assert!(w.cmd_output.is_some() && w.cmd_output.as_ref().unwrap().is_ok());
         let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
         if empty == "empty" {
             assert!(output.stdout.is_empty());
@@ -152,7 +151,6 @@ mod smells_steps {
 
     #[then(regex = "standard output contains \"(.+)\"")]
     fn stdout_contains_message(w: &mut SmellsWorld, message: String) {
-        assert!(w.cmd_output.is_some() && w.cmd_output.as_ref().unwrap().is_ok());
         let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
         let stdout: String = convert_std_to_string(output.stdout);
         assert!(stdout.contains(&message));
