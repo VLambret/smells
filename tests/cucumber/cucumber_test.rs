@@ -274,11 +274,6 @@ mod smells_steps {
 
     #[given(regex = "(.+) contributed to (.+)")]
     fn step_contributor_to_file(w: &mut SmellsWorld, contributor: String, file: String) {
-        /*let repo = Repository::open(
-            PathBuf::from(&w.initial_wd).join(&w.project.relative_path_to_project),
-        )
-        .unwrap();
-        */
         let repo = Repository::open(&w.project.relative_path_to_project).unwrap();
 
         let contributor_signature = Signature::now(&contributor, "mail").unwrap();
