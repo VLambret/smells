@@ -191,7 +191,7 @@ mod smells_steps {
 
     #[given(regex = "(.+) is created")]
     fn step_file_is_created(w: &mut SmellsWorld, file: String) {
-        w.project.create_or_append_file(file);
+        w.project.create_file(file);
     }
 
     /***********************************************************************************

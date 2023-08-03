@@ -1,7 +1,8 @@
 use crate::cucumber_test_auxiliary_functions::create_git_test_repository;
-use std::fs::{create_dir, remove_dir_all, File};
+use std::fs::{create_dir, remove_dir_all, File, create_dir_all};
 use std::io::Write;
 use std::path::PathBuf;
+use git2::Signature;
 
 #[derive(Debug)]
 pub struct Project {
@@ -9,8 +10,24 @@ pub struct Project {
 }
 
 impl Project {
-    pub(crate) fn create_or_append_file(&self, filename: String) {
+    pub(crate) fn get_contribution_to(&self, filename: String) {
         let file_in_project = self.relative_path_to_project.join(filename);
+        let mut file = File::options()
+            .append(true)
+            .open(file_in_project)
+            .unwrap();
+        writeln!(&mut file, "a").unwrap();
+
+    }
+}
+
+impl Project {
+    pub(crate) fn create_file(&self, filename: String) {
+        let file_in_project = self.relative_path_to_project.join(filename);
+        dbg!(&file_in_project);
+        if let Some(parent_dir) = file_in_project.parent() {
+            create_dir_all(parent_dir).expect("Failed to create parent directory")
+        }
         File::create(file_in_project).unwrap();
     }
 }
