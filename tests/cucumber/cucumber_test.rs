@@ -237,18 +237,18 @@ mod smells_steps {
         }
     }
 
-    #[then(regex = "no social complexity metric is computed")]
-    fn step_social_complexity_metric_is_not_computed(w: &mut SmellsWorld) {
+    #[then(regex = "no (.+) metric is computed")]
+    fn step_metric_is_not_computed(w: &mut SmellsWorld, metric_key : String) {
         let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
         let analysis_result = convert_std_to_json(output.stdout);
         let analysed_folder = w.project.relative_path_to_project.clone();
         let analysed_folder_file_name = analysed_folder.file_name().unwrap();
 
-        let social_complexity_field = analysis_result
+        let metric_field = analysis_result
             .get(analysed_folder_file_name.to_string_lossy().to_string())
             .and_then(|analysis_fields| analysis_fields.get("metrics"))
-            .and_then(|metrics| metrics.get("social_complexity"));
-        assert!(social_complexity_field.is_none())
+            .and_then(|metrics| metrics.get(metric_key));
+        assert!(metric_field.is_none())
     }
 
     //	Scenario: Analyse a git repository without any contributors
