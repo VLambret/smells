@@ -17,7 +17,6 @@ use std::{env, io, thread};
 pub struct SmellsWorld {
     project: Project,
     initial_wd: PathBuf,
-    relative_path_to_project: PathBuf,
     cmd: Command,
     cmd_output: Option<io::Result<Output>>,
 }
@@ -27,7 +26,6 @@ impl Default for SmellsWorld {
         SmellsWorld {
             project: Project::new(),
             initial_wd: PathBuf::new(),
-            relative_path_to_project: PathBuf::new(),
             cmd: Command::cargo_bin("smells").expect("Failed to create Command"),
             cmd_output: None,
         }
@@ -62,7 +60,7 @@ fn main() {
         error_number += run_feature_file(feature);
     }
 
-    if (error_number != 0) {
+    if error_number != 0 {
         exit(42);
     }
 }
@@ -101,11 +99,10 @@ mod smells_steps {
     use super::*;
     use crate::cucumber_test_auxiliary_functions::*;
     use cucumber::*;
-    use git2::{Repository, Signature, Tree};
+    use git2::{Signature, Tree};
     use log::warn;
     use std::env::{current_dir, set_current_dir};
     use std::fs::{create_dir, create_dir_all, remove_dir_all, File};
-    use std::io::Write;
     use std::path::PathBuf;
     use std::{assert_eq, panic, vec};
 

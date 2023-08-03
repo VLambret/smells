@@ -42,4 +42,3 @@ Feature: Smells social complexity
 #		And no warning is raised
 #		And file1.rs social complexity score is 1
 #		And file2.rs has no social complexity score
-#
