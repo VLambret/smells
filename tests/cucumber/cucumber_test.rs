@@ -255,10 +255,6 @@ mod smells_steps {
     #[given(expr = "project is a git repository")]
     fn step_project_is_a_git_repository(w: &mut SmellsWorld) {
         w.project.init_git_repository();
-
-        w.project.relative_path_to_project = PathBuf::from("tests")
-            .join("data")
-            .join("generated_project");
     }
 
     #[given(expr = "there is no contributor")]
