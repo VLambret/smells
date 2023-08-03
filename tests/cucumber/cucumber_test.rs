@@ -274,7 +274,9 @@ mod smells_steps {
         let contributor_signature = Signature::now(&contributor, "mail").unwrap();
         w.project.create_file(file.to_owned());
         w.project.get_contribution_in(file.to_owned());
-        add_file_to_the_staging_area(&repo, file);
+        w.project.add_file_to_staging_area(&file, &repo);
+
+//        add_file_to_the_staging_area(&repo, file);
         commit_changes_to_repo(&repo, &contributor_signature);
 
         /*

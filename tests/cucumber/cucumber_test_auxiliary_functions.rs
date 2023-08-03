@@ -83,12 +83,6 @@ pub fn get_social_complexity_score(
     Value::Null
 }
 
-pub fn add_file_to_the_staging_area(repo: &Repository, file: String) {
-    let mut index = repo.index().unwrap(); // index = staging_area
-    index.add_path(&PathBuf::from(file)).unwrap();
-    index.write().unwrap();
-}
-
 pub fn commit_changes_to_repo(repo: &Repository, author: &Signature) {
     match repo.head() {
         Ok(head) => {

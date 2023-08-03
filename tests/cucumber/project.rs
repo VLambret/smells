@@ -1,5 +1,5 @@
 use crate::cucumber_test_auxiliary_functions::create_git_test_repository;
-use git2::Signature;
+use git2::{Repository, Signature};
 use std::fs::{create_dir, create_dir_all, remove_dir_all, File};
 use std::io::Write;
 use std::path::PathBuf;
@@ -7,6 +7,14 @@ use std::path::PathBuf;
 #[derive(Debug)]
 pub struct Project {
     pub relative_path_to_project: PathBuf,
+}
+
+impl Project {
+    pub(crate) fn add_file_to_staging_area(&self, filename: &String, repo: &Repository) {
+        let mut index = repo.index().unwrap();
+        index.add_path(&PathBuf::from(filename)).unwrap();
+        index.write().unwrap();
+    }
 }
 
 impl Project {
