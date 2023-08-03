@@ -191,7 +191,7 @@ mod smells_steps {
 
     #[given(regex = "(.+) is created")]
     fn step_file_is_created(w: &mut SmellsWorld, file: String) {
-        w.project.create_file(file);
+        w.project.create_or_append_file(file);
     }
 
     /***********************************************************************************
@@ -274,14 +274,22 @@ mod smells_steps {
 
     #[given(regex = "(.+) contributed to (.+)")]
     fn step_contributor_to_file(w: &mut SmellsWorld, contributor: String, file: String) {
-        let repo = Repository::open(
+        /*let repo = Repository::open(
             PathBuf::from(&w.initial_wd).join(&w.project.relative_path_to_project),
         )
         .unwrap();
+        */
+        let repo = Repository::open(&w.project.relative_path_to_project).unwrap();
+
         let contributor_signature = Signature::now(&contributor, "mail").unwrap();
         update_file(&repo, &file);
         add_file_to_the_staging_area(&repo, file);
         commit_changes_to_repo(&repo, &contributor_signature);
+
+        /*w.project.create_or_append_file(file);
+        w.project.add_file_to_stagging_area(&file, &repo);
+        w.project.commit_changes_in_repo(&repo, &contributor_signature);*/
+
     }
 }
 

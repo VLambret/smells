@@ -9,7 +9,7 @@ pub struct Project {
 }
 
 impl Project {
-    pub(crate) fn create_file(&self, filename: String) {
+    pub(crate) fn create_or_append_file(&self, filename: String) {
         let file_in_project = self.relative_path_to_project.join(filename);
         File::create(file_in_project).unwrap();
     }
