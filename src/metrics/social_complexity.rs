@@ -10,6 +10,7 @@ use std::env::current_dir;
 use std::fmt::Debug;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
+use log::{info, warn};
 
 #[derive(Debug, Clone)]
 pub struct SocialComplexityMetric {
@@ -28,17 +29,19 @@ impl IMetric for SocialComplexityMetric {
     fn analyse(&self, file_path: &Path) -> Option<Box<dyn IMetricValue>> {
         if let Ok(relative_file_path) = get_relative_file_path(file_path, &self.root) {
             if !is_file_versioned(&self.root, &relative_file_path) {
+                warn!("File : {:?} is not versioned", &relative_file_path);
                 return None;
-            }
-
-            match get_authors_of_file(&self.root, &relative_file_path) {
-                Ok(Some(authors)) => Some(Box::new(SocialComplexityValue {
-                    authors: Ok(authors),
-                })),
-                Ok(None) => None,
-                _ => Some(Box::new(SocialComplexityValue {
-                    authors: Err("Analysis Error".to_string()),
-                })),
+            } else {
+                info!("File : {:?} is versioned", &relative_file_path);
+                match get_authors_of_file(&self.root, &relative_file_path) {
+                    Ok(Some(authors)) => Some(Box::new(SocialComplexityValue {
+                        authors: Ok(authors),
+                    })),
+                    Ok(None) => None,
+                    _ => Some(Box::new(SocialComplexityValue {
+                        authors: Err("Analysis Error".to_string()),
+                    })),
+                }
             }
         } else {
             Some(Box::new(SocialComplexityValue {
@@ -50,7 +53,22 @@ impl IMetric for SocialComplexityMetric {
 
 fn is_file_versioned(repo: &Path, file: &Path) -> bool {
     match Repository::discover(repo) {
-        Ok(repo) => repo.status_file(file).is_ok(),
+        Ok(repo) => {
+            // Verif index
+            // Verif Main
+            //repo.status_file(file).is_ok()
+            // repo.index().and_then(|index| {
+            //     Ok(index.get_path(file))
+            // }).is_ok()
+
+            if let Ok(index) = repo.index() {
+                let file_in_index = index.get_path(file, 0);
+                file_in_index.is_some()
+            } else {
+                false
+            }
+
+        },
         Err(_) => false,
     }
 }

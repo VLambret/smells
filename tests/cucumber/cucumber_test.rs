@@ -268,7 +268,8 @@ mod smells_steps {
     fn step_contributor_to_file(w: &mut SmellsWorld, contributor: String, file: String) {
         let contributor_signature = Signature::now(&contributor, "mail").unwrap();
         w.project.create_file(&file);
-        w.project.get_a_contribution_in(&file, &contributor_signature);
+        w.project
+            .get_a_contribution_in(&file, &contributor_signature);
     }
 }
 

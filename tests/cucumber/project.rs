@@ -1,4 +1,7 @@
-use crate::cucumber_test_auxiliary_functions::{add_file_to_staging_area, commit_changes_to_repo, create_git_test_repository, create_test_commit};
+use crate::cucumber_test_auxiliary_functions::{
+    add_file_to_staging_area, commit_changes_to_repo, create_git_test_repository,
+    create_test_commit,
+};
 use git2::{Repository, Signature};
 use std::fs::{create_dir, create_dir_all, remove_dir_all, File};
 use std::io::Write;
@@ -56,8 +59,5 @@ impl Project {
 
         add_file_to_staging_area(filename, &repo);
         commit_changes_to_repo(&repo, author);
-
-
     }
-
 }
