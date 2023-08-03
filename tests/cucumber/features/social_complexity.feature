@@ -41,4 +41,4 @@ Feature: Smells social complexity
 		Then exit code is 0
 		And no warning is raised
 		And file1.rs social_complexity score is 1
-#		And file2.rs has no social complexity score
+		And file2.rs has no social_complexity score
