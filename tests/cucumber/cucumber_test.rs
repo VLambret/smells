@@ -277,11 +277,13 @@ mod smells_steps {
         let repo = Repository::open(&w.project.relative_path_to_project).unwrap();
 
         let contributor_signature = Signature::now(&contributor, "mail").unwrap();
-        update_file(&repo, &file);
+        w.project.create_file(file.to_owned());
+        w.project.get_contribution_to(file.to_owned());
+        //update_file(&repo, &file);
         add_file_to_the_staging_area(&repo, file);
         commit_changes_to_repo(&repo, &contributor_signature);
 
-        /*w.project.create_or_append_file(file);
+        /*
         w.project.add_file_to_stagging_area(&file, &repo);
         w.project.commit_changes_in_repo(&repo, &contributor_signature);*/
 
