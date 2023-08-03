@@ -1,4 +1,4 @@
-mod cucumber_test_annex_functions;
+mod cucumber_test_auxiliary_functions;
 mod project;
 
 use assert_cmd::Command;
@@ -68,8 +68,6 @@ fn main() {
     }
 }
 
-
-
 fn run_feature_file(feature_file: &str) -> usize {
     let result = futures::executor::block_on(
         SmellsWorld::cucumber()
@@ -94,7 +92,7 @@ fn run_feature_file(feature_file: &str) -> usize {
             .fail_on_skipped()
             .run(feature_file),
     );
-    result.steps_stats().failed
+    result.steps_stats().to_owned().failed
 }
 
 /*************************************************************************************************************************/
@@ -102,7 +100,7 @@ fn run_feature_file(feature_file: &str) -> usize {
 #[cfg(test)]
 mod smells_steps {
     use super::*;
-    use crate::cucumber_test_annex_functions::*;
+    use crate::cucumber_test_auxiliary_functions::*;
     use cucumber::*;
     use git2::{Repository, Signature, Tree};
     use log::warn;

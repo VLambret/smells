@@ -8,7 +8,8 @@ tests\\data\\git_repository_social_complexity
 tests/data/non_git_repository
 tests\\data\\non_git_repository
 
-
+.idea/
+.DS_Store
 
 # Added by cargo
 

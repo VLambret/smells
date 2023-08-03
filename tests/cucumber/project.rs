@@ -1,7 +1,7 @@
 use std::fs::{create_dir, File, remove_dir_all};
 use std::io::Write;
 use std::path::PathBuf;
-use crate::cucumber_test_annex_functions::create_git_test_repository;
+use crate::cucumber_test_auxiliary_functions::create_git_test_repository;
 
 #[derive(Debug)]
 pub struct Project {
