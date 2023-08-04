@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, Clone)]
 pub struct SocialComplexityMetric {
     analyzed_folder: PathBuf,
-    git_repo_of_analyzed_folder: PathBuf,
+    project_of_analyzed_folder: PathBuf,
 }
 
 impl SocialComplexityMetric {
@@ -24,7 +24,7 @@ impl SocialComplexityMetric {
     ) -> SocialComplexityMetric {
         SocialComplexityMetric {
             analyzed_folder: analyzed_folder.to_owned(),
-            git_repo_of_analyzed_folder: git_repo_of_analyzed_folder.to_owned(),
+            project_of_analyzed_folder: git_repo_of_analyzed_folder.to_owned(),
         }
     }
 }
@@ -32,14 +32,14 @@ impl SocialComplexityMetric {
 impl IMetric for SocialComplexityMetric {
     fn analyse(&self, file_path: &Path) -> Option<Box<dyn IMetricValue>> {
         if let Ok(relative_file_path) =
-            get_relative_file_path(file_path, &self.git_repo_of_analyzed_folder)
+            get_relative_file_path(file_path, &self.project_of_analyzed_folder)
         {
-            if !is_file_versioned(&self.git_repo_of_analyzed_folder, &relative_file_path) {
+            if !is_file_versioned(&self.project_of_analyzed_folder, &relative_file_path) {
                 //info!("{:?} NOT VERSIONED", &file_path);
                 return None;
             } else {
                 //warn!("{:?} VERSIONED OK", &relative_file_path);
-                match get_authors_of_file(&self.git_repo_of_analyzed_folder, &relative_file_path) {
+                match get_authors_of_file(&self.project_of_analyzed_folder, &relative_file_path) {
                     Ok(Some(authors)) => Some(Box::new(SocialComplexityValue {
                         authors: Ok(authors),
                     })),

@@ -101,12 +101,12 @@ mod smells_steps {
     use cucumber::*;
     use git2::{Signature, Tree};
     use log::warn;
+    use serde_json::Value::Null;
+    use serde_json::{to_string, Value};
     use std::env::{current_dir, set_current_dir};
     use std::fs::{create_dir, create_dir_all, remove_dir_all, File};
     use std::path::PathBuf;
     use std::{assert_eq, panic, vec};
-    use serde_json::{to_string, Value};
-    use serde_json::Value::Null;
 
     /***********************************************************************************
      * BASIC USAGE
@@ -208,13 +208,21 @@ mod smells_steps {
     fn step_get_metric_score(w: &mut SmellsWorld, file: String, metric_key: String, score: String) {
         let analysis_result = get_json_analysis(&w.cmd_output);
         //TODO: find robust solution
-        if file.contains(&w.project.project_relative_path_to_analyzed_folder.to_string_lossy().to_string()) {
+        if file.contains(
+            &w.project
+                .project_relative_path_to_analyzed_folder
+                .to_string_lossy()
+                .to_string(),
+        ) {
             assert_eq!(
                 get_metric_score(PathBuf::from(&file), &analysis_result, &metric_key),
                 score.parse::<i32>().unwrap()
             );
         } else {
-            let filename = get_filename_for_analysis(&w.project.project_relative_path_to_analyzed_folder, &file);
+            let filename = get_filename_for_analysis(
+                &w.project.project_relative_path_to_analyzed_folder,
+                &file,
+            );
             assert_eq!(
                 get_metric_score(filename, &analysis_result, &metric_key),
                 score.parse::<i32>().unwrap()
@@ -232,7 +240,6 @@ mod smells_steps {
             Null
         );
     }
-
 
     /***********************************************************************************
      * SOCIAL COMPLEXITY
@@ -293,7 +300,8 @@ mod smells_steps {
     fn step_contributor_to_file(w: &mut SmellsWorld, contributor: String, file: String) {
         let contributor_signature = Signature::now(&contributor, "mail").unwrap();
         w.project.create_file(&file);
-        w.project.get_a_contribution_in(&file, &contributor_signature);
+        w.project
+            .get_a_contribution_in(&file, &contributor_signature);
     }
 }
 
