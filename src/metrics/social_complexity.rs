@@ -6,32 +6,41 @@ use crate::metrics::metric::{
     ResultError, SmellsError,
 };
 use git2::Repository;
+use log::{info, warn};
 use std::env::current_dir;
 use std::fmt::Debug;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
-use log::{info, warn};
 
 #[derive(Debug, Clone)]
 pub struct SocialComplexityMetric {
-    root: PathBuf,
+    analyzed_folder: PathBuf,
+    git_repo_of_analyzed_folder: PathBuf,
 }
 
 impl SocialComplexityMetric {
-    pub fn new(root: &PathBuf) -> SocialComplexityMetric {
+    pub fn new(
+        analyzed_folder: &PathBuf,
+        git_repo_of_analyzed_folder: &PathBuf,
+    ) -> SocialComplexityMetric {
         SocialComplexityMetric {
-            root: root.to_owned(),
+            analyzed_folder: analyzed_folder.to_owned(),
+            git_repo_of_analyzed_folder: git_repo_of_analyzed_folder.to_owned(),
         }
     }
 }
 
 impl IMetric for SocialComplexityMetric {
     fn analyse(&self, file_path: &Path) -> Option<Box<dyn IMetricValue>> {
-        if let Ok(relative_file_path) = get_relative_file_path(file_path, &self.root) {
-            if !is_file_versioned(&self.root, &relative_file_path) {
+        if let Ok(relative_file_path) =
+            get_relative_file_path(file_path, &self.git_repo_of_analyzed_folder)
+        {
+            if !is_file_versioned(&self.git_repo_of_analyzed_folder, &relative_file_path) {
+                //info!("{:?} NOT VERSIONED", &file_path);
                 return None;
             } else {
-                match get_authors_of_file(&self.root, &relative_file_path) {
+                //warn!("{:?} VERSIONED OK", &relative_file_path);
+                match get_authors_of_file(&self.git_repo_of_analyzed_folder, &relative_file_path) {
                     Ok(Some(authors)) => Some(Box::new(SocialComplexityValue {
                         authors: Ok(authors),
                     })),
@@ -49,10 +58,10 @@ impl IMetric for SocialComplexityMetric {
     }
 }
 
-fn is_file_versioned(repo: &Path, file: &Path) -> bool {
-    match Repository::discover(repo) {
+fn is_file_versioned(git_repo: &Path, file: &Path) -> bool {
+    //info!("repo: {:?}, file: {:?}", git_repo, file);
+    match Repository::open(git_repo) {
         Ok(repo) => {
-
             //TODO: check MAIN also
 
             if let Ok(index) = repo.index() {
@@ -61,14 +70,16 @@ fn is_file_versioned(repo: &Path, file: &Path) -> bool {
             } else {
                 false
             }
-
-        },
+        }
         Err(_) => false,
     }
 }
 
-fn get_authors_of_file(root: &PathBuf, file: &Path) -> Result<Option<Vec<String>>, SmellsError> {
-    let repo = Repository::open(root).unwrap();
+fn get_authors_of_file(
+    git_repo: &PathBuf,
+    file: &Path,
+) -> Result<Option<Vec<String>>, SmellsError> {
+    let repo = Repository::open(git_repo).unwrap();
     let blame = repo.blame_file(file, None).unwrap();
     //TODO: find a robust solution
     let standardized_path = file.to_string_lossy().replace('\\', "/");
@@ -99,8 +110,8 @@ fn get_authors_of_file(root: &PathBuf, file: &Path) -> Result<Option<Vec<String>
     }
 }
 
-fn get_relative_file_path(file: &Path, root: &Path) -> Result<PathBuf, ResultError> {
-    match file.strip_prefix(root) {
+fn get_relative_file_path(file: &Path, git_repository: &Path) -> Result<PathBuf, ResultError> {
+    match file.strip_prefix(git_repository) {
         Ok(relative_file_path) => Ok(PathBuf::from(relative_file_path)),
         Err(_) => Err(ResultError::new(String::new())),
     }

@@ -49,14 +49,14 @@ impl IMetricValue for LinesCountValue {
 
     fn get_score(&self) -> Result<MetricScoreType, AnalysisError> {
         match &self.line_count {
-            Ok(value) => Ok(Score(*value)),
+            Ok(value) => Ok(Score(value.to_owned())),
             Err(_) => Err(String::from("Analysis error")),
         }
     }
 
     fn get_value(&self) -> Result<MetricValueType, AnalysisError> {
         match &self.line_count {
-            Ok(line_count_value) => Ok(Number(*line_count_value)),
+            Ok(line_count_value) => Ok(Number(line_count_value.to_owned())),
             Err(line_count_error) => Err(line_count_error.clone()),
         }
     }

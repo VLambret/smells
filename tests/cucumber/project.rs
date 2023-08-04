@@ -10,6 +10,7 @@ use std::path::PathBuf;
 #[derive(Debug)]
 pub struct Project {
     pub relative_path_to_project: PathBuf,
+    pub project_relative_path_to_analyzed_folder: PathBuf,
 }
 
 impl Project {
@@ -19,7 +20,8 @@ impl Project {
             .join("generated_project");
 
         let project = Project {
-            relative_path_to_project,
+            relative_path_to_project: relative_path_to_project.clone(),
+            project_relative_path_to_analyzed_folder: relative_path_to_project,
         };
         project.destroy();
         create_dir(&project.relative_path_to_project).unwrap();
@@ -38,7 +40,6 @@ impl Project {
 
     pub(crate) fn create_file(&self, filename: &String) {
         let file_in_project = self.relative_path_to_project.join(filename);
-        dbg!(&file_in_project);
         if let Some(parent_dir) = file_in_project.parent() {
             create_dir_all(parent_dir).expect("Failed to create parent directory")
         }

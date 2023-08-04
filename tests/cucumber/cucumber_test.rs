@@ -105,7 +105,7 @@ mod smells_steps {
     use std::fs::{create_dir, create_dir_all, remove_dir_all, File};
     use std::path::PathBuf;
     use std::{assert_eq, panic, vec};
-    use serde_json::Value;
+    use serde_json::{to_string, Value};
     use serde_json::Value::Null;
 
     /***********************************************************************************
@@ -121,6 +121,13 @@ mod smells_steps {
         } else {
             Ok(())
         };
+
+        if arguments.contains(&"./".to_string()) {
+            let path = PathBuf::from(&arguments);
+            let path_without_point = path.strip_prefix("./").unwrap();
+            w.project.project_relative_path_to_analyzed_folder = PathBuf::from(path_without_point);
+            warn!("path_without_point: {:?}", path_without_point);
+        }
 
         if change_of_working_directory.is_ok() {
             w.cmd_output = Some(w.cmd.args(argv).output());
@@ -200,18 +207,25 @@ mod smells_steps {
     #[then(regex = "(.+) (.+) score is (.+)")]
     fn step_get_metric_score(w: &mut SmellsWorld, file: String, metric_key: String, score: String) {
         let analysis_result = get_json_analysis(&w.cmd_output);
-        let filename = get_filename_for_analysis(&w.project.relative_path_to_project, file);
-
-        assert_eq!(
-            get_metric_score(filename, &analysis_result, &metric_key),
-            score.parse::<i32>().unwrap()
-        );
+        //TODO: find robust solution
+        if file.contains(&w.project.project_relative_path_to_analyzed_folder.to_string_lossy().to_string()) {
+            assert_eq!(
+                get_metric_score(PathBuf::from(&file), &analysis_result, &metric_key),
+                score.parse::<i32>().unwrap()
+            );
+        } else {
+            let filename = get_filename_for_analysis(&w.project.project_relative_path_to_analyzed_folder, &file);
+            assert_eq!(
+                get_metric_score(filename, &analysis_result, &metric_key),
+                score.parse::<i32>().unwrap()
+            );
+        }
     }
 
     #[then(regex = "(.+) has no (.+) score")]
     fn step_no_metric_score(w: &mut SmellsWorld, file: String, metric_key: String) {
         let analysis_result = get_json_analysis(&w.cmd_output);
-        let filename = get_filename_for_analysis(&w.project.relative_path_to_project, file);
+        let filename = get_filename_for_analysis(&w.project.relative_path_to_project, &file);
 
         assert_eq!(
             get_metric_score(filename, &analysis_result, &metric_key),

@@ -1,3 +1,4 @@
+use crate::SmellsWorld;
 use git2::{Commit, Repository, Signature, Tree};
 use serde_json::Value;
 use std::env::current_dir;
@@ -5,7 +6,6 @@ use std::fs::{create_dir_all, remove_dir_all};
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Output;
-use crate::SmellsWorld;
 
 pub fn convert_std_to_json(cmd_output_std: Vec<u8>) -> Value {
     let stdout_str = String::from_utf8(cmd_output_std.to_owned()).unwrap();
@@ -117,8 +117,8 @@ pub fn create_test_commit(repo: &Repository, author: &Signature, tree: &Tree, pa
     .unwrap();
 }
 
-pub fn get_filename_for_analysis(path_to_project: &PathBuf, file: String) -> PathBuf {
-    let project_file_name = PathBuf::from(path_to_project.clone().file_name().unwrap());
+pub fn get_filename_for_analysis(relative_path_to_project: &PathBuf, file: &String) -> PathBuf {
+    let project_file_name = PathBuf::from(relative_path_to_project.clone().file_name().unwrap());
     let filename = project_file_name.join(file);
     filename
 }
