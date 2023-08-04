@@ -113,11 +113,6 @@ mod smells_steps {
      **********************************************************************************/
 
 
-    #[given(expr = "a project")]
-    fn smells_create_project(w: &mut SmellsWorld) {
-
-    }
-
 
     #[when(regex = "smells is called with \"(.*)\"")]
     fn smells_called(w: &mut SmellsWorld, arguments: String) {
@@ -205,6 +200,10 @@ mod smells_steps {
     #[given(regex = "(.+) is created")]
     fn step_file_is_created(w: &mut SmellsWorld, file: String) {
         w.project.create_file(&file);
+    }
+
+    #[given(expr = "a project")]
+    fn smells_existing_project(w: &mut SmellsWorld) {
     }
 
     /***********************************************************************************
