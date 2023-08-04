@@ -8,9 +8,6 @@ use std::path::PathBuf;
 
 pub fn do_analysis(root: PathBuf) -> TopAnalysis {
     let mut metrics_to_analyze: Vec<Box<dyn IMetric>> = vec![Box::new(LinesCountMetric::new())];
-    if is_git_repository(&root) {
-        metrics_to_analyze.push(Box::new(SocialComplexityMetric::new(&root, &root)));
-    }
     let repository_git_folder_of_root = Repository::discover(&root);
     if repository_git_folder_of_root.is_ok() {
         let existing_repository_git_folder_of_root = PathBuf::from(repository_git_folder_of_root.unwrap().path());
@@ -20,8 +17,4 @@ pub fn do_analysis(root: PathBuf) -> TopAnalysis {
         eprintln!("WARN: Analysed folder is not a git repository");
     }
     do_internal_analysis(&root, &FileExplorer::new(&root), &metrics_to_analyze)
-}
-
-fn is_git_repository(folder: &PathBuf) -> bool {
-    Repository::open(folder).is_ok()
 }
