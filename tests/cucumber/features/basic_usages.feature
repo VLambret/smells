@@ -18,12 +18,14 @@ Feature: Smells basic usages
     And standard output is empty
     And standard error contains "No such file or directory"
 
-#  Scenario: Smells nominal case
-#    When smells is called with "tests/data/existing_folder"
-#    Then exit code is 0
-#    And standard output is "not empty"
-#    And standard error is empty
-#
+  Scenario: Smells nominal case
+    Given a project
+    And tests/data/existing_folder is created
+    When smells is called with "."
+    Then exit code is 0
+    And standard output is "not empty"
+    And standard error is empty
+
 
   Scenario: Smells help can be called with long version
     When smells is called with "--help"

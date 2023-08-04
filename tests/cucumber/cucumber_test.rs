@@ -112,6 +112,13 @@ mod smells_steps {
      * BASIC USAGE
      **********************************************************************************/
 
+
+    #[given(expr = "a project")]
+    fn smells_create_project(w: &mut SmellsWorld) {
+
+    }
+
+
     #[when(regex = "smells is called with \"(.*)\"")]
     fn smells_called(w: &mut SmellsWorld, arguments: String) {
         let argv = arguments.split_whitespace();
