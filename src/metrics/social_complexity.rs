@@ -35,10 +35,8 @@ impl IMetric for SocialComplexityMetric {
             get_relative_file_path(file_path, &self.project_of_analyzed_folder)
         {
             if !is_file_versioned(&self.project_of_analyzed_folder, &relative_file_path) {
-                //info!("{:?} NOT VERSIONED", &file_path);
                 return None;
             } else {
-                //warn!("{:?} VERSIONED OK", &relative_file_path);
                 match get_authors_of_file(&self.project_of_analyzed_folder, &relative_file_path) {
                     Ok(Some(authors)) => Some(Box::new(SocialComplexityValue {
                         authors: Ok(authors),
@@ -58,7 +56,6 @@ impl IMetric for SocialComplexityMetric {
 }
 
 fn is_file_versioned(git_repo: &Path, file: &Path) -> bool {
-    //info!("repo: {:?}, file: {:?}", git_repo, file);
     match Repository::open(git_repo) {
         Ok(repo) => {
             //TODO: check MAIN also
