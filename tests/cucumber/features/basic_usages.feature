@@ -17,13 +17,12 @@ Feature: Smells basic usages
     Then exit code is 1
     And standard output is empty
     And standard error contains "No such file or directory"
-#
-#  Fail because analysed folder is not a git repo
-##  Scenario: Smells nominal case
-##    When smells is called with "tests/data/existing_folder"
-##    Then exit code is 0
-##    And standard output is "not empty"
-##    And standard error is empty
+
+#  Scenario: Smells nominal case
+#    When smells is called with "tests/data/existing_folder"
+#    Then exit code is 0
+#    And standard output is "not empty"
+#    And standard error is empty
 #
 
   Scenario: Smells help can be called with long version
