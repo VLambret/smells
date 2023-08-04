@@ -7,7 +7,6 @@ use crate::metrics::metric::{
 };
 use git2::Repository;
 use log::{info, warn};
-use std::env::current_dir;
 use std::fmt::Debug;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};

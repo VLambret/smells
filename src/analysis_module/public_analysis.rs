@@ -4,7 +4,6 @@ use crate::metrics::line_count::LinesCountMetric;
 use crate::metrics::metric::IMetric;
 use crate::metrics::social_complexity::SocialComplexityMetric;
 use git2::Repository;
-use log::warn;
 use std::path::PathBuf;
 
 pub fn do_analysis(root: PathBuf) -> TopAnalysis {
@@ -12,32 +11,15 @@ pub fn do_analysis(root: PathBuf) -> TopAnalysis {
     if is_git_repository(&root) {
         metrics_to_analyze.push(Box::new(SocialComplexityMetric::new(&root, &root)));
     }
-    //TODO: remove repetition
-    else if get_containing_git_repository(&root).is_some() {
-        let root_git_repo = get_containing_git_repository(&root).unwrap();
-        metrics_to_analyze.push(Box::new(SocialComplexityMetric::new(&root, &root_git_repo)));
+    let repository_git_folder_of_root = Repository::discover(&root);
+    if repository_git_folder_of_root.is_ok() {
+        let existing_repository_git_folder_of_root = PathBuf::from(repository_git_folder_of_root.unwrap().path());
+        let existing_git_repository_project = existing_repository_git_folder_of_root.parent().unwrap();
+        metrics_to_analyze.push(Box::new(SocialComplexityMetric::new(&root, &existing_git_repository_project.to_path_buf())));
     } else {
         eprintln!("WARN: Analysed folder is not a git repository");
-    };
-    do_internal_analysis(&root, &FileExplorer::new(&root), &metrics_to_analyze)
-}
-
-fn get_containing_git_repository(folder: &PathBuf) -> Option<PathBuf> {
-    // TODO: use Repository::discover(git_repo)
-    warn!("-> Current folder {:?}", &folder);
-    match Repository::open(folder) {
-        Ok(_) => {
-            warn!("is a git repo");
-            Some(folder.to_owned())
-        }
-        Err(_) => {
-            if folder.parent().is_none() || folder.parent() == Some("".as_ref()) {
-                None
-            } else {
-                get_containing_git_repository(&folder.parent().unwrap().to_path_buf())
-            }
-        }
     }
+    do_internal_analysis(&root, &FileExplorer::new(&root), &metrics_to_analyze)
 }
 
 fn is_git_repository(folder: &PathBuf) -> bool {
