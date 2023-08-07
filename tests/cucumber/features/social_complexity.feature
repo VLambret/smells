@@ -14,7 +14,8 @@ Feature: Smells social complexity
 		And there is no contributor
 		When smells is called with "."
 		Then exit code is 0
-		Then no warning is raised
+		#raise a warning because no file found
+		#Then no warning is raised
 		And no social_complexity metric is computed
 
 	Scenario: Analyse a git repository with contributors

@@ -125,7 +125,6 @@ mod smells_steps {
             let path = PathBuf::from(&arguments);
             let path_without_point = path.strip_prefix("./").unwrap();
             w.project.project_relative_path_to_analyzed_folder = PathBuf::from(path_without_point);
-            warn!("path_without_point: {:?}", path_without_point);
         }
 
         if change_of_working_directory.is_ok() {
@@ -148,7 +147,7 @@ mod smells_steps {
     fn stdout_is_empty(w: &mut SmellsWorld, empty: String) {
         let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
         if empty == "empty" {
-            assert!(output.stdout.is_empty());
+            assert!(output.stdout.is_empty(), "stdout contains {:?}", convert_std_to_string(output.stdout));
         } else {
             assert!(!output.stdout.is_empty());
         }
@@ -158,7 +157,7 @@ mod smells_steps {
     fn stdout_contains_message(w: &mut SmellsWorld, message: String) {
         let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
         let stdout: String = convert_std_to_string(output.stdout);
-        assert!(stdout.contains(&message));
+        assert!(stdout.contains(&message), "stdout contains {:?}", &stdout);
     }
 
     //TODO: find a way to handle fr/en
@@ -187,7 +186,8 @@ mod smells_steps {
                 .unwrap()
                 .stderr,
         );
-        assert!(stderr.is_empty());
+        assert!(stderr.is_empty(), "stderr contains: {:?}", &stderr);
+
     }
 
     /***********************************************************************************
@@ -278,8 +278,7 @@ mod smells_steps {
     fn step_warning_is_raised(w: &mut SmellsWorld, warning: String) {
         if let Some(Ok(output)) = &w.cmd_output {
             let stderr_str = String::from_utf8_lossy(&*output.stderr);
-            assert!(stderr_str.contains("WARN:"));
-            assert!(stderr_str.contains(&warning));
+            assert!(stderr_str.contains("WARN:") && stderr_str.contains(&warning), "stderr contains : {:?}", &stderr_str);
         } else {
             assert!(false);
         }
