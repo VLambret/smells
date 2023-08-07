@@ -20,8 +20,7 @@ pub fn do_analysis(root: PathBuf) -> TopAnalysis {
         existing_git_repository_of_root.path().parent().and_then(
             |project_containing_git_repository_of_root| {
                 metrics_to_analyze.push(Box::new(SocialComplexityMetric::new(
-                    &root,
-                    &project_containing_git_repository_of_root.to_path_buf(),
+                    &project_containing_git_repository_of_root.to_path_buf()
                 )));
                 Some(())
             },

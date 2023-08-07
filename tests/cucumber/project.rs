@@ -1,6 +1,5 @@
 use crate::cucumber_test_auxiliary_functions::{
     add_file_to_staging_area, commit_changes_to_repo, create_git_test_repository,
-    create_test_commit,
 };
 use git2::{Repository, Signature};
 use std::fs;

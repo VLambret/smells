@@ -2,28 +2,24 @@ use crate::metrics::metric::MetricScoreType::Score;
 use crate::metrics::metric::MetricValueType::Authors;
 use crate::metrics::metric::SmellsError::*;
 use crate::metrics::metric::{
-    AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType, OptionError,
+    AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType,
     ResultError, SmellsError,
 };
 use git2::Repository;
-use log::{info, warn};
 use std::fmt::Debug;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct SocialComplexityMetric {
-    analyzed_folder: PathBuf,
     project_of_analyzed_folder: PathBuf,
 }
 
 impl SocialComplexityMetric {
     pub fn new(
-        analyzed_folder: &PathBuf,
         git_repo_of_analyzed_folder: &PathBuf,
     ) -> SocialComplexityMetric {
         SocialComplexityMetric {
-            analyzed_folder: analyzed_folder.to_owned(),
             project_of_analyzed_folder: git_repo_of_analyzed_folder.to_owned(),
         }
     }

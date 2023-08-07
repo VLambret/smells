@@ -3,7 +3,6 @@ use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreTy
 use maplit::btreemap;
 use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
-use std::process::exit;
 
 /* **************************************************************** */
 
