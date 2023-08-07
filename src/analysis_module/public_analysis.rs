@@ -5,8 +5,16 @@ use crate::metrics::metric::IMetric;
 use crate::metrics::social_complexity::SocialComplexityMetric;
 use git2::Repository;
 use std::path::PathBuf;
+use std::process::exit;
 
 pub fn do_analysis(root: PathBuf) -> TopAnalysis {
+
+    let is_empty = root.read_dir().unwrap().next().is_none();
+    if is_empty {
+        eprintln!("WARN: Analysed folder is empty");
+        exit(1);
+    }
+
     let mut metrics_to_analyze: Vec<Box<dyn IMetric>> = vec![Box::new(LinesCountMetric::new())];
     let git_repository_of_root = Repository::discover(&root);
     if let Ok(existing_git_repository_of_root) = git_repository_of_root {

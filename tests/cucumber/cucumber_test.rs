@@ -52,6 +52,8 @@ fn main() {
     let feature_files = [
         "tests/cucumber/features/basic_usages.feature",
         "tests/cucumber/features/social_complexity.feature",
+        "tests/cucumber/features/lines_count.feature",
+
     ];
 
     let mut error_number = 0;
@@ -202,7 +204,7 @@ mod smells_steps {
         w.project.create_file(&file);
     }
 
-    #[given(expr = "a project")]
+    #[given(expr = "an empty project")]
     fn smells_existing_project(w: &mut SmellsWorld) {
     }
 
