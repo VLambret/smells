@@ -9,10 +9,8 @@ Feature: Smells lines count
     And no warning is raised
     And file0.rs lines_count score is 0
 
-#  Scenario: Analyse of an unauthorized file
-#
 #  Scenario: Analyse of folder ending with slash
-#
+
   Scenario: Analyse non empty files in folders
     Given a project
     And lib/mod1/file2.rs is created

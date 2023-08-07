@@ -6,7 +6,6 @@ use assert_cmd::Command;
 use cucumber::{given, World};
 use env_logger::Env;
 use futures::FutureExt;
-use log::info;
 use std::env::set_current_dir;
 use std::path::PathBuf;
 use std::process::{exit, Output};
@@ -106,7 +105,7 @@ mod smells_steps {
     use serde_json::{to_string, Value};
     use std::env::{current_dir, set_current_dir};
     use std::fs::{create_dir, create_dir_all, remove_dir_all, File};
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::{assert_eq, fs, panic, vec};
 
     /***********************************************************************************
@@ -203,6 +202,7 @@ mod smells_steps {
 
     #[given(expr = "a project")]
     fn smells_existing_project(w: &mut SmellsWorld) {}
+
 
     /***********************************************************************************
      * METRICS

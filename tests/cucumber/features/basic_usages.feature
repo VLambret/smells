@@ -25,6 +25,15 @@ Feature: Smells basic usages
     And the warning "Analysed folder is empty" is raised
     And standard output is empty
 
+#  Scenario: Analyse of an unauthorized file
+#    Given a project
+#    And lib/file.rs is created
+#    And lib is protected
+#    When smells is called with "./lib"
+#    Then exit code is 1
+#    And the warning "Access denied" is raised
+#    And standard output is empty
+
 #    Fails at sterr step
 #  Scenario: Smells nominal case
 #    Given a project
