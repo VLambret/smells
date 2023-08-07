@@ -18,6 +18,13 @@ Feature: Smells basic usages
     And standard output is empty
     And standard error contains "No such file or directory"
 
+  Scenario: Analyse an empty project
+    Given an empty project
+    When smells is called with "."
+    Then exit code is 1
+    And the warning "Analysed folder is empty" is raised
+    And standard output is empty
+
 #    Fails at sterr step
 #  Scenario: Smells nominal case
 #    Given a project
