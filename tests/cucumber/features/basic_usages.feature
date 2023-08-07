@@ -20,10 +20,20 @@ Feature: Smells basic usages
 
   Scenario: Smells called with an empty project
     Given a project
+    And the project is empty
     When smells is called with "."
     Then exit code is 1
-    And the warning "Analysed folder is empty" is raised
+    And the warning "Analysed folder does not contain any file" is raised
     And standard output is empty
+
+  Scenario: Smells called with a project containing an empty folder
+    Given a project
+    And lib/file.rs is created
+    And file lib/file.rs is deleted
+    When smells is called with "."
+    Then exit code is 0
+    And the warning "Analysed folder does not contain any file" is raised
+    And standard output is not empty
 
 #  Scenario: Analyse of an unauthorized file
 #    Given a project
@@ -34,14 +44,13 @@ Feature: Smells basic usages
 #    And the warning "Access denied" is raised
 #    And standard output is empty
 
-#    Fails at sterr step
-#  Scenario: Smells nominal case
-#    Given a project
-#    And existing_folder/file0.rs is created
-#    When smells is called with "./existing_folder"
-#    Then exit code is 0
-#    And standard output is not empty
-#    And standard error is empty
+  Scenario: Smells nominal case
+    Given a project
+    And existing_folder/file0.rs is created
+    When smells is called with "./existing_folder"
+    Then exit code is 0
+    And standard output is not empty
+    And standard error is empty
 
   Scenario: Smells help can be called with long version
     When smells is called with "--help"

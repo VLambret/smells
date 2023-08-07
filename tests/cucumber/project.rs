@@ -14,6 +14,7 @@ pub struct Project {
     pub project_relative_path_to_analyzed_folder: PathBuf,
 }
 
+
 impl Project {
     pub(crate) fn new() -> Project {
         let relative_path_to_project = PathBuf::from("tests")
@@ -47,6 +48,11 @@ impl Project {
         if !file_in_project.exists() {
             File::create(file_in_project).unwrap();
         }
+    }
+
+    pub(crate) fn remove_file(&self, file: PathBuf) {
+        let file_in_project = self.relative_path_to_project.join(file);
+        fs::remove_file(PathBuf::from(&file_in_project)).unwrap();
     }
 
     pub fn write_lines_in_a_file(&self, file: PathBuf, lines_count: u32) {

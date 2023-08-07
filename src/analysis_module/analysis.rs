@@ -3,6 +3,7 @@ use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreTy
 use maplit::btreemap;
 use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
+use std::process::exit;
 
 /* **************************************************************** */
 
@@ -104,6 +105,9 @@ pub fn do_internal_analysis(
     };
 
     let files_to_analyse = file_explorer.discover();
+    if files_to_analyse.is_empty() {
+        eprintln!("WARN: Analysed folder does not contain any file");
+    }
 
     let file_analyses = &analyse_all_files(files_to_analyse, metrics);
 
@@ -301,7 +305,7 @@ mod analyse1_test {
     use crate::metrics::line_count::LinesCountValue;
 
     #[test]
-    fn build_hier_analysis_from_file_analysis_test() {
+    fn build_hierarchical_analysis_from_file_analysis_test() {
         // Given
         let first_file_analysis = FileAnalysis {
             file_path: PathBuf::from("root")

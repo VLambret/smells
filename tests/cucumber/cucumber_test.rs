@@ -102,10 +102,9 @@ mod smells_steps {
     use git2::{Signature, Tree};
     use log::warn;
     use serde_json::Value::Null;
-    use serde_json::{to_string, Value};
-    use std::env::{current_dir, set_current_dir};
+    use std::env::set_current_dir;
     use std::fs::{create_dir, create_dir_all, remove_dir_all, File};
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
     use std::{assert_eq, fs, panic, vec};
 
     /***********************************************************************************
@@ -202,6 +201,16 @@ mod smells_steps {
 
     #[given(expr = "a project")]
     fn smells_existing_project(w: &mut SmellsWorld) {}
+
+    #[given(regex = "file (.+) is deleted")]
+    fn step_delete_file(w: &mut SmellsWorld, file: String) {
+        w.project.remove_file(PathBuf::from(&file));
+    }
+
+    #[given(expr = "the project is empty")]
+    fn step_project_empty(w: &mut SmellsWorld) {}
+
+
 
 
     /***********************************************************************************

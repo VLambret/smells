@@ -10,7 +10,7 @@ use std::process::exit;
 pub fn do_analysis(root: PathBuf) -> TopAnalysis {
     let is_empty = root.read_dir().unwrap().next().is_none();
     if is_empty {
-        eprintln!("WARN: Analysed folder is empty");
+        eprintln!("WARN: Analysed folder does not contain any file");
         exit(1);
     }
 

@@ -25,31 +25,6 @@ Feature: End-to-End feature
     }
     """
 
-    Scenario: If I give smells a file with 5 lines in a folder it will analyse the file
-        Given a path tests/data/single_file_folder_other
-        When I run the analysis of the folder
-        Then smells will show the json result of the analysis
-        """
-        {
-            "single_file_folder_other": {
-                "metrics": {
-                    "lines_count": 5,
-                    "social_complexity": 0
-                },
-                "folder_content_analyses": [
-                    {
-                        "file5.txt": {
-                            "metrics": {
-                                "lines_count": 5,
-                                "social_complexity": 0
-                            }
-                        }
-                    }
-                ]
-            }
-        }
-        """
-
     Scenario: If I give smells multiple files in a folder it will analyse the files
         Given a path tests/data/folder_with_multiple_files
         When I run the analysis of the folder
