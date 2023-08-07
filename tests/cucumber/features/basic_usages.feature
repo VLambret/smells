@@ -45,13 +45,13 @@ Feature: Smells basic usages
 #    And standard output is empty
 
   Scenario: Smells nominal case
-    Given a project
+    Given project is a git repository
     And existing_folder/file0.rs is created
     When smells is called with "./existing_folder"
     Then exit code is 0
     And standard output is not empty
     #Fail because not a git repo
-    #And standard error is empty
+    And standard error is empty
 
   Scenario: Smells help can be called with long version
     When smells is called with "--help"
