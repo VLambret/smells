@@ -1,14 +1,14 @@
 Feature: Smells lines count
 
-#  Scenario: Analyse an empty file
-#    Given project is created
-#    And file0.rs is created
-#    And 0 lines are added to file0.rs
-#    When smells is called with "."
-#    Then exit code is 0
-#    And no warning is raised
-#    And no lines_count metric is computed
-#
+  Scenario: Analyse an empty file
+    Given a project
+    And file0.rs is created
+    And 0 lines are added to file0.rs
+    When smells is called with "."
+    Then exit code is 0
+    And no warning is raised
+    And file0.rs lines_count score is 0
+
 #  Scenario: Analyse of an unauthorized file
 #
 #  Scenario: Analyse of folder ending with slash

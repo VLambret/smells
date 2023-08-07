@@ -19,7 +19,7 @@ Feature: Smells basic usages
     And standard error contains "No such file or directory"
 
   Scenario: Smells called with an empty project
-    Given an empty project
+    Given a project
     When smells is called with "."
     Then exit code is 1
     And the warning "Analysed folder is empty" is raised
