@@ -53,7 +53,6 @@ fn main() {
         "tests/cucumber/features/basic_usages.feature",
         "tests/cucumber/features/social_complexity.feature",
         "tests/cucumber/features/lines_count.feature",
-
     ];
 
     let mut error_number = 0;
@@ -113,8 +112,6 @@ mod smells_steps {
     /***********************************************************************************
      * BASIC USAGE
      **********************************************************************************/
-
-
 
     #[when(regex = "smells is called with \"(.*)\"")]
     fn smells_called(w: &mut SmellsWorld, arguments: String) {
@@ -205,8 +202,7 @@ mod smells_steps {
     }
 
     #[given(expr = "a project")]
-    fn smells_existing_project(w: &mut SmellsWorld) {
-    }
+    fn smells_existing_project(w: &mut SmellsWorld) {}
 
     /***********************************************************************************
      * METRICS
@@ -250,17 +246,15 @@ mod smells_steps {
     }
 
     /***********************************************************************************
-   * LINES COUNT
-   **********************************************************************************/
+     * LINES COUNT
+     **********************************************************************************/
 
     // Analyse an empty file
     #[given(regex = "(.+) lines are added to (.+)")]
-    fn step_add_lines_to_file(_w: &mut SmellsWorld, lines_count: String, file: String) {
-        for i in 0..lines_count.parse::<u32>().unwrap() {
-            fs::write(PathBuf::from(&file), "line", ).unwrap()
-        }
+    fn step_add_lines_to_file(w: &mut SmellsWorld, lines_count: String, file: String) {
+        w.project
+            .write_lines_in_a_file(PathBuf::from(file), lines_count.parse::<u32>().unwrap())
     }
-
 
     /***********************************************************************************
      * SOCIAL COMPLEXITY

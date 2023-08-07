@@ -3,6 +3,7 @@ use crate::cucumber_test_auxiliary_functions::{
     create_test_commit,
 };
 use git2::{Repository, Signature};
+use std::fs;
 use std::fs::{create_dir, create_dir_all, remove_dir_all, File};
 use std::io::Write;
 use std::path::PathBuf;
@@ -45,6 +46,18 @@ impl Project {
         }
         if !file_in_project.exists() {
             File::create(file_in_project).unwrap();
+        }
+    }
+
+    pub fn write_lines_in_a_file(&self, file: PathBuf, lines_count: u32) {
+        let file_in_project = self.relative_path_to_project.join(file);
+        for _ in 0..lines_count {
+            let mut file_to_modify = File::options()
+                .create(true)
+                .append(true)
+                .open(&file_in_project)
+                .unwrap();
+            writeln!(&mut file_to_modify, "line").unwrap();
         }
     }
 
