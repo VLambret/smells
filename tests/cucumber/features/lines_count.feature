@@ -1,13 +1,5 @@
 Feature: Smells lines count
 
-  #Could be in basic usage tests
-  Scenario: Analyse an empty project
-    Given an empty project
-    When smells is called with "."
-    Then exit code is 1
-	And the warning "Analysed folder is empty" is raised
-    And standard output is empty
-
 #  Scenario: Analyse an empty file
 #    Given project is created
 #    And file0.rs is created

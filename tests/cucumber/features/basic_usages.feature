@@ -18,7 +18,7 @@ Feature: Smells basic usages
     And standard output is empty
     And standard error contains "No such file or directory"
 
-  Scenario: Analyse an empty project
+  Scenario: Smells called with an empty project
     Given an empty project
     When smells is called with "."
     Then exit code is 1
