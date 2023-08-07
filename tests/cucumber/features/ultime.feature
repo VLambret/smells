@@ -1,1 +1,0 @@
-Feature: Smells metrics analysis

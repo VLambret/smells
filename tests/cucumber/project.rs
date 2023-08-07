@@ -66,7 +66,7 @@ impl Project {
         }
     }
 
-    pub(crate) fn get_a_contribution_in(&self, filename: &String, author: &Signature) {
+    pub(crate) fn get_a_one_line_contribution_in(&self, filename: &String, author: &Signature) {
         let repo = Repository::open(&self.relative_path_to_project).unwrap();
         let file_in_project = self.relative_path_to_project.join(filename);
         let mut file = File::options()

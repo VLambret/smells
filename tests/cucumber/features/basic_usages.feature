@@ -50,7 +50,6 @@ Feature: Smells basic usages
     When smells is called with "./existing_folder"
     Then exit code is 0
     And standard output is not empty
-    #Fail because not a git repo
     And standard error is empty
 
   Scenario: Smells help can be called with long version

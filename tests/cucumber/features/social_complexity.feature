@@ -5,25 +5,24 @@ Feature: Smells social complexity
 		And file.rs is created
 		When smells is called with "."
 		Then exit code is 0
-#		And the warning "Analysed folder is not a git repository" is raised
 		And file.rs lines_count score is 0
 		And no social_complexity metric is computed
 
 	Scenario: Analyse a git repository without any contributors
 		Given project is a git repository
+		And file0.rs is created
 		And there is no contributor
 		When smells is called with "."
 		Then exit code is 0
-		#raise a warning because no file found
-		#Then no warning is raised
+		Then no warning is raised
 		And no social_complexity metric is computed
 
 	Scenario: Analyse a git repository with contributors
 		Given project is a git repository
-        And author1 contributed to lib/mod1/file1.rs
-		And author1 contributed to lib/mod1/file2.rs
-		And author2 contributed to lib/mod1/file2.rs
-        And author3 contributed to lib/README
+        And author1 add a line to lib/mod1/file1.rs
+		And author1 add a line to lib/mod1/file2.rs
+		And author2 add a line to lib/mod1/file2.rs
+        And author3 add a line to lib/README
 		When smells is called with "."
        	Then exit code is 0
 		And no warning is raised
@@ -36,7 +35,7 @@ Feature: Smells social complexity
 
 	Scenario: Analyse of a not versioned file in a git repository gives no social complexity score
 		Given project is a git repository
-		And author1 contributed to file1.rs
+		And author1 add a line to file1.rs
 		And file2.rs is created
 		When smells is called with "."
 		Then exit code is 0
@@ -46,7 +45,7 @@ Feature: Smells social complexity
 
 	Scenario: Analyse of a subfolder of a git repository
 		Given project is a git repository
-		And author1 contributed to folder1/file1.rs
+		And author1 add a line to folder1/file1.rs
 		When smells is called with "./folder1"
 		Then exit code is 0
 		And no warning is raised

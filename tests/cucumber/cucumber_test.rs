@@ -52,6 +52,7 @@ fn main() {
         "tests/cucumber/features/basic_usages.feature",
         "tests/cucumber/features/social_complexity.feature",
         "tests/cucumber/features/lines_count.feature",
+        "tests/cucumber/features/ultimate.feature"
     ];
 
     let mut error_number = 0;
@@ -317,11 +318,11 @@ mod smells_steps {
 
     // 	Scenario: Analyse a git repository with contributors
 
-    #[given(regex = "(.+) contributed to (.+)")]
+    #[given(regex = "(.+) add a line to (.+)")]
     fn step_contributor_to_file(w: &mut SmellsWorld, contributor: String, file: String) {
         let contributor_signature = Signature::now(&contributor, "mail").unwrap();
         w.project.create_file(&file);
         w.project
-            .get_a_contribution_in(&file, &contributor_signature);
+            .get_a_one_line_contribution_in(&file, &contributor_signature);
     }
 }
