@@ -52,7 +52,7 @@ fn main() {
         "tests/cucumber/features/basic_usages.feature",
         "tests/cucumber/features/social_complexity.feature",
         "tests/cucumber/features/lines_count.feature",
-        "tests/cucumber/features/ultimate.feature"
+        "tests/cucumber/features/ultimate.feature",
     ];
 
     let mut error_number = 0;
@@ -100,11 +100,11 @@ mod smells_steps {
     use super::*;
     use crate::cucumber_test_auxiliary_functions::*;
     use cucumber::*;
-    use git2::{Signature};
+    use git2::Signature;
     use log::warn;
     use serde_json::Value::Null;
+    use std::assert_eq;
     use std::env::set_current_dir;
-    use std::{assert_eq};
 
     /***********************************************************************************
      * BASIC USAGE
@@ -146,7 +146,11 @@ mod smells_steps {
     fn stdout_is_empty(w: &mut SmellsWorld, empty: String) {
         let output = w.cmd_output.as_ref().unwrap().as_ref().cloned().unwrap();
         if empty == "empty" {
-            assert!(output.stdout.is_empty(), "stdout contains {:?}", convert_std_to_string(output.stdout));
+            assert!(
+                output.stdout.is_empty(),
+                "stdout contains {:?}",
+                convert_std_to_string(output.stdout)
+            );
         } else {
             assert!(!output.stdout.is_empty());
         }
@@ -186,7 +190,6 @@ mod smells_steps {
                 .stderr,
         );
         assert!(stderr.is_empty(), "stderr contains: {:?}", &stderr);
-
     }
 
     /***********************************************************************************
@@ -208,9 +211,6 @@ mod smells_steps {
 
     #[given(expr = "the project is empty")]
     fn step_project_empty(_w: &mut SmellsWorld) {}
-
-
-
 
     /***********************************************************************************
      * METRICS
@@ -277,7 +277,11 @@ mod smells_steps {
     fn step_warning_is_raised(w: &mut SmellsWorld, warning: String) {
         if let Some(Ok(output)) = &w.cmd_output {
             let stderr_str = String::from_utf8_lossy(&*output.stderr);
-            assert!(stderr_str.contains("WARN:") && stderr_str.contains(&warning), "stderr contains : {:?}", &stderr_str);
+            assert!(
+                stderr_str.contains("WARN:") && stderr_str.contains(&warning),
+                "stderr contains : {:?}",
+                &stderr_str
+            );
         } else {
             assert!(false);
         }
@@ -310,7 +314,11 @@ mod smells_steps {
     fn step_no_warning_is_raised(w: &mut SmellsWorld) {
         if let Some(Ok(output)) = &w.cmd_output {
             let stderr_str = String::from_utf8_lossy(&*output.stderr);
-            assert!(!stderr_str.contains("WARN:"), "stderr contains: {:?}", stderr_str);
+            assert!(
+                !stderr_str.contains("WARN:"),
+                "stderr contains: {:?}",
+                stderr_str
+            );
         } else {
             assert!(false);
         }

@@ -9,10 +9,10 @@ use std::path::Path;
 
 #[derive(Debug)]
 pub enum SmellsError {
-    AnalysisError(AnalysisError),
-    ResultError(ResultError),
-    OptionError(OptionError),
-    GitError(git2Error),
+    AnalysisError(String),
+    ResultError(String),
+    OptionError(String),
+    GitError(GitError),
 }
 
 pub type AnalysisError = String;
@@ -51,12 +51,12 @@ pub struct OptionError {
 impl OptionError {
     pub fn new() -> OptionError {
         OptionError {
-            details: "Result is an error".to_string(),
+            details: "Option is None".to_string(),
         }
     }
 }
 
-impl fmt::Display for OptionError {
+/*impl fmt::Display for OptionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.details)
     }
@@ -71,6 +71,19 @@ impl Error for OptionError {
 impl From<git2Error> for SmellsError {
     fn from(other: git2Error) -> SmellsError {
         SmellsError::GitError(other)
+    }
+}*/
+
+#[derive(Debug)]
+pub struct GitError {
+    details: String,
+}
+
+impl From<git2Error> for SmellsError {
+    fn from(other: git2Error) -> SmellsError {
+        SmellsError::GitError(GitError {
+            details: String::from("Error while retrieving social complexity git objects: ") + other.message(),
+        })
     }
 }
 

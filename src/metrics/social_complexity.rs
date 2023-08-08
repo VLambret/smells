@@ -2,10 +2,10 @@ use crate::metrics::metric::MetricScoreType::Score;
 use crate::metrics::metric::MetricValueType::Authors;
 use crate::metrics::metric::SmellsError::*;
 use crate::metrics::metric::{
-    AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType,
-    ResultError, SmellsError,
+    AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType, ResultError,
+    SmellsError,
 };
-use git2::Repository;
+use git2::{Blame, Blob, Repository};
 use std::fmt::Debug;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -16,9 +16,7 @@ pub struct SocialComplexityMetric {
 }
 
 impl SocialComplexityMetric {
-    pub fn new(
-        git_repo_of_analyzed_folder: &PathBuf,
-    ) -> SocialComplexityMetric {
+    pub fn new(git_repo_of_analyzed_folder: &PathBuf) -> SocialComplexityMetric {
         SocialComplexityMetric {
             project_of_analyzed_folder: git_repo_of_analyzed_folder.to_owned(),
         }
@@ -71,15 +69,14 @@ fn get_authors_of_file(
     git_repo: &PathBuf,
     file: &Path,
 ) -> Result<Option<Vec<String>>, SmellsError> {
-    let repo = Repository::open(git_repo).unwrap();
-    let blame = repo.blame_file(file, None).unwrap();
-    //TODO: find a robust solution
+    let repo = Repository::open(git_repo)?;
+    let blame = repo.blame_file(file, None)?;
     let standardized_path = file.to_string_lossy().replace('\\', "/");
     let spec = format!("HEAD:{}", standardized_path);
-    let object = repo.revparse_single(&spec).unwrap();
-    let blob = repo.find_blob(object.id()).unwrap();
+    let object = repo.revparse_single(&spec)?;
+    let blob = repo.find_blob(object.id())?;
 
-    let reader = BufReader::new(blob.content());
+    let reader: BufReader<&[u8]> = BufReader::new(blob.content());
     let mut authors: Vec<String> = vec![];
     for (line_nb, _line_content) in reader.lines().enumerate() {
         if let Some(hunk) = blame.get_line(line_nb + 1) {
@@ -87,7 +84,7 @@ fn get_authors_of_file(
             let author_name = signature
                 .name()
                 .map(|name| name.to_string())
-                .ok_or(OptionError);
+                .ok_or(OptionError("Option is None".to_string()));
             if let Ok(valid_author_name) = author_name {
                 if !authors.contains(&valid_author_name) {
                     authors.push(valid_author_name);

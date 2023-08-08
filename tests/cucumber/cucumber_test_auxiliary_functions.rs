@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::env::current_dir;
 use std::fs::{create_dir_all, remove_dir_all};
 use std::io;
-use std::path::{PathBuf};
+use std::path::PathBuf;
 use std::process::Output;
 
 pub fn convert_std_to_json(cmd_output_std: Vec<u8>) -> Value {

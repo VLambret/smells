@@ -13,7 +13,6 @@ pub struct Project {
     pub project_relative_path_to_analyzed_folder: PathBuf,
 }
 
-
 impl Project {
     pub(crate) fn new() -> Project {
         let relative_path_to_project = PathBuf::from("tests")
