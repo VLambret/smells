@@ -3,6 +3,7 @@ use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreTy
 use maplit::btreemap;
 use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
+use rayon::prelude::*;
 
 /* **************************************************************** */
 
@@ -93,7 +94,7 @@ pub fn do_internal_analysis(
     file_explorer: &dyn IFileExplorer,
     metrics: &[Box<dyn IMetric>],
 ) -> TopAnalysis {
-    let root_analysis = HierarchicalAnalysis {
+    let mut root_analysis = HierarchicalAnalysis {
         file_name: root
             .file_name()
             .unwrap_or(PathBuf::from("").as_ref())
@@ -110,11 +111,21 @@ pub fn do_internal_analysis(
 
     let file_analyses = &analyse_all_files(files_to_analyse, metrics);
 
-    let updated_root_analysis = build_hierarchical_analysis_structure(
-        root_analysis,
-        &keep_only_last_root_directory_in_analyses_file_names(file_analyses, root.to_path_buf()),
-    );
-    build_top_analysis_structure(updated_root_analysis)
+    let file_analyses_with_correct_names = keep_only_last_root_directory_in_analyses_file_names(file_analyses, root.to_path_buf());
+
+    for (_ha_counter, current_file_analysis) in file_analyses_with_correct_names.iter().enumerate() {
+        let current_file_hierarchical_analysis = HierarchicalAnalysis::new(current_file_analysis);
+        root_analysis =
+            combine_hierarchical_analysis(root_analysis, current_file_hierarchical_analysis);
+    }
+
+  /*  file_analyses_with_correct_names.into_par_iter().enumerate().map(|(_ha_counter, current_file_analysis)| {
+        let current_file_hierarchical_analysis = HierarchicalAnalysis::new(current_file_analysis);
+        root_analysis =
+            combine_hierarchical_analysis(root_analysis, current_file_hierarchical_analysis);
+    });
+*/
+    build_top_analysis_structure(root_analysis)
 }
 
 fn keep_only_last_root_directory_in_analyses_file_names(
@@ -142,20 +153,6 @@ fn keep_only_last_root_directory_in_analyses_file_names(
                 })
         })
         .collect()
-}
-
-fn build_hierarchical_analysis_structure(
-    root_analysis: HierarchicalAnalysis,
-    file_analyses: &[FileAnalysis],
-) -> HierarchicalAnalysis {
-    let mut updated_root_analysis = root_analysis;
-    for (_ha_counter, current_file_analysis) in file_analyses.iter().enumerate() {
-        let current_file_top_analysis = HierarchicalAnalysis::new(current_file_analysis);
-        updated_root_analysis =
-            combine_hierarchical_analysis(updated_root_analysis, current_file_top_analysis);
-    }
-
-    updated_root_analysis
 }
 
 fn build_top_analysis_structure(hierarchical_analysis: HierarchicalAnalysis) -> TopAnalysis {
