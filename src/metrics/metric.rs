@@ -9,13 +9,23 @@ use std::path::Path;
 
 #[derive(Debug)]
 pub enum SmellsError {
-    AnalysisError(String),
-    ResultError(String),
-    OptionError(String),
-    GitError(GitError),
+    AnalysisError(AnalysisError),
+    ResultError(ResultError),
+    OptionError(OptionError),
+    GitError(String),
 }
 
+
 pub type AnalysisError = String;
+
+impl From<git2Error> for SmellsError {
+    fn from(other: git2Error) -> SmellsError {
+        SmellsError::GitError(
+            String::from("Error while retrieving social complexity git objects: \n")
+                + other.message(),
+        )
+    }
+}
 
 #[derive(Debug)]
 pub struct ResultError {
@@ -23,11 +33,8 @@ pub struct ResultError {
 }
 
 impl ResultError {
-    pub fn new(mut message: String) -> ResultError {
-        if message.is_empty() {
-            message = "Result is an error".to_string()
-        }
-        ResultError { details: message }
+    pub fn new() -> ResultError {
+        ResultError { details: String::from("Result is Error") }
     }
 }
 
@@ -50,13 +57,11 @@ pub struct OptionError {
 
 impl OptionError {
     pub fn new() -> OptionError {
-        OptionError {
-            details: "Option is None".to_string(),
-        }
+        OptionError { details: String::from("Option is None") }
     }
 }
 
-/*impl fmt::Display for OptionError {
+impl fmt::Display for OptionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.details)
     }
@@ -68,24 +73,7 @@ impl Error for OptionError {
     }
 }
 
-impl From<git2Error> for SmellsError {
-    fn from(other: git2Error) -> SmellsError {
-        SmellsError::GitError(other)
-    }
-}*/
 
-#[derive(Debug)]
-pub struct GitError {
-    details: String,
-}
-
-impl From<git2Error> for SmellsError {
-    fn from(other: git2Error) -> SmellsError {
-        SmellsError::GitError(GitError {
-            details: String::from("Error while retrieving social complexity git objects: ") + other.message(),
-        })
-    }
-}
 
 /* **************************************************************** */
 

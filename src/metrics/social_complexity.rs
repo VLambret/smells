@@ -1,14 +1,13 @@
+use std::error;
 use crate::metrics::metric::MetricScoreType::Score;
 use crate::metrics::metric::MetricValueType::Authors;
-use crate::metrics::metric::SmellsError::*;
-use crate::metrics::metric::{
-    AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType, ResultError,
-    SmellsError,
-};
-use git2::{Blame, Blob, Repository};
+use crate::metrics::metric::*;
+use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType, OptionError, ResultError, SmellsError};
+use git2::Repository;
 use std::fmt::Debug;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
+use log::warn;
 
 #[derive(Debug, Clone)]
 pub struct SocialComplexityMetric {
@@ -36,15 +35,21 @@ impl IMetric for SocialComplexityMetric {
                         authors: Ok(authors),
                     })),
                     Ok(None) => None,
-                    _ => Some(Box::new(SocialComplexityValue {
+                    Err(error) => {
+                        warn!("Error accessing file authors : {:?}", error);
+                        Some(Box::new(SocialComplexityValue {
                         authors: Err("Analysis Error".to_string()),
-                    })),
+                    }))
+                    },
                 }
             }
         } else {
-            Some(Box::new(SocialComplexityValue {
-                authors: Err("Analysis Error".to_string()),
-            }))
+            {
+                warn!("Error getting relative file path");
+                Some(Box::new(SocialComplexityValue {
+                    authors: Err("Analysis Error".to_string()),
+                }))
+            }
         }
     }
 }
@@ -84,7 +89,7 @@ fn get_authors_of_file(
             let author_name = signature
                 .name()
                 .map(|name| name.to_string())
-                .ok_or(OptionError("Option is None".to_string()));
+                .ok_or(OptionError::new());
             if let Ok(valid_author_name) = author_name {
                 if !authors.contains(&valid_author_name) {
                     authors.push(valid_author_name);
@@ -102,7 +107,7 @@ fn get_authors_of_file(
 fn get_relative_file_path(file: &Path, git_repository: &Path) -> Result<PathBuf, ResultError> {
     match file.strip_prefix(git_repository) {
         Ok(relative_file_path) => Ok(PathBuf::from(relative_file_path)),
-        Err(_) => Err(ResultError::new(String::new())),
+        Err(_) => Err(ResultError::new()),
     }
 }
 
