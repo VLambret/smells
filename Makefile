@@ -49,3 +49,8 @@ d_test:
 
 d_shell:
 	 $(DOCKER_RUN) bash
+
+perf_test:
+	cargo build --release
+	./fs_generator/run.sh 2000
+
