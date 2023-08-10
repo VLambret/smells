@@ -1,13 +1,16 @@
-use std::error;
 use crate::metrics::metric::MetricScoreType::Score;
 use crate::metrics::metric::MetricValueType::Authors;
 use crate::metrics::metric::*;
-use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType, OptionError, ResultError, SmellsError};
+use crate::metrics::metric::{
+    AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType, OptionError,
+    ResultError, SmellsError,
+};
 use git2::Repository;
+use log::warn;
+use std::error;
 use std::fmt::Debug;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
-use log::warn;
 
 #[derive(Debug, Clone)]
 pub struct SocialComplexityMetric {
@@ -38,9 +41,9 @@ impl IMetric for SocialComplexityMetric {
                     Err(error) => {
                         warn!("Error accessing file authors : {:?}", error);
                         Some(Box::new(SocialComplexityValue {
-                        authors: Err("Analysis Error".to_string()),
-                    }))
-                    },
+                            authors: Err("Analysis Error".to_string()),
+                        }))
+                    }
                 }
             }
         } else {

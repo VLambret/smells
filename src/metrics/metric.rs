@@ -15,7 +15,6 @@ pub enum SmellsError {
     GitError(String),
 }
 
-
 pub type AnalysisError = String;
 
 impl From<git2Error> for SmellsError {
@@ -34,7 +33,9 @@ pub struct ResultError {
 
 impl ResultError {
     pub fn new() -> ResultError {
-        ResultError { details: String::from("Result is Error") }
+        ResultError {
+            details: String::from("Result is Error"),
+        }
     }
 }
 
@@ -57,7 +58,9 @@ pub struct OptionError {
 
 impl OptionError {
     pub fn new() -> OptionError {
-        OptionError { details: String::from("Option is None") }
+        OptionError {
+            details: String::from("Option is None"),
+        }
     }
 }
 
@@ -72,8 +75,6 @@ impl Error for OptionError {
         &self.details
     }
 }
-
-
 
 /* **************************************************************** */
 

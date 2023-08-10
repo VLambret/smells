@@ -1,10 +1,10 @@
 use crate::data_sources::file_explorer::IFileExplorer;
 use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreType};
 use maplit::btreemap;
+use rayon::prelude::*;
 use std::collections::{BTreeMap, HashMap};
 use std::ops::Index;
 use std::path::{Path, PathBuf};
-use rayon::prelude::*;
 
 /* **************************************************************** */
 
@@ -112,19 +112,14 @@ pub fn do_internal_analysis(
 
     let file_analyses = &analyse_all_files(files_to_analyse, metrics);
 
-    let file_analyses_with_correct_names = keep_only_last_root_directory_in_analyses_file_names(file_analyses, root.to_path_buf());
+    let file_analyses_with_correct_names =
+        keep_only_last_root_directory_in_analyses_file_names(file_analyses, root.to_path_buf());
 
-    for (_ha_counter, current_file_analysis) in file_analyses_with_correct_names.iter().enumerate() {
+    for (_ha_counter, current_file_analysis) in file_analyses_with_correct_names.iter().enumerate()
+    {
         let current_file_hierarchical_analysis = HierarchicalAnalysis::new(current_file_analysis);
-        combine_hierarchical_analysis2(&mut root_analysis, current_file_hierarchical_analysis);
+        combine_hierarchical_analysis(&mut root_analysis, current_file_hierarchical_analysis);
     }
-
-  /*  file_analyses_with_correct_names.into_par_iter().enumerate().map(|(_ha_counter, current_file_analysis)| {
-        let current_file_hierarchical_analysis = HierarchicalAnalysis::new(current_file_analysis);
-        root_analysis =
-            combine_hierarchical_analysis(root_analysis, current_file_hierarchical_analysis);
-    });
-*/
     build_top_analysis_structure(root_analysis)
 }
 
@@ -244,22 +239,29 @@ fn combine_folder_content(
 
     Some(updated_content.into_iter().collect())*/
 
-
-    let a : &mut BTreeMap<String, HierarchicalAnalysis> = &mut btreemap! {};
-    let some_root_content_entries = root_content_entries.unwrap_or(a);
+    let empty_content_entries: &mut BTreeMap<String, HierarchicalAnalysis> = &mut btreemap! {};
+    let some_root_content_entries = root_content_entries.unwrap_or(empty_content_entries);
     let mut some_other_content_entries = other_content_entries.unwrap_or(btreemap! {});
 
     while !some_other_content_entries.is_empty() {
-        let (other_content_entry_key, other_content_entry_analysis) = some_other_content_entries.pop_first().unwrap();
-        if let Some(root_content_entry_analysis) = some_root_content_entries.get_mut(&other_content_entry_key) {
-            combine_hierarchical_analysis(root_content_entry_analysis, other_content_entry_analysis);
+        if let Some((other_content_entry_key, other_content_entry_analysis)) =
+            some_other_content_entries.pop_first()
+        {
+            if let Some(root_content_entry_analysis) =
+                some_root_content_entries.get_mut(&other_content_entry_key)
+            {
+                combine_hierarchical_analysis(
+                    root_content_entry_analysis,
+                    other_content_entry_analysis,
+                );
+            } else {
+                some_root_content_entries
+                    .insert(other_content_entry_key, other_content_entry_analysis);
+            }
         } else {
-            some_root_content_entries.insert(other_content_entry_key, other_content_entry_analysis);
+            break;
         }
     }
-
-
-
 }
 
 /*
@@ -281,8 +283,12 @@ fn combine_hierarchical_analysis(
     root_analysis: &mut HierarchicalAnalysis,
     other_analysis: HierarchicalAnalysis,
 ) {
-    root_analysis.metrics = combine_metrics(root_analysis.metrics.to_owned(), other_analysis.metrics);
-    combine_folder_content(root_analysis.folder_content.as_mut(), other_analysis.folder_content);
+    root_analysis.metrics =
+        combine_metrics(root_analysis.metrics.to_owned(), other_analysis.metrics);
+    combine_folder_content(
+        root_analysis.folder_content.as_mut(),
+        other_analysis.folder_content,
+    );
 }
 
 /*fn combine_filenames(current_analysis_name: String, _other: String) -> String {
@@ -359,7 +365,7 @@ mod analyse1_test {
                 .join("file2"),
             metrics: vec![Box::new(LinesCountValue { line_count: Ok(3) })],
         });
-      /*  println!(
+        /*  println!(
             "{:?}",
             combine_hierarchical_analysis(first_analysis, second_analysis)
         );*/
