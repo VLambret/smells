@@ -347,7 +347,7 @@ mod analyse1_test {
 
     #[test]
     fn combine_hierarchical_analysis_test() {
-        let first_analysis = HierarchicalAnalysis::new(&FileAnalysis {
+        let mut first_analysis = HierarchicalAnalysis::new(&FileAnalysis {
             file_path: PathBuf::from("root")
                 .join("dir1")
                 .join("dir2")
@@ -363,10 +363,10 @@ mod analyse1_test {
                 .join("file2"),
             metrics: vec![Box::new(LinesCountValue { line_count: Ok(3) })],
         });
-        /*  println!(
+          println!(
             "{:?}",
-            combine_hierarchical_analysis(first_analysis, second_analysis)
-        );*/
+              combine_hierarchical_analysis(&mut first_analysis, second_analysis)
+        );
     }
 }
 
