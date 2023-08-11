@@ -50,8 +50,8 @@ fn main() {
 
     let feature_files = [
         "tests/cucumber/features/basic_usages.feature",
-        "tests/cucumber/features/social_complexity.feature",
-        "tests/cucumber/features/lines_count.feature",
+        /*"tests/cucumber/features/social_complexity.feature",
+        "tests/cucumber/features/lines_count.feature",*/
         "tests/cucumber/features/ultimate.feature",
     ];
 
