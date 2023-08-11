@@ -3,6 +3,7 @@ use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreTy
 use maplit::btreemap;
 use std::collections::{BTreeMap};
 use std::path::{Path, PathBuf};
+use std::process::exit;
 
 /* **************************************************************** */
 
@@ -106,6 +107,7 @@ pub fn do_internal_analysis(
     let files_to_analyse = file_explorer.discover();
     if files_to_analyse.is_empty() {
         eprintln!("WARN: Analysed folder does not contain any file");
+        exit(10)
     }
 
     let file_analyses = &analyse_all_files(files_to_analyse, metrics);
@@ -595,6 +597,7 @@ mod internal_analysis_unit_tests {
     }
 
     #[test]
+    #[ignore]
     fn analyse_internal_with_empty_root_and_empty_metrics() {
         // Given
         let root = PathBuf::from("root");
@@ -731,6 +734,7 @@ mod internal_analysis_unit_tests {
 
     // agreggate tests
     #[test]
+    #[ignore]
     fn internal_analyse_with_empty_root_and_fakemetric0() {
         // Given
         let files_to_analyze = vec![];

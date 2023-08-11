@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::fs::read_dir;
 use std::path::{Path, PathBuf};
+use log::warn;
 
 pub trait IFileExplorer: Debug {
     fn discover(&self) -> Vec<PathBuf>;
@@ -32,7 +33,10 @@ impl FileExplorer {
         if let Ok(root_dir) = read_dir(root) {
             for file in root_dir.flatten() {
                 let file = file.path();
-                if file.is_file() {
+                if is_a_hidden_file(&file, &root) {
+                    continue
+                }
+                if file.is_file()  {
                     files.push(file);
                 } else {
                     files.extend(Self::discover_inner(&file));
@@ -41,6 +45,11 @@ impl FileExplorer {
         }
         files
     }
+}
+
+fn is_a_hidden_file(file: &PathBuf, root: &PathBuf) -> bool {
+    let file_name = file.strip_prefix(root).unwrap();
+    file_name.to_string_lossy().to_string().starts_with(".")
 }
 
 impl Iterator for FileExplorer {

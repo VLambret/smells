@@ -13,8 +13,7 @@ Feature: Smells combined metrics analysis
     And no warning is raised
     And file0.rs has no social_complexity score
     And file0.rs lines_count score is 0
-    And .hidden_file.rs has no social_complexity score
-    And .hidden_file.rs has no lines_count score
+    And .hidden_file.rs is not included in analysis
     And lib/mod1/file1.rs social_complexity score is 1
     And lib/mod1/file1.rs lines_count score is 1
     And lib/mod1/file2.rs social_complexity score is 2

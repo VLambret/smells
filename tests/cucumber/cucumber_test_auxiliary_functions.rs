@@ -76,6 +76,44 @@ pub fn get_metric_score(file_path: PathBuf, analysis: &Value, metric_key: &str) 
     Value::Null
 }
 
+pub fn is_not_included_in_analysis(filename: PathBuf, analysis: &Value) -> bool {
+    let file_components: Vec<String> = filename
+        .components()
+        .map(|component| component.as_os_str().to_string_lossy().to_string())
+        .collect();
+
+    match file_components.as_slice() {
+        [file_name] => {
+            if let Some(_) = analysis.get(file_name) {
+                false
+            } else {
+                true
+            }
+        }
+        [first_dir, other_dirs @ ..] => {
+            let mut results = serde_json::Map::new();
+
+            if let Value::Object(obj) = analysis {
+                if let Some(current_level_folder_content) = obj
+                    .get(first_dir)
+                    .and_then(|fields| fields.get("folder_content_analyses"))
+                {
+                    if let Value::Array(arr) = current_level_folder_content {
+                        for item in arr {
+                            if let Value::Object(obj) = item {
+                                results.extend(obj.clone());
+                            }
+                        }
+                    }
+                }
+            }
+            let other_dirs_pathbuf = other_dirs.iter().collect::<PathBuf>();
+            return is_not_included_in_analysis(other_dirs_pathbuf, &Value::Object(results));
+        }
+        _ => {true}
+    }
+}
+
 pub fn add_file_to_staging_area(filename: &String, repo: &Repository) {
     let mut index = repo.index().unwrap();
     index.add_path(&PathBuf::from(filename)).unwrap();

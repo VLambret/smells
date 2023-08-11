@@ -11,7 +11,7 @@ pub fn do_analysis(root: PathBuf) -> TopAnalysis {
     let is_empty = root.read_dir().unwrap().next().is_none();
     if is_empty {
         eprintln!("WARN: Analysed folder does not contain any file");
-        exit(1);
+        exit(10);
     }
 
     let mut metrics_to_analyze: Vec<Box<dyn IMetric>> = vec![Box::new(LinesCountMetric::new())];

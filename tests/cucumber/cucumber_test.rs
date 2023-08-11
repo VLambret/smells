@@ -50,8 +50,8 @@ fn main() {
 
     let feature_files = [
         "tests/cucumber/features/basic_usages.feature",
-        /*"tests/cucumber/features/social_complexity.feature",
-        "tests/cucumber/features/lines_count.feature",*/
+        "tests/cucumber/features/social_complexity.feature",
+        "tests/cucumber/features/lines_count.feature",
         "tests/cucumber/features/ultimate.feature",
     ];
 
@@ -252,6 +252,16 @@ mod smells_steps {
             Null
         );
     }
+
+    #[then(regex = "(.+) is not included in analysis")]
+    fn step_not_included_in_analysis(w: &mut SmellsWorld, file: String) {
+        let analysis_result = get_json_analysis(&w.cmd_output);
+        let filename = get_filename_for_analysis(&w.project.relative_path_to_project, &file);
+
+        assert!(is_not_included_in_analysis(filename, &analysis_result));
+    }
+
+
 
     /***********************************************************************************
      * LINES COUNT
