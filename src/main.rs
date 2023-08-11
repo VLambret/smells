@@ -8,7 +8,10 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 pub struct CmdArgs {
     #[structopt(parse(try_from_str = get_folder_to_analyse))]
-    pub folder_to_analyse: PathBuf
+    pub folder_to_analyse: PathBuf,
+
+    #[structopt(short = "f", long = "filter")]
+    pub extension_of_files_to_analyse: String,
 }
 
 fn get_folder_to_analyse(input: &str) -> Result<PathBuf, String> {
