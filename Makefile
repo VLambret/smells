@@ -50,7 +50,14 @@ d_test:
 d_shell:
 	 $(DOCKER_RUN) bash
 
+################################################################################
+# PERF
+################################################################################*
+
 perf_test:
 	cargo build --release
 	./fs_generator/run.sh 2000
 
+perf_analysis:
+	cargo build --release
+	heaptrack ./target/release/smells ./fs_generator/root_directory_4000

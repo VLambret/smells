@@ -1,13 +1,11 @@
 use crate::metrics::metric::MetricScoreType::Score;
 use crate::metrics::metric::MetricValueType::Authors;
-use crate::metrics::metric::*;
 use crate::metrics::metric::{
     AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType, OptionError,
     ResultError, SmellsError,
 };
 use git2::Repository;
 use log::warn;
-use std::error;
 use std::fmt::Debug;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};

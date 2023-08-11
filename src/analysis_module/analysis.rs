@@ -1,9 +1,7 @@
 use crate::data_sources::file_explorer::IFileExplorer;
 use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreType};
 use maplit::btreemap;
-use rayon::prelude::*;
-use std::collections::{BTreeMap, HashMap};
-use std::ops::Index;
+use std::collections::{BTreeMap};
 use std::path::{Path, PathBuf};
 
 /* **************************************************************** */

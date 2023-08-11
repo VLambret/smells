@@ -26,3 +26,4 @@ fake_*
 tests/data/generated*
 fs_generator/root_directory*
 massif.out.*
+heaptrack.smells*
