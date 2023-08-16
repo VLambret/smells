@@ -1,7 +1,6 @@
-use std::fmt::Debug;
-use std::fs::read_dir;
+use std::fmt::{Debug};
 use std::path::{Path, PathBuf};
-use log::warn;
+use glob::{glob_with, MatchOptions};
 
 pub trait IFileExplorer: Debug {
     fn discover(&self) -> Vec<PathBuf>;
@@ -29,27 +28,21 @@ impl FileExplorer {
         }
     }
     fn discover_inner(root: &PathBuf) -> Vec<PathBuf> {
-        let mut files = vec![];
-        if let Ok(root_dir) = read_dir(root) {
-            for file in root_dir.flatten() {
-                let file = file.path();
-                if is_a_hidden_file(&file, &root) {
-                    continue
-                }
-                if file.is_file()  {
-                    files.push(file);
-                } else {
-                    files.extend(Self::discover_inner(&file));
-                }
-            }
-        }
-        files
-    }
-}
+        let file_discovery_pattern = format!("{}/**/*", root.to_string_lossy().to_string());
 
-fn is_a_hidden_file(file: &PathBuf, root: &PathBuf) -> bool {
-    let file_name = file.strip_prefix(root).unwrap();
-    file_name.to_string_lossy().to_string().starts_with(".")
+        let glob_options = MatchOptions {
+            case_sensitive: false,
+            require_literal_separator: false,
+            require_literal_leading_dot: true,
+        };
+
+        glob_with(&file_discovery_pattern, glob_options).unwrap().filter_map(|file| {
+            match file {
+                Ok(f) if f.is_file() => Some(f),
+                _ => None
+            }
+        }).collect()
+    }
 }
 
 impl Iterator for FileExplorer {
