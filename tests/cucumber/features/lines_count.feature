@@ -2,12 +2,11 @@ Feature: Smells lines count
 
   Scenario: Analyse an empty file
     Given project is a git repository
-    And file0.rs is created
-    And 0 lines are added to file0.rs
+    And empty.rs is created
     When smells is called with "."
     Then exit code is 0
     And no warning is raised
-    And file0.rs lines_count score is 0
+    And empty.rs lines_count score is 0
 
 #  Scenario: Analyse of folder ending with slash
 

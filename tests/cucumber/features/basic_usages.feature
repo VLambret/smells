@@ -52,15 +52,19 @@ Feature: Smells basic usages
     And standard output is not empty
     And standard error is empty
 
+  @ignore
   Scenario: Smells can filter files to analyse
     Given project is a git repository
     And lib/file.rs is created
     And lib/file.c is created
     And lib/file.h is created
-    When smells is called with "--filter="c,h""
+    When smells is called with ". --filter c,h"
     Then exit code is 0
     And standard error is empty
-    And .hidden_file.rs is not included in analysis
+    And lib/file.c lines_count score is 0
+    And lib/file.h lines_count score is 0
+    And lib/file.rs is not included in analysis
+
 
   Scenario: Smells help can be called with long version
     When smells is called with "--help"

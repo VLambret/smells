@@ -11,7 +11,7 @@ Feature: Smells social complexity
 
 	Scenario: Analyse a git repository without any contributors
 		Given project is a git repository
-		And file0.rs is created
+		And file.rs is created
 		And there is no contributor
 		When smells is called with "."
 		Then exit code is 0

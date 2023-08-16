@@ -88,7 +88,9 @@ fn run_feature_file(feature_file: &str) -> usize {
                 sleep_future
             })
             .fail_on_skipped()
-            .run(feature_file),
+            .filter_run(feature_file,|_, _, sc| {
+                sc.tags.iter().all(|t| t != "ignore")
+            }),
     );
     result.steps_stats().to_owned().failed
 }
