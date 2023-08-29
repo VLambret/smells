@@ -49,21 +49,18 @@ impl HierarchicalAnalysis {
 fn build_folder_content_one_level_below(
     file_analysis: &FileAnalysis,
 ) -> Option<BTreeMap<String, HierarchicalAnalysis>> {
-    if let Some(file_path_without_top_parent_path) = remove_top_parent_path_from_file_full_path(&file_analysis.file_path) {
-        let one_level_below_file_analysis = FileAnalysis {
+    let file_path_without_top_parent_path = remove_top_parent_path_from_file_full_path(&file_analysis.file_path)?;
+    let one_level_below_file_analysis = FileAnalysis {
             file_path: file_path_without_top_parent_path.clone(),
             metrics: file_analysis.metrics.clone(),
-        };
-        if let Some(current_directory) = get_top_parent(&file_path_without_top_parent_path) {
-            Some(
-                btreemap! {current_directory.to_string_lossy().to_string() => HierarchicalAnalysis::new(&one_level_below_file_analysis)},
-            )
-        } else {
-            file_analysis.file_path.file_name()
-            .map(|file_name| btreemap! {file_name.to_string_lossy().to_string() => HierarchicalAnalysis::new(&one_level_below_file_analysis)})
-        }
+    };
+    if let Some(current_directory) = get_top_parent(&file_path_without_top_parent_path) {
+        Some(
+            btreemap! {current_directory.to_string_lossy().to_string() => HierarchicalAnalysis::new(&one_level_below_file_analysis)},
+        )
     } else {
-        None
+        file_analysis.file_path.file_name()
+            .map(|file_name| btreemap! {file_name.to_string_lossy().to_string() => HierarchicalAnalysis::new(&one_level_below_file_analysis)})
     }
 }
 
