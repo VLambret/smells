@@ -264,20 +264,6 @@ fn combine_folder_content(
     }
 }
 
-/*
-fn combine_hierarchical_analysis(
-    root_analysis: HierarchicalAnalysis,
-    other_analysis: HierarchicalAnalysis,
-) -> HierarchicalAnalysis {
-    HierarchicalAnalysis {
-        file_name: combine_filenames(root_analysis.file_name, other_analysis.file_name),
-        metrics: combine_metrics(root_analysis.metrics, other_analysis.metrics),
-        folder_content: combine_folder_content(
-            root_analysis.folder_content,
-            other_analysis.folder_content,
-        ),
-    }
-}*/
 
 fn combine_hierarchical_analysis(
     root_analysis: &mut HierarchicalAnalysis,
@@ -290,10 +276,6 @@ fn combine_hierarchical_analysis(
         other_analysis.folder_content,
     );
 }
-
-/*fn combine_filenames(current_analysis_name: String, _other: String) -> String {
-    current_analysis_name
-}*/
 
 fn combine_metrics(
     current_metrics: Vec<Box<dyn IMetricValue>>,
