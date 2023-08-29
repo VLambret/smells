@@ -68,15 +68,20 @@ fn build_folder_content_one_level_below(
 }
 
 fn remove_top_parent(current_file: &Path) -> Option<PathBuf> {
-    if let Some(top_parent) = get_top_parent(current_file) {
-        if let Ok(file_without_top_parent) = current_file.strip_prefix(top_parent) {
-            Some(PathBuf::from(file_without_top_parent))
-        } else {
-            None
-        }
-    } else {
-        None
-    }
+    let top_parent = get_top_parent(current_file)?;
+    if let Ok(file_without_top_parent) = current_file.strip_prefix(top_parent) {
+        Some(PathBuf::from(file_without_top_parent))
+    } else { None }
+
+    // if let Some(top_parent) = get_top_parent(current_file) {
+    //     if let Ok(file_without_top_parent) = current_file.strip_prefix(top_parent) {
+    //         Some(PathBuf::from(file_without_top_parent))
+    //     } else {
+    //         None
+    //     }
+    // } else {
+    //     None
+    // }
 }
 
 fn get_top_parent(file: &Path) -> Option<PathBuf> {
