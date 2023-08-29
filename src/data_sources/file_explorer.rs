@@ -1,6 +1,6 @@
-use std::fmt::{Debug};
-use std::path::{Path, PathBuf};
 use glob::{glob_with, MatchOptions};
+use std::fmt::Debug;
+use std::path::{Path, PathBuf};
 
 pub trait IFileExplorer: Debug {
     fn discover(&self) -> Vec<PathBuf>;
@@ -36,12 +36,13 @@ impl FileExplorer {
             require_literal_leading_dot: true,
         };
 
-        glob_with(&file_discovery_pattern, glob_options).unwrap().filter_map(|file| {
-            match file {
+        glob_with(&file_discovery_pattern, glob_options)
+            .unwrap()
+            .filter_map(|file| match file {
                 Ok(f) if f.is_file() => Some(f),
-                _ => None
-            }
-        }).collect()
+                _ => None,
+            })
+            .collect()
     }
 }
 

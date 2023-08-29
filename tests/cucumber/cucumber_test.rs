@@ -88,7 +88,7 @@ fn run_feature_file(feature_file: &str) -> usize {
                 sleep_future
             })
             .fail_on_skipped()
-            .filter_run(feature_file,|_, _, sc| {
+            .filter_run(feature_file, |_, _, sc| {
                 sc.tags.iter().all(|t| t != "ignore")
             }),
     );
@@ -262,8 +262,6 @@ mod smells_steps {
 
         assert!(is_not_included_in_analysis(filename, &analysis_result));
     }
-
-
 
     /***********************************************************************************
      * LINES COUNT

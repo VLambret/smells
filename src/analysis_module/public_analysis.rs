@@ -1,6 +1,6 @@
 use crate::analysis_module::analysis::{do_internal_analysis, TopAnalysis};
 use crate::data_sources::file_explorer::FileExplorer;
-use crate::metrics::line_count::LinesCountMetric;
+use crate::metrics::lines_count::LinesCountMetric;
 use crate::metrics::metric::IMetric;
 use crate::metrics::social_complexity::SocialComplexityMetric;
 use git2::Repository;

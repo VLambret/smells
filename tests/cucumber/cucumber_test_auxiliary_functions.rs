@@ -110,7 +110,7 @@ pub fn is_not_included_in_analysis(filename: PathBuf, analysis: &Value) -> bool 
             let other_dirs_pathbuf = other_dirs.iter().collect::<PathBuf>();
             return is_not_included_in_analysis(other_dirs_pathbuf, &Value::Object(results));
         }
-        _ => {true}
+        _ => true,
     }
 }
 

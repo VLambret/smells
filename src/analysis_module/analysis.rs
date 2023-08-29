@@ -1,7 +1,7 @@
 use crate::data_sources::file_explorer::IFileExplorer;
 use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreType};
 use maplit::btreemap;
-use std::collections::{BTreeMap};
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::exit;
 
@@ -49,10 +49,11 @@ impl HierarchicalAnalysis {
 fn build_folder_content_one_level_below(
     file_analysis: &FileAnalysis,
 ) -> Option<BTreeMap<String, HierarchicalAnalysis>> {
-    let file_path_without_top_parent_path = remove_top_parent_path_from_file_full_path(&file_analysis.file_path)?;
+    let file_path_without_top_parent_path =
+        remove_top_parent_path_from_file_full_path(&file_analysis.file_path)?;
     let one_level_below_file_analysis = FileAnalysis {
-            file_path: file_path_without_top_parent_path.clone(),
-            metrics: file_analysis.metrics.clone(),
+        file_path: file_path_without_top_parent_path.clone(),
+        metrics: file_analysis.metrics.clone(),
     };
     if let Some(current_directory) = get_top_parent(&file_path_without_top_parent_path) {
         Some(
@@ -255,7 +256,6 @@ fn combine_folder_content(
     }
 }
 
-
 fn combine_hierarchical_analysis(
     root_analysis: &mut HierarchicalAnalysis,
     other_analysis: HierarchicalAnalysis,
@@ -303,7 +303,7 @@ fn combine_metrics(
 #[cfg(test)]
 mod analyse1_test {
     use super::*;
-    use crate::metrics::line_count::LinesCountValue;
+    use crate::metrics::lines_count::LinesCountValue;
 
     #[test]
     fn build_hierarchical_analysis_from_file_analysis_test() {
@@ -338,9 +338,9 @@ mod analyse1_test {
                 .join("file2"),
             metrics: vec![Box::new(LinesCountValue { line_count: Ok(3) })],
         });
-          println!(
+        println!(
             "{:?}",
-              combine_hierarchical_analysis(&mut first_analysis, second_analysis)
+            combine_hierarchical_analysis(&mut first_analysis, second_analysis)
         );
     }
 }

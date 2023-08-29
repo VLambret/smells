@@ -11,7 +11,7 @@ pub struct CmdArgs {
     pub folder_to_analyse: PathBuf,
 
     /// you can specify multiple extensions by separating them with commas like <ext1,ext2>
-    #[structopt(short="f", long="filter")]
+    #[structopt(short = "f", long = "filter")]
     pub extension_of_files_to_analyse: Option<String>,
 }
 
