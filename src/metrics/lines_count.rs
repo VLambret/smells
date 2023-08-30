@@ -99,16 +99,6 @@ mod tests {
     use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType};
 
     #[rstest(
-        input,
-        expected,
-        case("line1", 1),
-        case("line1\nline2", 2),
-        case("line1\nline2\nline3", 3),
-    )]
-
-    // #[ignore = "update to use actual metric"]
-
- /*   #[rstest(
     input,
     expected,
     case("", 1),
@@ -117,16 +107,20 @@ mod tests {
     case("line1\nline2\nline3", 3),
     case("\n", 2),
     case("\n\n\n", 4)
-    )]*/
+    )]
 
-    #[ignore = "needs confirmation that test fails for good reasons"]
+    #[ignore = "needs to be updated"]
     fn test_line_count_analyse(input: &str, expected: u32) {
+        //Given
         let file_path = PathBuf::from("tests").join("data").join("lines_count");
         let mut file = File::create(&file_path).unwrap();
-        file.write(input.as_ref()).unwrap();
+        file.write_all(input.as_bytes()).unwrap();
+
+        //When
         let file_line_count_metric = LinesCountMetric::new();
         let file_lines_count_value = file_line_count_metric.analyse(&file_path).unwrap();
 
+        //Then
         assert_eq!("lines_count", file_lines_count_value.get_key());
         assert_eq!(MetricValueType::Number(expected.clone() as u64), file_lines_count_value.get_value().unwrap());
         assert_eq!(MetricScoreType::Score(expected.clone() as u64), file_lines_count_value.get_score().unwrap());
