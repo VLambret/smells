@@ -32,7 +32,7 @@ backlog.dot: backlog.py
 # DOCKER
 ################################################################################*
 
-IMAGE_NAME := rust:1.69-bookworm
+IMAGE_NAME := rust:1.70-bookworm
 SMELLS_DIR := $(shell realpath .)
 
 DOCKER_RUN := docker run --rm \
