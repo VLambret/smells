@@ -14,6 +14,10 @@ pub struct CmdArgs {
     /// you can specify multiple extensions by separating them with commas like <ext1,ext2>
     #[structopt(short = "f", long = "filter")]
     pub extension_of_files_to_analyse: Option<String>,
+
+    /// Prints more information about execution
+    #[structopt(short = "v", long = "verbose")]
+    pub verbose: bool,
 }
 
 fn get_folder_to_analyse(input: &str) -> Result<PathBuf, String> {
@@ -24,7 +28,11 @@ fn get_folder_to_analyse(input: &str) -> Result<PathBuf, String> {
 }
 
 fn main() {
-    let env = Env::default().filter_or("MY_LOG_LEVEL", "info");
+    let env_logger_level = match CmdArgs::from_args().verbose {
+        true => "info",
+        _ => "off"
+    };
+    let env = Env::default().filter_or("MY_LOG_LEVEL", env_logger_level);
     env_logger::init_from_env(env);
 
     let folder_to_analyse = CmdArgs::from_args().folder_to_analyse;
