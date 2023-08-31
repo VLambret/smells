@@ -4,6 +4,7 @@ use maplit::btreemap;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::exit;
+use log::info;
 
 /* **************************************************************** */
 
@@ -101,8 +102,9 @@ pub fn do_internal_analysis(
         eprintln!("WARN: Analysed folder does not contain any file");
         exit(10)
     }
-
+    info!("Scanning for files...");
     let file_analyses = &analyse_all_files(files_to_analyse, metrics);
+    info!("All files to be analysed have been recovered. Starting files analysis ...");
 
     let file_analyses_with_correct_names =
         keep_only_last_root_directory_in_analyses_file_names(file_analyses, root.to_path_buf());
