@@ -4,7 +4,7 @@ use maplit::btreemap;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::exit;
-use log::info;
+use log::{info, warn};
 
 /* **************************************************************** */
 
@@ -99,7 +99,7 @@ pub fn do_internal_analysis(
 
     let files_to_analyse = file_explorer.discover();
     if files_to_analyse.is_empty() {
-        eprintln!("WARN: Analysed folder does not contain any file");
+        warn!("WARN: Analysed folder does not contain any file");
         exit(10)
     }
     info!("Scanning for files...");

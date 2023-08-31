@@ -93,7 +93,7 @@ impl IMetricValue for LinesCountValue {
 mod tests {
     use std::fs::File;
     use std::io::Write;
-    use std::path::{Path, PathBuf};
+    use std::path::{PathBuf};
     use rstest::rstest;
     use crate::metrics::lines_count::{LinesCountMetric, LinesCountValue};
     use crate::metrics::metric::{AnalysisError, IMetric, IMetricValue, MetricScoreType, MetricValueType};

@@ -3,7 +3,7 @@ use smells::analysis_module::public_analysis::do_analysis;
 use smells::formatters::json::convert_analysis_to_formatted_json;
 use smells::viewers::cli::print_formatted_json_output;
 use std::path::PathBuf;
-use log::info;
+use log::{info};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -30,7 +30,7 @@ fn get_folder_to_analyse(input: &str) -> Result<PathBuf, String> {
 fn main() {
     let env_logger_level = match CmdArgs::from_args().verbose {
         true => "info",
-        _ => "off"
+        _ => "warn"
     };
     let env = Env::default().filter_or("MY_LOG_LEVEL", env_logger_level);
     env_logger::init_from_env(env);

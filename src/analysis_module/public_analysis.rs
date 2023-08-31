@@ -6,11 +6,12 @@ use crate::metrics::social_complexity::SocialComplexityMetric;
 use git2::Repository;
 use std::path::PathBuf;
 use std::process::exit;
+use log::warn;
 
 pub fn do_analysis(root: PathBuf) -> TopAnalysis {
     let is_empty = root.read_dir().unwrap().next().is_none();
     if is_empty {
-        eprintln!("WARN: Analysed folder does not contain any file");
+        warn!("WARN: Analysed folder does not contain any file");
         exit(10);
     }
 
@@ -26,7 +27,7 @@ pub fn do_analysis(root: PathBuf) -> TopAnalysis {
             },
         );
     } else {
-        eprintln!("WARN: Analysed folder is not a git repository");
+        warn!("WARN: Analysed folder is not a git repository");
     }
     do_internal_analysis(&root, &FileExplorer::new(&root), &metrics_to_analyze)
 }
