@@ -202,37 +202,6 @@ fn combine_folder_content(
     root_content_entries: Option<&mut BTreeMap<String, HierarchicalAnalysis>>,
     other_content_entries: Option<BTreeMap<String, HierarchicalAnalysis>>,
 ) {
-    /*let mut updated_content: HashMap<String, HierarchicalAnalysis> = HashMap::new();
-
-    if let Some(root_content_entries) = root_content_entries.to_owned() {
-        for (root_content_entry_key, root_content_entry_analysis) in root_content_entries {
-            if let Some(other_analysis) = other_content_entries
-                .as_ref()
-                .and_then(|entries| entries.get(&root_content_entry_key))
-            {
-                let updated_current_analysis = combine_hierarchical_analysis(
-                    root_content_entry_analysis,
-                    other_analysis.clone(),
-                );
-                updated_content.insert(root_content_entry_key, updated_current_analysis);
-            } else {
-                updated_content.insert(root_content_entry_key, root_content_entry_analysis);
-            }
-        }
-    }
-
-    if let Some(other_content_entries) = other_content_entries {
-        for (other_content_entry_key, other_content_entry_analysis) in other_content_entries {
-            if let Some(root_content_entries) = root_content_entries.as_ref() {
-                if !root_content_entries.contains_key(&other_content_entry_key) {
-                    updated_content.insert(other_content_entry_key, other_content_entry_analysis);
-                }
-            }
-        }
-    }
-
-    Some(updated_content.into_iter().collect())*/
-
     let empty_content_entries: &mut BTreeMap<String, HierarchicalAnalysis> = &mut btreemap! {};
     let some_root_content_entries = root_content_entries.unwrap_or(empty_content_entries);
     let mut some_other_content_entries = other_content_entries.unwrap_or(btreemap! {});
@@ -484,7 +453,7 @@ mod internal_analysis_unit_tests {
         fn analyse(&self, _file_path: &Path) -> Option<Box<dyn IMetricValue>> {
             Some(Box::new(FakeMetricValue {
                 metric_key: self.metric_key,
-                value: self.value,
+                value: self.value.clone(),
             }))
         }
     }
@@ -501,7 +470,7 @@ mod internal_analysis_unit_tests {
         }
 
         fn get_score(&self) -> Result<MetricScoreType, AnalysisError> {
-            Ok(Score(self.value))
+            Ok(Score(self.value.clone()))
         }
 
         fn get_value(&self) -> Result<MetricValueType, AnalysisError> {
@@ -516,7 +485,7 @@ mod internal_analysis_unit_tests {
             };
             Box::new(FakeMetricValue {
                 metric_key: self.metric_key,
-                value: self.value + line_count,
+                value: self.value.clone() + line_count,
             })
         }
     }
@@ -559,37 +528,6 @@ mod internal_analysis_unit_tests {
         }
     }
 
-    fn build_analysis_structure(
-        root_name: String,
-        metrics: BTreeMap<&'static str, Result<MetricScoreType, AnalysisError>>,
-        content: BTreeMap<String, TopAnalysis>,
-    ) -> TopAnalysis {
-        TopAnalysis {
-            file_name: root_name,
-            metrics,
-            folder_content: Some(content),
-        }
-    }
-
-    #[test]
-    #[ignore]
-    fn analyse_internal_with_empty_root_and_empty_metrics() {
-        // Given
-        let root = PathBuf::from("root");
-        let fake_file_explorer: Box<dyn IFileExplorer> = Box::new(FakeFileExplorer::_new(vec![]));
-
-        // When
-        let actual_result_analysis = do_internal_analysis(&root, &*fake_file_explorer, &[]);
-
-        // Then
-        let expected_result_analysis = build_analysis_structure(
-            root.to_string_lossy().to_string(),
-            btreemap! {},
-            btreemap! {},
-        );
-
-        assert_eq!(expected_result_analysis, actual_result_analysis);
-    }
     #[test]
     fn analyse_internal_with_2_files_and_empty_metrics() {
         // Given
@@ -708,28 +646,6 @@ mod internal_analysis_unit_tests {
     }
 
     // agreggate tests
-    #[test]
-    #[ignore]
-    fn internal_analyse_with_empty_root_and_fakemetric0() {
-        // Given
-        let files_to_analyze = vec![];
-        let fake_file_explorer: Box<dyn IFileExplorer> =
-            Box::new(FakeFileExplorer::_new(files_to_analyze));
-        let metrics: Vec<Box<dyn IMetric>> = vec![Box::new(FakeMetric::new(0))];
-
-        // When
-        let actual_root_analysis =
-            do_internal_analysis(&PathBuf::from("empty_root"), &*fake_file_explorer, &metrics);
-
-        // Then
-        let expected_root_analysis = TopAnalysis {
-            file_name: String::from("empty_root"),
-            metrics: btreemap! {},
-            folder_content: Some(BTreeMap::new()),
-        };
-
-        assert_eq!(expected_root_analysis, actual_root_analysis)
-    }
 
     #[test]
     fn internal_analyse_with_1_file_and_fakemetric1() {
